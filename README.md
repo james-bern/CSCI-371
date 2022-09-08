@@ -10,7 +10,7 @@ i highly recommended you get the code running on your own computer, however, the
 - **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
 - **navigate into repo:** `cd CSCI-371`
 - **build and run:** `./ubuntu_build_and_run.sh`
-  - **append any argument to run faster & compile slower (don't use if you will be debugging the resulting executable):** `./ubuntu_build_and_run.zsh asdf`
+  - **append any argument to run faster & compile slower (probably don't use if you will be debugging the resulting executable):** `./ubuntu_build_and_run.zsh asdf`
 #### debug
 - **debug with Visual Studio Code:** `./xplat_debug_vscode.bat`
   - **_install CodeLLDB when prompted_**
@@ -35,7 +35,7 @@ i highly recommended you get the code running on your own computer, however, the
   - **_if prompted, install developer tools and then repeat this step_**
 - **navigate into repo:** `cd CSCI-371`
 - **build and run:** `source mac_build_and_run.sh` (or `./mac_build_and_run.sh` if you've made it executable)
-  - **append any argument to run faster & compile slower (don't use if you will be debugging the resulting executable):** `./mac_build_and_run.sh asdf`
+  - **append any argument to run faster & compile slower (probably don't use if you will be debugging the resulting executable):** `./mac_build_and_run.sh asdf`
 #### debug
 - **debug with VS Code:**
   - **install and configure VS Code**
@@ -71,7 +71,7 @@ i highly recommended you get the code running on your own computer, however, the
 - **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
 - **navigate into repo:** `cd CSCI-371`
 - **build and run:** `windows_build_and_run.bat`
-- - **append any argument to run faster & compile slower (don't use if you will be debugging the resulting executable):** `windows_build_and_run.bat asdf`
+- - **append any argument to run faster & compile slower (definitely don't use if you will be debugging the resulting executable):** `windows_build_and_run.bat asdf`
 - **(optional but recommended) create a shortcut for the x64 Native Tools Command Prompt that starts in repo**
   - **bring up x64 Native Tools Command Prompt in start menu:** press `⊞ Win`; type `x64`
   - **bring up shortcut in file explorer:** click Open file location
