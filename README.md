@@ -30,6 +30,7 @@ i highly recommended you get the code running on your own computer, however, the
 - **open terminal:** `⌘ + Space`; type `Terminal`; press `Enter`
 - **(optional but recommended) old-style fullscreen Terminal:** hold `option`; click green circle
 - **navigate to Desktop:** `cd Desktop`
+- **install Xcode if you don't have it already:** https://apps.apple.com/us/app/xcode/id497799835?mt=12
 - **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
   - **_if prompted, install developer tools and then repeat this step_**
 - **navigate into repo:** `cd CSCI-371`
