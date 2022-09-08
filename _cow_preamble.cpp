@@ -89,7 +89,8 @@
     // #include <stdint.h>
     // #include <string.h>
     #include <stdarg.h>
-    #include <time.h>
+    // #include <time.h>
+    #include <chrono>
     #include <utility>
 
 // minified stb_easy_font

@@ -436,9 +436,12 @@ int util_random_sign() {
     return util_random_double() < .5 ? -1 : 1;
 }
 long util_time_in_millis() { // no promises this is even a little bit accurate
-    struct timespec ts;
-    timespec_get(&ts, TIME_UTC);
-    return long(ts.tv_sec * 1000L) + long(ts.tv_nsec / 1000000L);
+    // struct timespec ts;
+    // timespec_get(&ts, TIME_UTC);
+    // return long(ts.tv_sec * 1000L) + long(ts.tv_nsec / 1000000L);
+    using namespace std::chrono;
+    milliseconds ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    return (long) ms.count();
 }
 
 
