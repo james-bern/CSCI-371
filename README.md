@@ -57,12 +57,11 @@ i highly recommended you get the code running on your own computer, however, the
 </details>
 
 <details>
-  <summary>🤷‍♂️ on your windows computer</summary>
+  <summary>🤷‍♂️ on your windows computer (note: somewhat broken on windows 11; see me for help)</summary>
 
 #### build and run
 - **install git if you don't have it**
-  - **option a (recommended) -- install Github Desktop:** https://desktop.github.com
-  - **option b -- install standalone:** https://git-scm.com/download/win
+  - **install standalone (use all default options):** https://git-scm.com/download/win
 - **install C++ build tools if you don't have them (any year should work)**
   - **option a (recommended) -- install standalone:** https://visualstudio.microsoft.com/downloads/?q=build+tools
   - **option b -- install Visual Studio Community Edition:** https://visualstudio.microsoft.com/downloads/
