@@ -57,7 +57,7 @@ i highly recommended you get the code running on your own computer, however, the
 </details>
 
 <details>
-  <summary>🤷‍♂️ on your windows 10 computer (note: windows 11 has multiple issues--broken shortcut for x64 command prompt; Desktop may be inside of OneDrive--see me in person and we can try to make it work)</summary>
+  <summary>🤷‍♂️ on your windows 10 computer (note: windows 11 may have multiple issues--e.g. Desktop may be inside of OneDrive--see me in person and we'll make it work)</summary>
 
 #### build and run
 - **install git if you don't have it**
