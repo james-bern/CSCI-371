@@ -140,7 +140,7 @@ the CSCI-371 codebase was designed to
 ```c
 // // stack-allocated fixed-size arrays
 
-// stack-allocated fixed-size array of 16 reals filled with garbage
+// stack-allocated fixed-size array of 16 doubles filled with garbage
 double a[16];
 
 // same thing but filled with zeroes
@@ -161,7 +161,7 @@ void foo(double *bar);
 ```c
 // // heap-allocated arrays
 
-// b is a pointer to heap-allocated array of 1000 reals filled with garbage
+// b is a pointer to heap-allocated array of 1000 doubles filled with garbage
 double *b = (double *) malloc(1000 * sizeof(double));
 
 // same thing but filled with zeroes
@@ -173,7 +173,7 @@ double *b = (double *) calloc(1000, sizeof(double));
 ```c
 // // structs
 
-// this is a struct containing two reals followed by two ints followed by a pointer to a Poe    
+// this is a struct containing two doubles followed by two ints followed by a pointer to a Poe    
 struct Poe {                                                                               
     double x, y;                                                                             
     int i, j;                                                                              
