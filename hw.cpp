@@ -1,3 +1,18 @@
+// !! This is the hw.cpp for hw1.                                               
+//                                                                              
+// If you cloned today expecting to start working on hw0, please...             
+//                                                                              
+// - open the file explorer / finder                                            
+// - navigate into folder old_hw\hw0                                            
+// - copy hw.cpp                                                                
+// - navigate back to the root folder (CSCI-371)                                
+// - paste hw.cpp inside, replacing the file that's already there (this file)   
+//                                                                              
+// You should then be good to go :)                                             
+//                                                                              
+// Please ask me ASAP if you have any questions.                                
+
+
 // if you find a bug in the hw, please report it on Github Issues or email      
 //                                        the class will be rewarded with snacks
 
