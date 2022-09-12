@@ -188,6 +188,7 @@ void hw1a() {
 }
 
 void hw1b() {
+    // Camera3D camera = { 5, RAD(45) };
 }
 
 void hw1c() {
