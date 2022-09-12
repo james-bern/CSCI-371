@@ -6,6 +6,9 @@
 //                 ||     ||     app library                    james-bern 2022 
 //                                                                              
 // - face culling is disabled by default; to enable #define COW_CULL_BACK_FACES 
+//   (meshlib is fornow kinda sloppy and will probably break a bit)             
+
+// todo camera3D in terms of distance with function to recover screen height 2D
 
 #include "_cow_preamble.cpp"
 void xplat_run_to_line() { // debugger entry point
@@ -51,6 +54,8 @@ struct {
     #define TRIANGLE_FAN GL_TRIANGLE_FAN
     #define TRIANGLE_STRIP GL_TRIANGLE_STRIP
     #define QUADS 255
+    #define QUAD_MESH 254
+    #define TRIANGLE_MESH 253
     #ifndef GL_QUADS
     #define GL_QUADS QUADS
     #endif
@@ -204,7 +209,7 @@ struct {
 
     // VAO is (VVVVCCCC)
     // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-    GLuint VAO, VBO, EBO;
+    GLuint VAO, VBO, EBO[3];
 } basic;
 
 struct {
@@ -392,39 +397,53 @@ struct {
 } monokai;
 
 struct {
-    int axes_vertex_dimension = 3;
-    int axes_color_dimension = 3;
-    int axes_num_vertices = 6;
-    vec3 axes_vertex_positions[6] = { {}, { 1, 0, 0 }, {}, { 0, 1, 0 }, {}, { 0, 0, 1 } };
-    vec3 axes_vertex_colors[6] = { monokai.red, monokai.red, monokai.green, monokai.green, monokai.blue, monokai.blue };
-    BasicMesh axes = { LINES, axes_vertex_dimension, axes_color_dimension, axes_num_vertices, (double *) axes_vertex_positions, (double *) axes_vertex_colors };
+    int basic_axes_primitive = LINES;
+    int basic_axes_vertex_dimension = 3;
+    int basic_axes_color_dimension = 3;
+    int basic_axes_num_vertices = 6;
+    vec3 basic_axes_vertex_positions[6] = { {}, { 1, 0, 0 }, {}, { 0, 1, 0 }, {}, { 0, 0, 1 } };
+    vec3 basic_axes_vertex_colors[6] = { monokai.red, monokai.red, monokai.green, monokai.green, monokai.blue, monokai.blue };
+    BasicMesh axes = { basic_axes_primitive, basic_axes_vertex_dimension, basic_axes_color_dimension, basic_axes_num_vertices, (double *) basic_axes_vertex_positions, (double *) basic_axes_vertex_colors };
+
+    int basic_tet_primitive = TRIANGLE_MESH;
+    int basic_tet_vertex_dimension = 3;
+    int basic_tet_color_dimension = 0;
+    int basic_tet_num_vertices = 12;
+    vec3 basic_tet_vertex_positions[12] = {{0,0,0},{1,0,0},{0,1,0},{0,0,0},{0,1,0},{0,0,1},{0,0,0},{0,0,1},{1,0,0},{1,0,0},{0,1,0},{0,0,1}};
+    vec3 *basic_tet_vertex_colors = NULL;
+    BasicMesh basic_tet = { basic_tet_primitive, basic_tet_vertex_dimension, basic_tet_color_dimension, basic_tet_num_vertices, (double *) basic_tet_vertex_positions, (double *) basic_tet_vertex_colors };
+
+    int basic_box_primitive = QUAD_MESH;
+    int basic_box_vertex_dimension = 3;
+    int basic_box_color_dimension = 0;
+    int basic_box_num_vertices = 24;
+    vec3 *basic_box_vertex_positions = _meshlib_fancy_box_vertex_positions;
+    vec3 *basic_box_vertex_colors = NULL;
+    BasicMesh basic_box = { basic_box_primitive, basic_box_vertex_dimension, basic_box_color_dimension, basic_box_num_vertices, (double *) basic_box_vertex_positions, (double *) basic_box_vertex_colors };
 
     // [-1, 1]^3;
     // note: we split the box into six regions
-    int box_num_triangles = 12;
-    int3 box_triangle_indices[12] = {{2,1,0},{3,2,0},{4,5,6},{4,6,7},{8,9,10},{8,10,11},{14,13,12},{15,14,12},{18,17,16},{19,18,16},{20,21,22},{20,22,23},};
-    int box_num_vertices = 24;
-    vec3 box_vertex_positions[24] = {{1,1,1},{1,1,-1},{1,-1,-1},{1,-1,1},{-1,1,1},{-1,1,-1},{-1,-1,-1},{-1,-1,1},{1,1,1},{1,1,-1},{-1,1,-1},{-1,1,1},{1,-1,1},{1,-1,-1},{-1,-1,-1},{-1,-1,1},{1,1,1},{1,-1,1},{-1,-1,1},{-1,1,1},{1,1,-1},{1,-1,-1},{-1,-1,-1},{-1,1,-1},};
-    vec3 box_vertex_normals[24] = {{1,0,0},{1,0,0},{1,0,0},{1,0,0},{-1,0,0},{-1,0,0},{-1,0,0},{-1,0,0},{0,1,0},{0,1,0},{0,1,0},{0,1,0},{0,-1,0},{0,-1,0},{0,-1,0},{0,-1,0},{0,0,1},{0,0,1},{0,0,1},{0,0,1},{0,0,-1},{0,0,-1},{0,0,-1},{0,0,-1},};
-    FancyMesh box = { box_num_triangles, box_triangle_indices, box_num_vertices, box_vertex_positions, box_vertex_normals };
+    int fancy_box_num_triangles = 12;
+    int fancy_box_num_vertices = 24;
+    FancyMesh fancy_box = { fancy_box_num_triangles, _meshlib_fancy_box_triangle_indices, fancy_box_num_vertices, _meshlib_fancy_box_vertex_positions, _meshlib_fancy_box_vertex_normals };
 
     // unit radius and height; base is centered at origin; y is up
     // note: we split the cone into two regions
-    int cone_num_triangles = 126;
-    int cone_num_vertices = 129;
-    FancyMesh cone = { cone_num_triangles, _meshlib_cone_triangle_indices, cone_num_vertices, _meshlib_cone_vertex_positions, _meshlib_cone_vertex_normals };
+    int fancy_cone_num_triangles = 126;
+    int fancy_cone_num_vertices = 129;
+    FancyMesh fancy_cone = { fancy_cone_num_triangles, _meshlib_fancy_cone_triangle_indices, fancy_cone_num_vertices, _meshlib_fancy_cone_vertex_positions, _meshlib_fancy_cone_vertex_normals };
 
     // unit radius and height; base is centered at origin; y is up
     // note: we split the cylinder into three regions
-    int cylinder_num_triangles = 252;
-    int cylinder_num_vertices = 256;
-    FancyMesh cylinder = { cylinder_num_triangles, _meshlib_cylinder_triangle_indices, cylinder_num_vertices, _meshlib_cylinder_vertex_positions, _meshlib_cylinder_vertex_normals };
+    int fancy_cylinder_num_triangles = 252;
+    int fancy_cylinder_num_vertices = 256;
+    FancyMesh fancy_cylinder = { fancy_cylinder_num_triangles, _meshlib_fancy_cylinder_triangle_indices, fancy_cylinder_num_vertices, _meshlib_fancy_cylinder_vertex_positions, _meshlib_fancy_cylinder_vertex_normals };
 
     // r = 1; centered at origin
     // note: we want smooth normals for the sphere!
-    int sphere_num_triangles = 1280;
-    int sphere_num_vertices = 642;
-    FancyMesh sphere = { sphere_num_triangles, _meshlib_sphere_triangle_indices, sphere_num_vertices, _meshlib_sphere_vertex_positions, _meshlib_sphere_vertex_normals };
+    int fancy_sphere_num_triangles = 1280;
+    int fancy_sphere_num_vertices = 642;
+    FancyMesh fancy_sphere = { fancy_sphere_num_triangles, _meshlib_fancy_sphere_triangle_indices, fancy_sphere_num_vertices, _meshlib_fancy_sphere_vertex_positions, _meshlib_fancy_sphere_vertex_normals };
 } meshlib;
 #endif
 
@@ -562,8 +581,8 @@ void linalg_mat4_transpose(double *AT, double *A) { // AT = A^T
 
 void input_get_mouse_position_and_change_in_position_in_world_coordinates(
         double *PV,
-        double *mouse_x_world,
-        double *mouse_y_world,
+        double *mouse_x_world = NULL,
+        double *mouse_y_world = NULL,
         double *mouse_dx_world = NULL,
         double *mouse_dy_world = NULL) {
     ASSERT(PV);
@@ -578,6 +597,18 @@ void input_get_mouse_position_and_change_in_position_in_world_coordinates(
     if (mouse_dx_world) *mouse_dx_world = dxdy[0];
     if (mouse_dy_world) *mouse_dy_world = dxdy[1];
 }
+#ifdef SNAIL_WAS_INCLUDED
+vec2 input_get_mouse_position_in_world_coordinates(mat4 PV) {
+    vec2 ret;
+    input_get_mouse_position_and_change_in_position_in_world_coordinates(PV.data, &ret.x, &ret.y);
+    return ret;
+}
+vec2 input_get_mouse_change_in_position_in_world_coordinates(mat4 PV) {
+    vec2 ret;
+    input_get_mouse_position_and_change_in_position_in_world_coordinates(PV.data, NULL, NULL, &ret.x, &ret.y);
+    return ret;
+}
+#endif
 
 
 
@@ -1017,16 +1048,39 @@ void basic_draw(
         double a_fallback = 1,
         double size_in_pixels = 0,
         bool overlay = false,
-        bool fornow_wireframe = false) {
+        double r_wireframe = 1,
+        double g_wireframe = 1,
+        double b_wireframe = 1,
+        double a_wireframe = 1) {
     ASSERT(transform);
     ASSERT(dimension_of_positions >= 1 && dimension_of_positions <= 4);
     if (vertex_colors) ASSERT(dimension_of_colors == 3 || dimension_of_colors == 4);
+    ASSERT(dimension_of_colors >= 0);
     ASSERT(vertex_positions);
+
+    int mesh_special_case = 0; {
+        if (primitive == TRIANGLE_MESH || primitive == QUAD_MESH) {
+            basic_draw(primitive == TRIANGLE_MESH ? TRIANGLES : QUADS, transform, dimension_of_positions, dimension_of_colors, num_vertices, vertex_positions, vertex_colors, r_fallback, g_fallback, b_fallback, a_fallback, size_in_pixels, overlay);
+
+            if (primitive == TRIANGLE_MESH) {
+                mesh_special_case = 1;
+            } else {
+                mesh_special_case = 2;
+            }
+
+            primitive = LINES;
+            vertex_colors = NULL;
+            r_fallback = r_wireframe;
+            g_fallback = g_wireframe;
+            b_fallback = b_wireframe;
+            a_fallback = a_wireframe;
+        }
+    }
+
 
     if (IS_ZERO(size_in_pixels)) {
         size_in_pixels = (primitive == POINTS) ? 10 : 5;
     }
-
     size_in_pixels *= _macbook_retina_scale;
 
     double fallback_color[4] = { r_fallback, g_fallback, b_fallback, a_fallback };
@@ -1071,40 +1125,81 @@ void basic_draw(
     shader_set_uniform(shader_program, "overlay", overlay);
     shader_set_uniform_vec4(shader_program, "fallback_color", fallback_color);
 
-    if ((0 || fornow_wireframe) && primitive != POINTS) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    }
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    if (primitive != QUADS) {
+    if (primitive != QUADS && !mesh_special_case) {
         glDrawArrays(primitive, 0, num_vertices);
     } else {
-        const int MAX_VERTICES_IF_DRAWING_QUADS = 1000000;
-        ASSERT(num_vertices <= MAX_VERTICES_IF_DRAWING_QUADS);
-        int num_quads = num_vertices / 4;
-        num_vertices = num_quads * 6;
-        static GLuint *quad_indices;
-        if (!quad_indices) {
-            quad_indices = (GLuint *) malloc(MAX_VERTICES_IF_DRAWING_QUADS / 4 * 6 * sizeof(GLuint));
-            int k = 0;
-            for (int i = 0; i < MAX_VERTICES_IF_DRAWING_QUADS / 4; ++i) {
-                quad_indices[k++] = 4 * i + 2;
-                quad_indices[k++] = 4 * i + 1;
-                quad_indices[k++] = 4 * i + 0;
-                quad_indices[k++] = 4 * i + 3;
-                quad_indices[k++] = 4 * i + 2;
-                quad_indices[k++] = 4 * i + 0;
+        // we upload three EBO's _once_               
+        // and bind the appropriate one before drawing
+
+        ASSERT(primitive == QUADS || mesh_special_case != 0);
+
+        const int MAX_VERTICES = 1000000;
+        ASSERT(num_vertices <= MAX_VERTICES);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, basic.EBO[mesh_special_case]);
+
+        if (primitive == QUADS) {
+            primitive = TRIANGLES;
+            num_vertices = (num_vertices / 4) * 6;
+            static GLuint *indices;
+            if (!indices) {
+                indices = (GLuint *) malloc(MAX_VERTICES / 4 * 6 * sizeof(GLuint));
+                int k = 0;
+                for (int i = 0; i < MAX_VERTICES / 4; ++i) {
+                    indices[k++] = 4 * i + 2;
+                    indices[k++] = 4 * i + 1;
+                    indices[k++] = 4 * i + 0;
+                    indices[k++] = 4 * i + 3;
+                    indices[k++] = 4 * i + 2;
+                    indices[k++] = 4 * i + 0;
+                }
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_VERTICES / 4 * 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
             }
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, basic.EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_VERTICES_IF_DRAWING_QUADS / 4 * 6 * sizeof(GLuint), quad_indices, GL_STATIC_DRAW);
+        } else {
+            if (mesh_special_case == 1) {
+                num_vertices = (num_vertices / 3) * 6;
+                static GLuint *indices;
+                if (!indices) {
+                    indices = (GLuint *) malloc(MAX_VERTICES / 3 * 6 * sizeof(GLuint));
+                    int k = 0;
+                    for (int i = 0; i < MAX_VERTICES / 3; ++i) {
+                        indices[k++] = 3 * i + 0;
+                        indices[k++] = 3 * i + 1;
+                        indices[k++] = 3 * i + 1;
+                        indices[k++] = 3 * i + 2;
+                        indices[k++] = 3 * i + 2;
+                        indices[k++] = 3 * i + 0;
+                    }
+                    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_VERTICES / 3 * 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
+                }
+            } else {
+                num_vertices = (num_vertices / 4) * 8;
+                static GLuint *indices;
+                if (!indices) {
+                    indices = (GLuint *) malloc(MAX_VERTICES / 4 * 8 * sizeof(GLuint));
+                    int k = 0;
+                    for (int i = 0; i < MAX_VERTICES / 4; ++i) {
+                        indices[k++] = 4 * i + 0;
+                        indices[k++] = 4 * i + 1;
+                        indices[k++] = 4 * i + 1;
+                        indices[k++] = 4 * i + 2;
+                        indices[k++] = 4 * i + 2;
+                        indices[k++] = 4 * i + 3;
+                        indices[k++] = 4 * i + 3;
+                        indices[k++] = 4 * i + 0;
+                    }
+                    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_VERTICES / 4 * 8 * sizeof(GLuint), indices, GL_STATIC_DRAW);
+                }
+            }
         }
-        glDrawElements(GL_TRIANGLES, num_vertices, GL_UNSIGNED_INT, 0);
+        glDrawElements(primitive, num_vertices, GL_UNSIGNED_INT, 0);
     }
 
-    if ((0 || fornow_wireframe) && primitive != POINTS) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
-void basic_draw(double *transform, BasicMesh mesh, double r_fallback, double g_fallback, double b_fallback, double a_fallback, bool force_fallback = false) {
+void basic_draw(double *transform, BasicMesh mesh, double r_fallback, double g_fallback, double b_fallback, double a_fallback, double r_wireframe, double g_wireframe, double b_wireframe, double a_wireframe) {
     basic_draw(
             mesh.primitive,
             transform,
@@ -1112,11 +1207,17 @@ void basic_draw(double *transform, BasicMesh mesh, double r_fallback, double g_f
             mesh.dimension_of_colors,
             mesh.num_vertices,
             mesh.vertex_positions,
-            (!force_fallback) ? mesh.vertex_colors : 0,
+            mesh.vertex_colors ? mesh.vertex_colors : 0,
             r_fallback,
             g_fallback,
             b_fallback,
-            a_fallback);
+            a_fallback,
+            0,
+            false,
+            r_wireframe,
+            g_wireframe,
+            b_wireframe,
+            a_wireframe);
 }
 #ifdef SNAIL_WAS_INCLUDED
 template<int D_pos, int D_col> void basic_draw(
@@ -1146,8 +1247,10 @@ template<int D_pos, int D_col = 3> void basic_draw(
     ASSERT(vertex_positions);
     basic_draw(primitive, transform.data, D_pos, D_col, num_vertices, (double *) vertex_positions, NULL, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, size_in_pixels, overlay);
 }
-template<int D_col = 3> void basic_draw(mat4 transform, BasicMesh mesh, SnailVec<D_col> fallback_color = V3(1, 1, 1), bool force_fallback = false) {
-    basic_draw(transform.data, mesh, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, force_fallback);
+template<int D_col = 3, int D_col2 = 3> void basic_draw(mat4 transform, BasicMesh mesh, SnailVec<D_col> fallback_color = V3(1, 1, 1), SnailVec<3> wireframe_color = V3(1, 1, 1)) {
+    STATIC_ASSERT(D_col == 3 || D_col == 4);
+    STATIC_ASSERT(D_col2 == 3 || D_col2 == 4);
+    basic_draw(transform.data, mesh, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, wireframe_color.r, wireframe_color.g, wireframe_color.b, D_col2 == 4 ? wireframe_color[3] : 1);
 }
 #endif
 void basic_text(
@@ -1347,7 +1450,15 @@ void fancy_draw(mat4 P, mat4 V, mat4 M, FancyMesh mesh, vec3 fallback_color = V3
 }
 #endif
 
-bool widget_drag(double *PV, int num_vertices, double *vertex_positions, double size_in_pixels = 0, double r = 1, double g = 1, double b = 1, double a = 1) {
+// 0 if no widget functions active
+// otherwise the ID of the active widget function
+#define WIDGET_ID_IMGUI 1
+#define WIDGET_ID_ANNOTATE 2
+#define WIDGET_ID_DRAG 3
+int widget_active_widget_ID;
+
+void widget_drag(double *PV, int num_vertices, double *vertex_positions, double size_in_pixels = 0, double r = 1, double g = 1, double b = 1, double a = 1) {
+    if (widget_active_widget_ID != 0 && widget_active_widget_ID != WIDGET_ID_DRAG) return;
     static double *selected;
     if (selected) { // fornow: allows multiple calls to this function between begin_frame
         bool found = false;
@@ -1357,7 +1468,7 @@ bool widget_drag(double *PV, int num_vertices, double *vertex_positions, double 
                 break;
             }
         }
-        if (!found) return false;
+        if (!found) return;
     }
     double *hot = selected;
     if (!selected) {
@@ -1391,10 +1502,10 @@ bool widget_drag(double *PV, int num_vertices, double *vertex_positions, double 
         selected = NULL;
     }
 
-    return true;
+    widget_active_widget_ID = (hot || selected) ? WIDGET_ID_DRAG : 0;
 }
 #ifdef SNAIL_WAS_INCLUDED
-template<int D_color = 3> bool widget_drag(mat4 PV, int num_vertices, vec2 *vertex_positions, double size_in_pixels = 0, SnailVec<D_color> color = V3(1, 1, 1)) {
+template<int D_color = 3> void widget_drag(mat4 PV, int num_vertices, vec2 *vertex_positions, double size_in_pixels = 0, SnailVec<D_color> color = V3(1, 1, 1)) {
     STATIC_ASSERT(D_color == 3 || D_color == 4);
     return widget_drag(PV.data, num_vertices, (double *) vertex_positions, size_in_pixels, color.r, color.g, color.b, D_color == 4 ? color[3] : 1);
 }
@@ -1404,6 +1515,7 @@ template<int D_color = 3> bool widget_drag(mat4 PV, int num_vertices, vec2 *vert
 
 void gl_begin(int primitive, double size_in_pixels = 0) {
     ASSERT(!gl._began);
+    ASSERT(primitive != TRIANGLE_MESH && primitive != QUAD_MESH); // not supported
     gl._began = true;
     gl._primitive = primitive;
     gl._size_in_pixels = size_in_pixels;
@@ -1608,7 +1720,10 @@ void _imgui_slider(char *text, void *t, bool is_int, double *t_copy, double a, d
     double w = 166;
     double band[4] = { imgui.x_curr, imgui.y_curr, imgui.x_curr + w, imgui.y_curr };
     double s_dot[2] = { LERP(INVERSE_LERP(*t_copy, a, b), band[0], band[2]), band[1] };
-    bool hot = (linalg_vecX_squared_distance(2, s_dot, s_mouse) < _macbook_retina_scale * 16) && (imgui.selected_widget_ID == NULL);
+    bool hot = (widget_active_widget_ID == 0 || widget_active_widget_ID == WIDGET_ID_IMGUI) && (linalg_vecX_squared_distance(2, s_dot, s_mouse) < _macbook_retina_scale * 16) && (imgui.selected_widget_ID == NULL);
+    if (widget_active_widget_ID == 0 || widget_active_widget_ID == WIDGET_ID_IMGUI) {
+        widget_active_widget_ID = (hot) ? WIDGET_ID_IMGUI : 0;
+    }
     if (!imgui.selected_widget_ID && hot && input.mouse_left_pressed) imgui.selected_widget_ID = t;
     if (imgui.selected_widget_ID == t) {
         if (input.mouse_left_held) *t_copy = LERP(CLAMP(INVERSE_LERP(s_mouse[0], band[0], band[2]), 0, 1), a, b);
@@ -1822,7 +1937,7 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         basic.shader_program_TRIANGLES = shader_build_program(basic.vert, basic.frag);
         glGenVertexArrays(1, &basic.VAO);
         glGenBuffers(1, &basic.VBO);
-        glGenBuffers(1, &basic.EBO);
+        glGenBuffers(3, basic.EBO);
     }
 
     { // fancy
@@ -1877,6 +1992,11 @@ vec3 color_get_kelly(int i) {
     static vec3 _kelly_colors[]={{255./255,179./255,0./255},{128./255,62./255,117./255},{255./255,104./255,0./255},{166./255,189./255,215./255},{193./255,0./255,32./255},{206./255,162./255,98./255},{129./255,112./255,102./255},{0./255,125./255,52./255},{246./255,118./255,142./255},{0./255,83./255,138./255},{255./255,122./255,92./255},{83./255,55./255,122./255},{255./255,142./255,0./255},{179./255,40./255,81./255},{244./255,200./255,0./255},{127./255,24./255,13./255},{147./255,170./255,0./255},{89./255,51./255,21./255},{241./255,58./255,19./255},{35./255,44./255,22./255}};
     return _kelly_colors[MODULO(i, NELEMS(_kelly_colors))];
 }
+vec3 color_rainbow_swirl(double t) {
+    #define Q(o) (.5 + .5 * cos(6.28 * ((o) - t)))
+    return { Q(0), Q(.33), Q(-.33) };
+    #undef Q
+}
 #endif
 
 
@@ -1895,7 +2015,7 @@ void hello() {
         { cos(RAD(330)), sin(RAD(330)) },
     };
 
-    while (begin_frame()) {                                    
+    while (begin_frame()) {
         // xplat_run_to_line();
 
         camera_move(&camera);

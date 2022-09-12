@@ -19,7 +19,6 @@
 // -  v[0], v[1], v[2], v[3]                                                    
 // -   v.x,  v.y,  v.y,  v.w                                                    
 // -   v.r,  v.g,  v.b,  v.a                                                    
-// -   v.u,  v.v                                                                
 // -  v.xy                                                                      
 // - v.xyz                                                                      
 // - or if you prefer, v.data[0], v.data[1], ...                                
@@ -72,7 +71,6 @@ template <int T> union SnailMat {
 
 template <> union SnailVec<2> {
     struct { double x, y; };
-    struct { double u, v; };
     double data[2];
     double &operator [](int index) { return data[index]; }
 };
@@ -289,7 +287,7 @@ template <int T> double norm(SnailVec<T> v) {
 }
 template <int T> SnailVec<T> normalized(SnailVec<T> v) {
     double norm_v = norm(v);
-    SNAIL_ASSERT(abs(norm_v) > 1e-7);
+    SNAIL_ASSERT(fabs(norm_v) > 1e-7);
     return (1 / norm_v) * v;
 }
 
