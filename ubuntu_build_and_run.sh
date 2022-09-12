@@ -9,4 +9,4 @@ fi
 
 rm executable.exe
 g++ -O$OPTARG -g -std=c++11 -Wall -Wextra -Wno-misleading-indentation -Wno-char-subscripts -Wconversion -Wno-write-strings -Wno-missing-field-initializers -o executable.exe hw.cpp -lglfw -lGL
-executable.exe
+./executable.exe
