@@ -302,6 +302,7 @@ struct {
 struct {
     #define MAX_GL_VERTICES 999999
     bool _began;
+    bool _called_gl_PV_at_least_once;
     int _num_vertices;
     double _vertex_positions[3 * MAX_GL_VERTICES];
     double _vertex_colors[4 * MAX_GL_VERTICES];
@@ -1522,6 +1523,7 @@ void gl_begin(int primitive, double size_in_pixels = 0) {
     gl._num_vertices = 0;
 }
 void gl_end() {
+    ASSERT(gl._called_gl_PV_at_least_once);
     gl._began = false;
     basic_draw(gl._primitive,
             gl._PV,
@@ -1550,6 +1552,7 @@ void gl_color(double r, double g, double b, double a = 1) {
     gl._color[3] = a;
 }
 void gl_PV(double *PV) {
+    gl._called_gl_PV_at_least_once = true;
     memcpy(gl._PV, PV, 16 * sizeof(double));
 }
 void gl_M(double *M) {
