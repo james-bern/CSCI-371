@@ -34,11 +34,14 @@
 // begin submission                                                             
 
 void hw() {
-    Camera2D camera = { 5 };
     while (begin_frame()) {
+
+        static Camera2D camera = { 5 };
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
-        gl_PV(PV);
+
+        gl_PV(PV); // you must call this in order to use the gl_* API
+
         gl_begin(LINE_LOOP);
         gl_color(1, 1, 1);
         gl_vertex(0, 0);
