@@ -35,7 +35,6 @@
 
 void hw() {
     while (begin_frame()) {
-
         static Camera2D camera = { 5 };
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
