@@ -31,6 +31,8 @@
 // usage code
 #endif
 
+// you can quit the current app by pressing the Q key                           
+
 // press the \ key to display an fps counter                                    
 // (macbook users see README.txt if you don't have a 60 fps cap)                
 // press the / key to uncap the framerate                                       
