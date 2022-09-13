@@ -37,7 +37,8 @@ void hw() {
     Camera2D camera = { 5 };
     while (begin_frame()) {
         camera_move(&camera);
-        gl_PV(camera_get_PV(&camera));
+        mat4 PV = camera_get_PV(&camera);
+        gl_PV(PV);
         gl_begin(LINE_LOOP);
         gl_color(1, 1, 1);
         gl_vertex(0, 0);
