@@ -1523,6 +1523,7 @@ void gl_begin(int primitive, double size_in_pixels = 0) {
     gl._num_vertices = 0;
 }
 void gl_end() {
+    ASSERT(gl._began);
     ASSERT(gl._called_gl_PV_at_least_once);
     gl._began = false;
     basic_draw(gl._primitive,
@@ -1539,6 +1540,7 @@ void gl_end() {
             gl._size_in_pixels);
 }
 void gl_vertex(double x, double y, double z = 0, double w = 1) {
+    ASSERT(gl._began);
     double p[4] = { x, y, z, w };
     if (gl._multiply_by_M) linalg_mat4_times_vec4_persp_divide(p, gl._M, p);
     memcpy(gl._vertex_positions + 3 * gl._num_vertices, p, 3 * sizeof(double));
