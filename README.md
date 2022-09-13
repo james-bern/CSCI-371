@@ -69,7 +69,7 @@ i highly recommended you get the code running on your own computer, however, the
 - **install git if you don't have it**
   - **install standalone (use all default options):** https://git-scm.com/download/win
 - **install C++ build tools if you don't have them (any year should work)**
-  - **option a (recommended) -- install standalone:** https://visualstudio.microsoft.com/downloads/?q=build+tools
+  - **option a (recommended) -- install standalone (:warning: you will need to scroll down; be careful you install the right thing):** https://visualstudio.microsoft.com/downloads/?q=build+tools
   - **option b -- install Visual Studio Community Edition:** https://visualstudio.microsoft.com/downloads/
 - **open a x64 Native Tools Command Prompt:** press `⊞ Win`; type `x64`; press `Enter`
 - **navigate to Desktop:** `cd "C:\Users\YOUR_USER_NAME\Desktop"`
