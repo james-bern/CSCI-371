@@ -5,10 +5,10 @@
 //                 ||----w |      and dirty                                     
 //                 ||     ||     app library                    james-bern 2022 
 //                                                                              
+// - cameras use a right-handed coordinate system (point along their negative z)
 // - face culling is disabled by default; to enable #define COW_CULL_BACK_FACES 
 //   (meshlib is fornow kinda sloppy and will probably break a bit)             
 
-// todo camera3D in terms of distance with function to recover screen height 2D
 
 #include "_cow_preamble.cpp"
 void xplat_run_to_line() { // debugger entry point
@@ -83,7 +83,6 @@ struct {
 
         void main() {
             gl_Position = transform * vec4(vertex, 1);
-            gl_Position /= gl_Position.w; // fornow
             vs_out.position = gl_Position;
             vs_out.color = has_vertex_colors ? color : fallback_color;
 
@@ -132,13 +131,13 @@ struct {
 
         void emit(float x, float y) {
             gs_out.xy = vec2(x, y);
-            gs_out.position = gl_Position = position + sqrt(2) * primitive_radius * vec4(x / aspect, y, 0, 0);
+            gl_Position = gs_out.position = (position + sqrt(2) * primitive_radius * vec4(x / aspect, y, 0, 0)) * gl_in[0].gl_Position.w;
             gs_out.color = gs_in[0].color;                                     
             EmitVertex();                                               
         }
 
         void main() {    
-            position = gl_in[0].gl_Position;
+            position = gl_in[0].gl_Position / gl_in[0].gl_Position.w;
             emit(-1, -1);
             emit(1, -1);
             emit(-1, 1);
@@ -186,18 +185,18 @@ struct {
 
         void main() {    
 
-            vec4 s = gl_in[0].gl_Position;
-            vec4 t = gl_in[1].gl_Position;
+            vec4 s = gl_in[0].gl_Position / gl_in[0].gl_Position.w;
+            vec4 t = gl_in[1].gl_Position / gl_in[1].gl_Position.w;
 
             vec4 color_s = gs_in[0].color;
             vec4 color_t = gs_in[1].color;
 
             vec4 perp = vec4(primitive_radius * vec2(1 / aspect, 1) * normalize(vec2(-1 / aspect, 1) * (t - s).yx), 0, 0);
 
-            gs_out.position = gl_Position = s + perp; gs_out.color = color_s; EmitVertex();                                               
-            gs_out.position = gl_Position = s - perp; gs_out.color = color_s; EmitVertex();                                               
-            gs_out.position = gl_Position = t + perp; gs_out.color = color_t; EmitVertex();                                               
-            gs_out.position = gl_Position = t - perp; gs_out.color = color_t; EmitVertex();                                               
+            gs_out.position = gl_Position = (s + perp) * gl_in[0].gl_Position.w; gs_out.color = color_s; EmitVertex();
+            gs_out.position = gl_Position = (s - perp) * gl_in[0].gl_Position.w; gs_out.color = color_s; EmitVertex();
+            gs_out.position = gl_Position = (t + perp) * gl_in[1].gl_Position.w; gs_out.color = color_t; EmitVertex();
+            gs_out.position = gl_Position = (t - perp) * gl_in[1].gl_Position.w; gs_out.color = color_t; EmitVertex();
 
             EndPrimitive();
         }  
@@ -332,16 +331,10 @@ struct Camera3D {
     // the sphere radius (camera distance) is given by*      
     //     (screen_height_World / 2) / tan(angle_of_view / 2)
     // *we define it this way for compatability with Camera2D
-    double screen_height_World;
+    double distance; //sphere_radius
     double angle_of_view;
-    union {
-        double theta;
-        double yaw;
-    };
-    union {
-        double phi;
-        double pitch;
-    };
+    double theta; // yaw
+    double phi; // pitch
     double _o_x;
     double _o_y;
 };
@@ -663,15 +656,6 @@ void window_get_NDC_from_Screen(double *A) {
 
 
 
-void tform_write_clip_planes_to_P22_and_P23(double *P, double n, double f) { // camera pointing along its negative z-axis
-    // z'(z) = [-a - b*z]              
-    // we want to map [n, f] -> [-1, 1]
-    // z'(n) = -a - b*n := -1          
-    // z'(f) = -a - b*f :=  1          
-    //        solve the system to yield
-    _4x4(P, 2, 2) = 2 / (n - f);       // a
-    _4x4(P, 2, 3) = (f + n) / (n - f); // b
-}
 void tform_get_P_perspective(double *P, double angle_of_view) {
     ASSERT(P);
 
@@ -737,8 +721,27 @@ void tform_get_P_perspective(double *P, double angle_of_view) {
     memset(P, 0, 16 * sizeof(double));
     _4x4(P, 0, 0) = Q_x;
     _4x4(P, 1, 1) = Q_y;
-    tform_write_clip_planes_to_P22_and_P23(P, -.001, -1000);
     _4x4(P, 3, 2) = -1;
+
+    // z'(z) = [-a - b/z]              
+    // we want to map [n, f] -> [-1, 1]
+    // z'(n) = -a - b/n := -1          
+    // z'(f) = -a - b/f :=  1          
+    //                                 
+    // => a + b/n =  1                 
+    //    a + b/f = -1                 
+    // => b/n - b/f = 2                
+    //                                 
+    // => b * (f - n) / (n * f) = 2    
+    // => b = (2 * n * f) / (f - n)    
+    //                                 
+    // => a + (2 * f) / (f - n) = 1    
+    // => a = -(n + f) / (f - n)       
+    //       = (n + f) / (n - f)       
+    double n = -.001;
+    double f = -1000;
+    _4x4(P, 2, 2) = (n + f) / (n - f);     // a
+    _4x4(P, 2, 3) = (2 * n * f) / (f - n); // b
 }
 void tform_get_P_ortho(double *P, double screen_height_World) {
     ASSERT(P);
@@ -778,7 +781,22 @@ void tform_get_P_ortho(double *P, double screen_height_World) {
     memset(P, 0, 16 * sizeof(double));
     _4x4(P, 0, 0) = 1 / r_x;
     _4x4(P, 1, 1) = 1 / r_y;
-    tform_write_clip_planes_to_P22_and_P23(P, 1000, -1000);
+
+    // z'(z) = [az + b]                
+    // we want to map [n, f] -> [-1, 1]
+    // z'(n) = an + b := -1            
+    // z'(f) = af + b :=  1            
+    //                                 
+    // => a * (f - n) = 2              
+    //    a = 2 / (f - n)              
+    //                                 
+    // (2 * f) / (f - n) + b = 1       
+    // => b = (n + f) / (n - f)        
+    double n = 1000;
+    double f = -1000;
+    _4x4(P, 2, 2) = 2 / (f - n);
+    _4x4(P, 2, 3) = (n + f) / (n - f);
+
     _4x4(P, 2, 2) *= -1; // sign flip
     _4x4(P, 2, 3) *= -1; //          
     _4x4(P, 3, 3) = 1;
@@ -830,11 +848,11 @@ mat4 tform_get_P_ortho(double screen_height_World) { mat4 ret; tform_get_P_ortho
 void camera_get_PV(Camera2D *camera, double *PV) {
     tform_get_PV_ortho(PV, camera->screen_height_World, camera->o_x, camera->o_y);
 }
-double camera_get_distance(Camera3D *camera) {
-    return tform_get_distance_to_film_plane(camera->screen_height_World, camera->angle_of_view);
+double camera_get_screen_height_World(Camera3D *camera) {
+    return tform_get_screen_height_World(camera->distance, camera->angle_of_view);
 }
 void camera_get_coordinate_system(Camera3D *camera, double *C_out, double *x_out = 0, double *y_out = 0, double *z_out = 0, double *o_out = 0, double *R_out = 0) {
-    double camera_o_z = camera_get_distance(camera);
+    double camera_o_z = camera->distance;
 
     double C[16]; {
         double T[16] = {
@@ -940,9 +958,9 @@ void camera_move(Camera2D *camera, bool disable_pan = false, bool disable_zoom =
 void camera_move(Camera3D *camera, bool disable_pan = false, bool disable_zoom = false, bool disable_rotate = false) {
     disable_rotate |= (imgui.selected_widget_ID != NULL); // fornow
     { // 2D transforms
-        Camera2D tmp = { camera->screen_height_World, camera->_o_x, camera->_o_y };
+        Camera2D tmp = { camera_get_screen_height_World(camera), camera->_o_x, camera->_o_y };
         camera_move(&tmp, disable_pan, disable_zoom);
-        camera->screen_height_World = tmp.screen_height_World;
+        camera->distance = tform_get_distance_to_film_plane(tmp.screen_height_World, camera->angle_of_view);
         camera->_o_x = tmp.o_x;
         camera->_o_y = tmp.o_y;
     }
@@ -1516,7 +1534,6 @@ template<int D_color = 3> void widget_drag(mat4 PV, int num_vertices, vec2 *vert
 
 void gl_begin(int primitive, double size_in_pixels = 0) {
     ASSERT(!gl._began);
-    ASSERT(primitive != TRIANGLE_MESH && primitive != QUAD_MESH); // not supported
     gl._began = true;
     gl._primitive = primitive;
     gl._size_in_pixels = size_in_pixels;
@@ -1708,13 +1725,15 @@ void imgui_readout(char *name, Camera3D *t) {
     char *join0 = (char *)((name) ? "->" : "");
     char *join1 = " ";
     #define Q(field) _imgui_printf("%s%s%s%s%lf", name, join0, XSTR(field), join1, t->field);
-    Q(screen_height_World);
-    _imgui_printf("%s%s%s%s%lf (%d deg)", name, join0, "angle_of_view", join1, t->angle_of_view, int(round(DEG(t->angle_of_view))));
+    #define R(field) _imgui_printf("%s%s%s%s%lf (%d deg)", name, join0, XSTR(field), join1, t->field, int(round(DEG(t->field))));
+    Q(distance);
+    R(angle_of_view);
+    R(theta);
+    R(phi);
     Q(_o_x);
     Q(_o_y);
-    Q(theta);
-    Q(phi);
     #undef Q
+    #undef R
 }
 void _imgui_slider(char *text, void *t, bool is_int, double *t_copy, double a, double b) {
     imgui.y_curr += 8;
@@ -1867,6 +1886,16 @@ void clear_draw_buffer(double r, double g, double b, double a) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 void init(bool transparent_framebuffer = false, char *window_title = 0, int screen_height_in_pixels = 1080) {
+
+    // crash on floating point esxceptions
+    #if defined(unix) || defined(__unix__) || defined(__unix) // ubuntu
+    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+    #elif defined(__APPLE__) || defined(__MACH__) // mac
+    #elif defined(WIN32) || defined(_WIN64) // windows
+    // _clearfp();
+    // _controlfp(_controlfp(0, 0) & ~(_EM_INVALID | _EM_ZERODIVIDE | _EM_OVERFLOW), _MCW_EM);
+    #endif
+
     if (initialized) {
         if (window_title) window_set_title(window_title);
         memset(&input, 0, sizeof(input));
