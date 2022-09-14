@@ -87,7 +87,7 @@ struct {
             vs_out.color = has_vertex_colors ? color : fallback_color;
 
             if (overlay) {
-                gl_Position.z = -.99;
+                gl_Position.z = -.99 * gl_Position.w; // ?
                 vs_out.position = gl_Position;
             }
 
@@ -295,6 +295,7 @@ struct {
     double x_curr;
     double y_curr;
     void *selected_widget_ID;
+    void *hot_widget_ID;
     double _dx_accumulator;
 } imgui;
 
@@ -841,6 +842,7 @@ double tform_get_screen_height_World(double distance_to_film_plane, double angle
 #ifdef SNAIL_WAS_INCLUDED
 mat4 tform_get_P_perspective(double angle_of_view) { mat4 ret; tform_get_P_perspective(ret.data, angle_of_view); return ret; }
 mat4 tform_get_P_ortho(double screen_height_World) { mat4 ret; tform_get_P_ortho(ret.data, screen_height_World); return ret; }
+mat4 tform_get_PV_hud() { mat4 ret; tform_get_PV_hud(ret.data); return ret; }
 #endif
 
 
@@ -1744,18 +1746,34 @@ void _imgui_slider(char *text, void *t, bool is_int, double *t_copy, double a, d
     double w = 166;
     double band[4] = { imgui.x_curr, imgui.y_curr, imgui.x_curr + w, imgui.y_curr };
     double s_dot[2] = { LERP(INVERSE_LERP(*t_copy, a, b), band[0], band[2]), band[1] };
-    bool hot = (widget_active_widget_ID == 0 || widget_active_widget_ID == WIDGET_ID_IMGUI) && (linalg_vecX_squared_distance(2, s_dot, s_mouse) < _macbook_retina_scale * 16) && (imgui.selected_widget_ID == NULL);
+
     if (widget_active_widget_ID == 0 || widget_active_widget_ID == WIDGET_ID_IMGUI) {
-        widget_active_widget_ID = (hot) ? WIDGET_ID_IMGUI : 0;
+        bool is_near = linalg_vecX_squared_distance(2, s_dot, s_mouse) < _macbook_retina_scale * 16;
+        if (is_near) {
+            imgui.hot_widget_ID = t;
+            widget_active_widget_ID = WIDGET_ID_IMGUI;
+        }
+        if (imgui.hot_widget_ID == t && !is_near) {
+            imgui.hot_widget_ID = 0;
+            if (imgui.selected_widget_ID != t) widget_active_widget_ID = 0;
+        }
     }
-    if (!imgui.selected_widget_ID && hot && input.mouse_left_pressed) imgui.selected_widget_ID = t;
+    if (!imgui.selected_widget_ID && (imgui.hot_widget_ID == t) && input.mouse_left_pressed) {
+        widget_active_widget_ID = WIDGET_ID_IMGUI;
+        imgui.selected_widget_ID = t;
+    }
     if (imgui.selected_widget_ID == t) {
-        if (input.mouse_left_held) *t_copy = LERP(CLAMP(INVERSE_LERP(s_mouse[0], band[0], band[2]), 0, 1), a, b);
-        if (input.mouse_left_released) imgui.selected_widget_ID = NULL;
+        if (input.mouse_left_held) {
+            *t_copy = LERP(CLAMP(INVERSE_LERP(s_mouse[0], band[0], band[2]), 0, 1), a, b);
+        }
+        if (input.mouse_left_released) {
+            if (imgui.hot_widget_ID != t) widget_active_widget_ID = 0;
+            imgui.selected_widget_ID = 0;
+        }
     }
     basic_draw(LINES, PV, XY, RGB, 2, band, NULL, .6, .6, .6, 1, 6, true);
-    double r = (imgui.selected_widget_ID == t) ? 1 : (hot) ? .9 : .8;
-    basic_draw(POINTS, PV, XY, RGB, 1, s_dot, NULL, r, r, r, 1, (hot && imgui.selected_widget_ID != t) ? 12 : 10, true);
+    double r = (imgui.selected_widget_ID == t) ? 1 : (imgui.hot_widget_ID == t) ? .9 : .8;
+    basic_draw(POINTS, PV, XY, RGB, 1, s_dot, NULL, r, r, r, 1, (imgui.hot_widget_ID == t && imgui.selected_widget_ID != t) ? 12 : 10, true);
     imgui.y_curr -= 8;
     imgui.x_curr += w + 16;
     if (is_int) {
