@@ -81,6 +81,7 @@
 }
 
 // // ?
+    #include <fenv.h> 
     #include <stdlib.h>
     #include <stdarg.h>
     #include <chrono>

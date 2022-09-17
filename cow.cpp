@@ -1803,6 +1803,19 @@ void imgui_slider(char *name, double *t, double a, double b) {
 }
 
 
+#ifdef SNAIL_WAS_INCLUDED
+vec3 color_get_kelly(int i) {
+    static vec3 _kelly_colors[]={{255./255,179./255,0./255},{128./255,62./255,117./255},{255./255,104./255,0./255},{166./255,189./255,215./255},{193./255,0./255,32./255},{206./255,162./255,98./255},{129./255,112./255,102./255},{0./255,125./255,52./255},{246./255,118./255,142./255},{0./255,83./255,138./255},{255./255,122./255,92./255},{83./255,55./255,122./255},{255./255,142./255,0./255},{179./255,40./255,81./255},{244./255,200./255,0./255},{127./255,24./255,13./255},{147./255,170./255,0./255},{89./255,51./255,21./255},{241./255,58./255,19./255},{35./255,44./255,22./255}};
+    return _kelly_colors[MODULO(i, NELEMS(_kelly_colors))];
+}
+vec3 color_rainbow_swirl(double t) {
+    #define Q(o) (.5 + .5 * cos(6.28 * ((o) - t)))
+    return { Q(0), Q(.33), Q(-.33) };
+    #undef Q
+}
+#endif
+
+
 
 double _callback_scaling_factor() {
     return input.key_held[GLFW_KEY_LEFT_SHIFT] ? .1 : 1;
@@ -1903,8 +1916,44 @@ void clear_draw_buffer(double r, double g, double b, double a) {
     glClearColor(float(r), float(g), float(b), float(a));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
+bool begin_frame(double r = 0, double g = 0, double b = 0, double a = 0) {
+    poll_input();
+    swap_draw_buffers();
+    clear_draw_buffer(r, g, b, a);
+    imgui_begin_frame();
+    { // framerate
+        static int measured_fps;
+        // request uncapped framerate 
+        if (input.key_pressed['/']) {
+            glfwSwapInterval(!input.key_toggle['/']);
+        }
+        // grab and smooth fps
+        {
+            const int N_MOVING_WINDOW = 5;
+            static long prev_stamps[N_MOVING_WINDOW];
+            long stamp = util_time_in_millis();
+            measured_fps = (int) round(N_MOVING_WINDOW / (double(stamp - prev_stamps[N_MOVING_WINDOW - 1]) / 1000.));
+            for (int i = N_MOVING_WINDOW - 1; i >= 1; --i) {
+                prev_stamps[i] = prev_stamps[i - 1];
+            }
+            prev_stamps[0] = stamp;
+        }
+        // display fps
+        if (input.key_toggle['\\']) {
+            static int display_fps;
+            static long stamp = util_time_in_millis();
+            if (util_time_in_millis() - stamp > 166) {
+                stamp = util_time_in_millis();
+                display_fps = measured_fps;
+            }
+            char text[256] = {};
+            snprintf(text, sizeof(text), "fps: %d", display_fps);
+            basic_text(NULL, text, 0, 0, 0, (display_fps < 45) ? 1 : 0, (display_fps > 30) ? 1 : 0, 0);
+        }
+    }
+    return !(input.key_pressed['Q'] || input.key_pressed[GLFW_KEY_ESCAPE] || glfwWindowShouldClose(window));
+}
 void init(bool transparent_framebuffer = false, char *window_title = 0, int screen_height_in_pixels = 1080) {
-
     // crash on floating point esxceptions
     #if defined(unix) || defined(__unix__) || defined(__unix) // ubuntu
     feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
@@ -1999,58 +2048,6 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         glGenBuffers(1, &fancy.EBO);
     }
 }
-bool begin_frame(double r = 0, double g = 0, double b = 0, double a = 0) {
-    poll_input();
-    swap_draw_buffers();
-    clear_draw_buffer(r, g, b, a);
-    imgui_begin_frame();
-    { // framerate
-        static int measured_fps;
-        // request uncapped framerate 
-        if (input.key_pressed['/']) {
-            glfwSwapInterval(!input.key_toggle['/']);
-        }
-        // grab and smooth fps
-        {
-            const int N_MOVING_WINDOW = 5;
-            static long prev_stamps[N_MOVING_WINDOW];
-            long stamp = util_time_in_millis();
-            measured_fps = (int) round(N_MOVING_WINDOW / (double(stamp - prev_stamps[N_MOVING_WINDOW - 1]) / 1000.));
-            for (int i = N_MOVING_WINDOW - 1; i >= 1; --i) {
-                prev_stamps[i] = prev_stamps[i - 1];
-            }
-            prev_stamps[0] = stamp;
-        }
-        // display fps
-        if (input.key_toggle['\\']) {
-            static int display_fps;
-            static long stamp = util_time_in_millis();
-            if (util_time_in_millis() - stamp > 166) {
-                stamp = util_time_in_millis();
-                display_fps = measured_fps;
-            }
-            char text[256] = {};
-            snprintf(text, sizeof(text), "fps: %d", display_fps);
-            basic_text(NULL, text, 0, 0, 0, (display_fps < 45) ? 1 : 0, (display_fps > 30) ? 1 : 0, 0);
-        }
-    }
-    return !(input.key_pressed['Q'] || input.key_pressed[GLFW_KEY_ESCAPE] || glfwWindowShouldClose(window));
-}
-
-
-
-#ifdef SNAIL_WAS_INCLUDED
-vec3 color_get_kelly(int i) {
-    static vec3 _kelly_colors[]={{255./255,179./255,0./255},{128./255,62./255,117./255},{255./255,104./255,0./255},{166./255,189./255,215./255},{193./255,0./255,32./255},{206./255,162./255,98./255},{129./255,112./255,102./255},{0./255,125./255,52./255},{246./255,118./255,142./255},{0./255,83./255,138./255},{255./255,122./255,92./255},{83./255,55./255,122./255},{255./255,142./255,0./255},{179./255,40./255,81./255},{244./255,200./255,0./255},{127./255,24./255,13./255},{147./255,170./255,0./255},{89./255,51./255,21./255},{241./255,58./255,19./255},{35./255,44./255,22./255}};
-    return _kelly_colors[MODULO(i, NELEMS(_kelly_colors))];
-}
-vec3 color_rainbow_swirl(double t) {
-    #define Q(o) (.5 + .5 * cos(6.28 * ((o) - t)))
-    return { Q(0), Q(.33), Q(-.33) };
-    #undef Q
-}
-#endif
-
 
 
 
