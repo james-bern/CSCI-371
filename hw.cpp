@@ -17,7 +17,7 @@
 //                                        the class will be rewarded with snacks
 
 #define _CRT_SECURE_NO_WARNINGS
-#define COW_CRASH_ON_FLOATING_POINT_EXCEPTIONS
+// #define COW_CRASH_ON_FLOATING_POINT_EXCEPTIONS
 #include "snail.cpp"
 #include "cow.cpp"
 #include <vector>
