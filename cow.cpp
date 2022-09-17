@@ -1803,6 +1803,7 @@ void imgui_slider(char *name, double *t, double a, double b) {
 }
 
 
+
 #ifdef SNAIL_WAS_INCLUDED
 vec3 color_get_kelly(int i) {
     static vec3 _kelly_colors[]={{255./255,179./255,0./255},{128./255,62./255,117./255},{255./255,104./255,0./255},{166./255,189./255,215./255},{193./255,0./255,32./255},{206./255,162./255,98./255},{129./255,112./255,102./255},{0./255,125./255,52./255},{246./255,118./255,142./255},{0./255,83./255,138./255},{255./255,122./255,92./255},{83./255,55./255,122./255},{255./255,142./255,0./255},{179./255,40./255,81./255},{244./255,200./255,0./255},{127./255,24./255,13./255},{147./255,170./255,0./255},{89./255,51./255,21./255},{241./255,58./255,19./255},{35./255,44./255,22./255}};
@@ -1953,22 +1954,40 @@ bool begin_frame(double r = 0, double g = 0, double b = 0, double a = 0) {
     }
     return !(input.key_pressed['Q'] || input.key_pressed[GLFW_KEY_ESCAPE] || glfwWindowShouldClose(window));
 }
-void init(bool transparent_framebuffer = false, char *window_title = 0, int screen_height_in_pixels = 1080) {
-    #ifdef COW_CRASH_ON_FLOATING_POINT_EXCEPTIONS
+void enable_floating_point_exceptions() {
+    // ! can't trap invalid on apple silicon (glfw throws)
+    // ! apple intel untested (i don't have one)          
+
     #if defined(unix) || defined(__unix__) || defined(__unix) // ubuntu
     feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
     #elif defined(__APPLE__) || defined(__MACH__) // mac
+
+    #if defined(__arm__) || defined(__arm64__) // Apple Silicon
+    fenv_t env;
+    fegetenv(&env);
+    env.__fpcr = env.__fpcr | __fpcr_trap_divbyzero /* | __fpcr_trap_overflow | __fpcr_trap_invalid */;
+    fesetenv(&env);
+    #else // Intel
+    _mm_setcsr(_MM_MASK_MASK & ~(_MM_MASK_DIV_ZERO | _MM_MASK_INVALID | _MM_MASK_OVERFLOW));
+    #endif
+
     #elif defined(WIN32) || defined(_WIN64) // windows
     _clearfp();
-    _controlfp(_controlfp(0, 0) & ~(_EM_INVALID | _EM_ZERODIVIDE | _EM_OVERFLOW), _MCW_EM);
+    _controlfp(_controlfp(0, 0) & ~(_EM_ZERODIVIDE | _EM_INVALID | _EM_OVERFLOW), _MCW_EM);
     #endif
-    #endif
+}
+void init(bool transparent_framebuffer = false, char *window_title = 0, int screen_height_in_pixels = 540) {
 
     if (initialized) {
         if (window_title) window_set_title(window_title);
         memset(&input, 0, sizeof(input));
         return;
     }
+
+    // floating point exceptions
+    #ifdef COW_CRASH_ON_FLOATING_POINT_EXCEPTIONS
+    enable_floating_point_exceptions();
+    #endif
 
     setvbuf(stdout, NULL, _IONBF, 0); // don't buffer printf
     srand(0);
@@ -2048,7 +2067,11 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         glGenBuffers(1, &fancy.VBO);
         glGenBuffers(1, &fancy.EBO);
     }
+
 }
+
+
+
 
 
 
