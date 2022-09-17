@@ -1954,13 +1954,14 @@ bool begin_frame(double r = 0, double g = 0, double b = 0, double a = 0) {
     return !(input.key_pressed['Q'] || input.key_pressed[GLFW_KEY_ESCAPE] || glfwWindowShouldClose(window));
 }
 void init(bool transparent_framebuffer = false, char *window_title = 0, int screen_height_in_pixels = 1080) {
-    // crash on floating point esxceptions
+    #ifdef COW_CRASH_ON_FLOATING_POINT_EXCEPTIONS
     #if defined(unix) || defined(__unix__) || defined(__unix) // ubuntu
     feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
     #elif defined(__APPLE__) || defined(__MACH__) // mac
     #elif defined(WIN32) || defined(_WIN64) // windows
-    // _clearfp();
-    // _controlfp(_controlfp(0, 0) & ~(_EM_INVALID | _EM_ZERODIVIDE | _EM_OVERFLOW), _MCW_EM);
+    _clearfp();
+    _controlfp(_controlfp(0, 0) & ~(_EM_INVALID | _EM_ZERODIVIDE | _EM_OVERFLOW), _MCW_EM);
+    #endif
     #endif
 
     if (initialized) {
