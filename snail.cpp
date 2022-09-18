@@ -95,7 +95,7 @@ SnailVec<2> snail_V2(double x, double y) { SnailVec<2> ret = { x, y }; return re
 SnailVec<3> snail_V3(double x, double y, double z) { SnailVec<3> ret = { x, y, z }; return ret; }
 SnailVec<4> snail_V4(double x, double y, double z, double w) { SnailVec<4> ret = { x, y, z, w }; return ret; }
 
-// snort names /////////////////////////////////////////////////////////////////
+// short names /////////////////////////////////////////////////////////////////
 
 #define V2 snail_V2
 #define V3 snail_V3
@@ -433,14 +433,6 @@ SnailMat<4> Translation(SnailVec<2> xy) {
 SnailMat<4> Translation(SnailVec<3> xyz) {
     return Translation(xyz.x, xyz.y, xyz.z);
 }
-SnailMat<4> Scaling(double s) {
-    SnailMat<4> ret = {};
-    ret(0, 0) = s;
-    ret(1, 1) = s;
-    ret(2, 2) = s;
-    ret(3, 3) = 1;
-    return ret;
-}
 SnailMat<4> Scaling(double x, double y, double z = 1) {
     SnailMat<4> ret = {};
     ret(0, 0) = x;
@@ -448,6 +440,9 @@ SnailMat<4> Scaling(double x, double y, double z = 1) {
     ret(2, 2) = z;
     ret(3, 3) = 1;
     return ret;
+}
+SnailMat<4> Scaling(double s) {
+    return Scaling(s, s, s);
 }
 SnailMat<4> Scaling(SnailVec<2> xy) {
     return Scaling(xy.x, xy.y);

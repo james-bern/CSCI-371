@@ -258,25 +258,24 @@ struct {
             vec3 N = normalize(fs_in.normal_World);
             vec3 E = normalize(world_to_eye);
 
-            vec3 color = vec3(0);
-
+            vec3 color = fs_in.color;
             if (has_vertex_normals) {
-                    vec3 base = vec3(1);
-                    float distance = length(world_to_eye);
-                    float attenuation = 1 / (1 + .02 * distance + .002 * distance * distance);
+                color = .8 * fs_in.color;
+                vec3 base = vec3(1);
+                float distance = length(world_to_eye);
+                float attenuation = 1 / (1 + .02 * distance + .002 * distance * distance);
 
-                    vec3 L = E;
-                    vec3 H = normalize(L + E);
-                    float F0 = .05;
+                vec3 L = E;
+                vec3 H = normalize(L + E);
+                float F0 = .05;
 
-                    float diffuse = max(0, dot(N, L));
-                    float specular = pow(max(0, dot(N, H)), 100);
-                    float fresnel = F0 + (1 - F0) * pow(1 - max(0, dot(N, H)), 5);
+                float diffuse = max(0, dot(N, L));
+                float specular = pow(max(0, dot(N, H)), 100);
+                float fresnel = F0 + (1 - F0) * pow(1 - max(0, dot(N, H)), 5);
 
-                    color += .8 * fs_in.color;
-                    color += attenuation * .7 * diffuse * vec3(.7, 1, .7);
-                    color += attenuation * .7 * specular * vec3(1, .2, .2);
-                    color += attenuation * .8 * fresnel * vec3(.2, .2, 1);
+                color += attenuation * .7 * diffuse * vec3(.7, 1, .7);
+                color += attenuation * .7 * specular * vec3(1, .2, .2);
+                color += attenuation * .8 * fresnel * vec3(.2, .2, 1);
             }
 
             frag_color = vec4(color, 1);
@@ -415,6 +414,14 @@ struct {
     vec3 *basic_box_vertex_positions = _meshlib_fancy_box_vertex_positions;
     vec3 *basic_box_vertex_colors = NULL;
     BasicMesh basic_box = { basic_box_primitive, basic_box_vertex_dimension, basic_box_color_dimension, basic_box_num_vertices, (double *) basic_box_vertex_positions, (double *) basic_box_vertex_colors };
+
+    // just a triangle
+    int fancy_tri_num_triangles = 1;
+    int3 fancy_tri_triangle_indices[1] = { { 0, 1, 2 } };
+    int fancy_tri_num_vertices = 3;
+    vec3 fancy_tri_vertex_positions[3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 } };
+    vec3 fancy_tri_vertex_normals[3] = { { 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 } };
+    FancyMesh fancy_tri = { fancy_tri_num_triangles, fancy_tri_triangle_indices, fancy_tri_num_vertices, fancy_tri_vertex_positions, fancy_tri_vertex_normals };
 
     // [-1, 1]^3;
     // note: we split the box into six regions
@@ -566,7 +573,7 @@ void linalg_mat4_inverse(double *invA, double *A) {
 void linalg_mat4_transpose(double *AT, double *A) { // AT = A^T
     ASSERT(AT);
     ASSERT(A);
-    double tmp[16]; { // allows for A <- transpose(A)
+    double tmp[16] = {}; { // allows for A <- transpose(A)
         for (int i = 0; i < 4; ++i) for (int j = 0; j < 4; ++j) _4x4(tmp, i, j) = _4x4(A, j, i);
     }
     memcpy(AT, tmp, 16 * sizeof(double));
@@ -721,6 +728,7 @@ void tform_get_P_perspective(double *P, double angle_of_view) {
 
     memset(P, 0, 16 * sizeof(double));
     _4x4(P, 0, 0) = Q_x;
+    _4x4(P, 0, 1) = 0; // TERRIBLE PATCH
     _4x4(P, 1, 1) = Q_y;
     _4x4(P, 3, 2) = -1;
 
@@ -903,13 +911,13 @@ void camera_get_coordinate_system(Camera3D *camera, double *C_out, double *x_out
         memcpy(R_out, tmp, sizeof(tmp));
     }
 }
-void camera_get_V(Camera3D *camera, double *V) {
-    camera_get_coordinate_system(camera, V);
-    linalg_mat4_inverse(V, V);
-}
 void camera_get_P(Camera3D *camera, double *P) {
     tform_get_P_perspective(P, camera->angle_of_view);
     // tform_get_P_ortho(P, camera->screen_height_World);
+}
+void camera_get_V(Camera3D *camera, double *V) {
+    camera_get_coordinate_system(camera, V);
+    linalg_mat4_inverse(V, V);
 }
 void camera_get_PV(Camera3D *camera, double *PV) {
     ASSERT(PV);
@@ -1054,7 +1062,6 @@ void shader_set_uniform(int ID, char *name, vec4 value) { shader_set_uniform_vec
 void shader_set_uniform(int ID, char *name, mat4 value) { shader_set_uniform_mat4(ID, name, value.data); }
 #endif
 
-
 void basic_draw(
         int primitive,
         double *transform,
@@ -1078,6 +1085,7 @@ void basic_draw(
     if (vertex_colors) ASSERT(dimension_of_colors == 3 || dimension_of_colors == 4);
     ASSERT(dimension_of_colors >= 0);
     ASSERT(vertex_positions);
+    bool has_vertex_colors = vertex_colors;
 
     int mesh_special_case = 0; {
         if (primitive == TRIANGLE_MESH || primitive == QUAD_MESH) {
@@ -1135,14 +1143,13 @@ void basic_draw(
             shader_program = basic.shader_program_TRIANGLES;
         }
     }
-
     ASSERT(shader_program);
     glUseProgram(shader_program);
 
     shader_set_uniform(shader_program, "aspect", window_get_aspect());
     shader_set_uniform_mat4(shader_program, "transform", transform);
     shader_set_uniform(shader_program, "primitive_radius", .5 * size_in_pixels / window_get_height_in_pixels());
-    shader_set_uniform(shader_program, "has_vertex_colors", vertex_colors != NULL);
+    shader_set_uniform(shader_program, "has_vertex_colors", has_vertex_colors);
     shader_set_uniform(shader_program, "overlay", overlay);
     shader_set_uniform_vec4(shader_program, "fallback_color", fallback_color);
 
@@ -1215,7 +1222,7 @@ void basic_draw(
                 }
             }
         }
-        glDrawElements(primitive, num_vertices, GL_UNSIGNED_INT, 0);
+        glDrawElements(primitive, num_vertices, GL_UNSIGNED_INT, NULL);
     }
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -1387,12 +1394,13 @@ void fancy_draw(
         double *vertex_colors = NULL,
         double r_fallback = 1,
         double g_fallback = 1,
-        double b_fallback = 1,
-        bool debug_normals = false) {
+        double b_fallback = 1) {
     ASSERT(P);
     ASSERT(V);
     ASSERT(M);
     ASSERT(vertex_positions);
+    bool has_vertex_normals = vertex_normals;
+    bool has_vertex_colors = vertex_colors;
     double fallback_color[4] = { r_fallback, g_fallback, b_fallback, 1 };
 
     glBindVertexArray(fancy.VAO);
@@ -1441,15 +1449,12 @@ void fancy_draw(
         linalg_mat4_transpose(N, N);
     }
     shader_set_uniform_mat4(fancy.shader_program, "N", N);
-    shader_set_uniform(fancy.shader_program, "has_vertex_colors", vertex_colors != NULL);
-    shader_set_uniform(fancy.shader_program, "has_vertex_normals", vertex_normals != NULL);
+    shader_set_uniform(fancy.shader_program, "has_vertex_colors", has_vertex_colors);
+    shader_set_uniform(fancy.shader_program, "has_vertex_normals", has_vertex_normals);
     shader_set_uniform_vec4(fancy.shader_program, "fallback_color", fallback_color);
 
-    glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
 
-    if (debug_normals) {
-        // todo normal debug shader
-    }
 }
 #ifdef SNAIL_WAS_INCLUDED
 void fancy_draw(
@@ -1462,12 +1467,11 @@ void fancy_draw(
         vec3 *vertex_positions,
         vec3 *vertex_normals = NULL,
         vec3 *vertex_colors = NULL,
-        vec3 fallback_color = V3(1, 1, 1),
-        bool debug_normals = false) {
-    fancy_draw(P.data, V.data, M.data, num_triangles, (int *) triangle_indices, num_vertices, (double *) vertex_positions, (double *) vertex_normals, (double *) vertex_colors, fallback_color.r, fallback_color.g, fallback_color.b, debug_normals);
+        vec3 fallback_color = V3(1, 1, 1)) {
+    fancy_draw(P.data, V.data, M.data, num_triangles, (int *) triangle_indices, num_vertices, (double *) vertex_positions, (double *) vertex_normals, (double *) vertex_colors, fallback_color.r, fallback_color.g, fallback_color.b);
 }
-void fancy_draw(mat4 P, mat4 V, mat4 M, FancyMesh mesh, vec3 fallback_color = V3(1, 1, 1), bool debug_normals = false) {
-    fancy_draw(P, V, M, mesh.num_triangles, mesh.triangle_indices, mesh.num_vertices, mesh.vertex_positions, mesh.vertex_normals, mesh.vertex_colors, fallback_color, debug_normals);
+void fancy_draw(mat4 P, mat4 V, mat4 M, FancyMesh mesh, vec3 fallback_color = V3(1, 1, 1)) {
+    fancy_draw(P, V, M, mesh.num_triangles, mesh.triangle_indices, mesh.num_vertices, mesh.vertex_positions, mesh.vertex_normals, mesh.vertex_colors, fallback_color);
 }
 #endif
 

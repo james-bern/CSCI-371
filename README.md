@@ -18,11 +18,9 @@ i highly recommended you get the code running on your own computer, however, the
 - **navigate to Desktop:** `cd Desktop`
 - **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
 - **navigate into repo:** `cd CSCI-371`
-- **build and run:** `./ubuntu_build_and_run.sh`
-  - **append any argument to run faster & compile slower (probably don't use if you will be debugging the resulting executable):** `./ubuntu_build_and_run.zsh asdf`
+- **build and run / debug:** `source ubuntu_build_and_run.sh --help`
 #### debug
-- **debug with Visual Studio Code:** `./xplat_debug_vscode.bat`
-  - **_install CodeLLDB when prompted_**
+- **_install CodeLLDB when prompted_**
 - **(optional but recommended) install C/C++ extension:** https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
 #### misc
 - **make a file executable (runnable as `./foo.bar`):** `chmod +x foo.bar`
@@ -43,17 +41,15 @@ i highly recommended you get the code running on your own computer, however, the
 - **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
   - **_if prompted, install developer tools and then repeat this step_**
 - **navigate into repo:** `cd CSCI-371`
-- **build and run:** `source mac_build_and_run.sh` (or `./mac_build_and_run.sh` if you've made it executable)
-  - **append any argument to run faster & compile slower (probably don't use if you will be debugging the resulting executable):** `./mac_build_and_run.sh asdf`
+- **build and run / debug:** `source mac_build_and_run.sh --help`
 #### debug
 - **debug with VS Code:**
   - **install and configure VS Code**
     - **follow steps for 'Installation':** https://code.visualstudio.com/docs/setup/mac
     - **follow steps for 'Launching from the command line':** https://code.visualstudio.com/docs/setup/mac#_launching-from-the-command-line
-  - `source xplat_debug_vscode.bat` (or `./xplat_debug_vscode.bat` if you've made it executable)
-    - **_if this randomly stops working you may need to shell uninstall and then shell install again_ (see 'Launching from the command line')**
   - **_install CodeLLDB when prompted_**
   - **(optional but recommended) install C/C++ extension:** https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
+- **❗ _if you randomly start having problems, you may need to shell uninstall and then shell install again_ (see 'Launching from the command line')**
 #### misc
 - **(recommended) set refresh rate to 60 Hertz**
   - **open System Preferences:** `⌘ + Space`; type `System Preferences`; press `Enter`
@@ -78,8 +74,7 @@ i highly recommended you get the code running on your own computer, however, the
 - **navigate to Desktop:** `cd "C:\Users\YOUR_USER_NAME\Desktop"`
 - **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
 - **navigate into repo:** `cd CSCI-371`
-- **build and run:** `windows_build_and_run.bat`
-- - **append any argument to run faster & compile slower (definitely don't use if you will be debugging the resulting executable):** `windows_build_and_run.bat asdf`
+- **build and run / debug:** `windows_build_and_run.bat --help`
 - **(optional but recommended) create a shortcut for the x64 Native Tools Command Prompt that starts in repo**
   - **bring up x64 Native Tools Command Prompt in start menu:** press `⊞ Win`; type `x64`
   - **bring up shortcut in file explorer:** click Open file location
@@ -89,13 +84,11 @@ i highly recommended you get the code running on your own computer, however, the
     - go to General tab -> change name (no-name field) to `CSCI-371` (or whatever you would like)
 
 #### debug
-- **option a (easier) -- debug with Visual Studio Code**
-  - **install VS Code if you don't have it:** https://code.visualstudio.com/download
-  - `xplat_debug_vscode.bat`
-- **option b (better) -- debug with RemedyBG (vroom vroom)**
-  - purchase here https://remedybg.itch.io/remedybg
+- **option a (so much better) -- debug with RemedyBG (vroom vroom)**
+  - purchase here (i am happy to pay for it) https://remedybg.itch.io/remedybg
   - place remedybg.exe in CSCI-371 directory
-  - `_windows_debug_remedybg.bat`
+- **option a (maybe easier at first, but trust me it's not worth it) -- debug with Visual Studio Code**
+  - **install VS Code if you don't have it:** https://code.visualstudio.com/download
 #### misc
 - **open file explorer:** start .
 - **show hidden files:** press `⊞ Win`; type Show hidden files; File Explorer Options -> Show hidden files... (also a good time to make sure Hide extensions for known file types is unchecked)
