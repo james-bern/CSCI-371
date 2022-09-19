@@ -103,7 +103,6 @@ i highly recommended you get the code running on your own computer, however, the
 #### basic usage
 - click to the left of a line number (red circle should appear) to toggle a breakpoint
 #### troubleshooting
-- **if the debugger is acting weird:** make sure you compiled without optimizations (i.e. ran **build_and_run** with no command line arguments) before calling **xplat_debug_vscode**
 - **known issue -- pause button doesn't work at first in VS Code**
   - workaround: use a programmatic breakpoint `xplat_run_to_line();`
   - workaround: hit a manual breakpoint and resume, then pause should work
