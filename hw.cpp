@@ -180,7 +180,17 @@ void hw() {
 // end submission                                                               
 
 int main() {
-    init(false, "hw2", 540, 950, 100);
+    // please change this call to init(...)        
+    // so you like where the popup window spawns :)
+    //                                             
+    // void init(                                  
+    //     bool transparent_framebuffer,           
+    //     char *window_title,                     
+    //     int screen_height_in_pixels,            
+    //     int window_top_left_init_x_in_pixels,   
+    //     int window_top_left_init_y_in_pixels    
+    // );                                          
+    init(false, "hw2", 540, 0, 100);
     hw();
     return 0;
 }
