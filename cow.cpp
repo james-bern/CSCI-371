@@ -1080,6 +1080,7 @@ void basic_draw(
         double g_wireframe = 1,
         double b_wireframe = 1,
         double a_wireframe = 1) {
+    if (num_vertices == 0) { return; } // UPDATE: num_vertices zero is now valid input
     ASSERT(transform);
     ASSERT(dimension_of_positions >= 1 && dimension_of_positions <= 4);
     if (vertex_colors) ASSERT(dimension_of_colors == 3 || dimension_of_colors == 4);
