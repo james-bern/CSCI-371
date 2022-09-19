@@ -1800,7 +1800,9 @@ void imgui_slider(char *name, int *t, int a, int b, char j = 0, char k = 0, bool
     *t = int(.5 + tmp);
     if (input.key_pressed[k]) ++(*t);
     if (input.key_pressed[j]) --(*t);
-    *t = (!loop) ? CLAMP(*t, a, b) : a + MODULO(*t - a, (b + 1) - a);
+    if (input.key_pressed[k] || input.key_pressed[j]) {
+        *t = (!loop) ? CLAMP(*t, a, b) : a + MODULO(*t - a, (b + 1) - a);
+    }
 }
 void imgui_slider(char *name, double *t, double a, double b) {
     _imgui_slider(name, t, false, t, a, b);
@@ -1980,11 +1982,12 @@ void enable_floating_point_exceptions() {
     _controlfp(_controlfp(0, 0) & ~(_EM_ZERODIVIDE | _EM_INVALID | _EM_OVERFLOW), _MCW_EM);
     #endif
 }
-void init(bool transparent_framebuffer = false, char *window_title = 0, int screen_height_in_pixels = 540) {
+void init(bool transparent_framebuffer = false, char *window_title = 0, int screen_height_in_pixels = 540, int window_top_left_init_x = 0, int window_top_left_init_y = 30) {
 
     if (initialized) {
         if (window_title) window_set_title(window_title);
         memset(&input, 0, sizeof(input));
+        widget_active_widget_ID = 0;
         return;
     }
 
@@ -2014,7 +2017,7 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
             ASSERT(0);
         }
 
-        glfwSetWindowPos(window, 0, 30);
+        glfwSetWindowPos(window, window_top_left_init_x, window_top_left_init_y);
         glfwMakeContextCurrent(window);
         glfwSetFramebufferSizeCallback(window, callback_framebuffer_size);
         glfwSetFramebufferSizeCallback(window, callback_framebuffer_size);

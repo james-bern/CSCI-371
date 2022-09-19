@@ -19,10 +19,12 @@
     #define MIN(a, b) ((a) < (b) ? (a) : (b))
     #define MAX(a, b) ((a) > (b) ? (a) : (b))
     #define AVG(a, b) (.5 * (a) + .5 * (b))
-    #define CLAMP(t, a, b) MIN(MAX(t, a), b)
 
+    #define CLAMP(t, a, b) MIN(MAX(t, a), b)
     #define LERP(t, a, b) ((1 - (t)) * (a) + (t) * (b))
-    #define INVERSE_LERP(p, a, b) (((p) - (a)) / double((b) - (a)))
+    #define COS_LERP(t, a, b) LERP(.5 - .5 * cos((t)*PI), a, b)
+    #define CLAMPED_LERP(t, a, b) LERP(CLAMP(t, 0, 1), a, b)
+    #define INVERSE_LERP(c, a, b) (((c) - (a)) / double((b) - (a)))
 
     #define TINY 1e-7
     #define IS_POSITIVE(a) ((a) > TINY)

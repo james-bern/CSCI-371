@@ -1,275 +1,186 @@
-// !! This is the hw.cpp for hw1.                                               
-//                                                                              
-// If you cloned today expecting to start working on hw0, please...             
-//                                                                              
-// - open the file explorer / finder                                            
-// - navigate into folder old_hw\hw0                                            
-// - copy hw.cpp                                                                
-// - navigate back to the root folder (CSCI-371)                                
-// - paste hw.cpp inside, replacing the file that's already there (this file)   
-//                                                                              
-// You should then be good to go :)                                             
-//                                                                              
-// Please ask me ASAP if you have any questions.                                
-
-
-// if you find a bug in the hw, please report it on Github Issues or email      
-//                                        the class will be rewarded with snacks
+#define COW_CRASH_ON_FLOATING_POINT_EXCEPTIONS
 
 #define _CRT_SECURE_NO_WARNINGS
-// #define COW_CRASH_ON_FLOATING_POINT_EXCEPTIONS
 #include "snail.cpp"
 #include "cow.cpp"
-#include <vector>
-#include <iostream>
 
+// // documentation ////////////////////////////////////////////////////////////
+//                                                                              
+// // random double in interval [a, b]                                          
+// double util_random_double(double a = 0, double b = 1);                       
+//                                                                              
+// double norm(vecX v); // length of a vector v                                 
+//                                                                              
+// matX inverse(matX M); // inverse of matrix M                                 
+//                                                                              
+// // useful macros (see hw2 writeup for explanation)                           
+// #define LERP(t, a, b)          ((1 - (t)) * (a) + (t) * (b))                 
+// #define INVERSE_LERP(c, a, b)  (((c) - (a)) / double((b) - (a)))             
+// #define CLAMP(t, a, b)         MIN(MAX(t, a), b)                             
+// #define CLAMPED_LERP(t, a, b)  LERP(CLAMP(t, 0, 1), a, b)                    
+// #define COS_LERP(t, a, b)      LERP(.5 - .5 * cos((t)*PI), a, b)             
 
-//                                                                              
-// documentation                                                                
-//                                                                              
-
-#if 0
-// usage code
-#endif
-
-// you can quit the current app by pressing the Q key                           
-
-// press the \ key to display an fps counter                                    
-// (macbook users see README.txt if you don't have a 60 fps cap)                
-// press the / key to uncap the framerate                                       
-
-// here is the actual basic_draw function signature (at least for this week)    
-// if vertex_colors is NULL, then it draws all vertices with the same color,    
-// specifically { r_fallback, g_fallback, b_fallback, a_fallback }              
-// if overlay is true, then we draw on top of _everything_                      
-//                                                                              
-// void basic_draw(                                                             
-//         int primitive,                                                       
-//         double *transform,                                                   
-//         int dimension_of_positions,                                          
-//         int dimension_of_colors,                                             
-//         int num_vertices,                                                    
-//         double *vertex_positions,                                            
-//         double *vertex_colors = NULL,                                        
-//         double r_fallback = 1,                                               
-//         double g_fallback = 1,                                               
-//         double b_fallback = 1,                                               
-//         double a_fallback = 1,                                               
-//         double size_in_pixels = 0,                                           
-//         bool overlay = false,                                                
-//         double r_wireframe = 1,                                              
-//         double g_wireframe = 1,                                              
-//         double b_wireframe = 1,                                              
-//         double a_wireframe = 1);                                             
-//                                                                              
-// snail gives us a couple convenient wrappers, which we can think of as        
-//                                                                              
-//   // single color                                                            
-//   void basic_draw(                                                           
-//           int primtive,                                                      
-//           mat4 transform,                                                    
-//           int num_vertices,                                                  
-//           vecX *vertex_positions,                                            
-//           vec3 color,                                                        
-//           double size_in_pixels = 0,                                         
-//           bool overlay = false);                                             
-//                                                                              
-//   // per-vertex color                                                        
-//   void basic_draw(                                                           
-//           int primtive,                                                      
-//           mat4 transform,                                                    
-//           int num_vertices,                                                  
-//           vecX *vertex_positions,                                            
-//           vec3 *vertex_colors,                                               
-//           double size_in_pixels = 0,                                         
-//           bool overlay = false);                                             
-//                                                                              
-// here vecX means you can use vec2 or vec3 (cow.cpp uses templates for this)   
-
-#if 0
-static Camera2D camera = { 5 };
-mat4 PV = camera_get_PV(&camera);
-vec2 foo[3] = { { 0, 0 }, { 1, 0}, { 0, 1} };
-basic_draw(TRIANGLES, PV, 3, foo, monokai.white);
-#endif
-
-// this function lets you drag 2D vertices                                      
-// the arguments with default arguments specify the size and color of the dot   
-// that pops up when you hover over a point                                     
-//                                                                              
-// bool widget_drag(                                                            
-//         double *PV,                                                          
-//         int num_vertices,                                                    
-//         double *vertex_positions,                                            
-//         double size_in_pixels = 0,                                           
-//         double r = 1,                                                        
-//         double g = 1,                                                        
-//         double b = 1,                                                        
-//         double a = 1);                                                       
-//                                                                              
-// if we include snail we can call this wrapper if we prefer                    
-//                                                                              
-// bool widget_drag(                                                            
-//         mat4 PV,                                                             
-//         int num_vertices,                                                    
-//         vec2 *vertex_positions,                                              
-//         double size_in_pixels = 0,                                           
-//         vec3 color = monokai.white);                                         
-
-#if 0
-static Camera2D camera = { 5 };
-mat4 PV = camera_get_PV(&camera);
-static vec2 foo[3] = { { 0, 0 }, { 1, 0 }, { 0, 1 } };
-basic_draw(LINE_LOOP, PV, 3, foo, monokai.white);
-widget_drag(PV, 3, foo);
-#endif
-
-// imgui_slider lets us scrub an int t between bounds a and b.                  
-// pressing the key j will decrement t, pressing the key k will increment it    
-// if loop is true, e.g. going above b will take us back to a                   
-//                                                                              
-// void imgui_slider(                                                           
-//         char *name,                                                          
-//         int *t,                                                              
-//         int a,                                                               
-//         int b,                                                               
-//         char j = 0,                                                          
-//         char k = 0,                                                          
-//         bool loop = false);                                                  
-//                                                                              
-// there is also a version for doubles                                          
-//                                                                              
-// void imgui_slider(char *name, double *t, double a, double b);                
-
-#if 0
-static int foo = 0;
-imgui_slider("foo", &foo, 0, 100, 'j', 'k', true);
-#endif
-
-// here is how we can access user input                                         
-//                                                                              
-// input.key_pressed[...]                                                       
-// input.key_released[...]                                                      
-// input.key_held[...]                                                          
-// input.key_toggle[...]                                                        
-// input.mouse_left_pressed                                                     
-// input.mouse_left_held                                                        
-// input.mouse_left_released                                                    
-// input.mouse_right_pressed                                                    
-// input.mouse_right_held                                                       
-// input.mouse_right_released                                                   
-//                                                                              
-// void input_get_mouse_position_and_change_in_position_in_world_coordinates(   
-//         double *PV,                                                          
-//         double *mouse_x_world,                                               
-//         double *mouse_y_world,                                               
-//         double *mouse_dx_world = NULL,                                       
-//         double *mouse_dy_world = NULL);                                      
-//                                                                              
-// which has these snail wrappers                                               
-//                                                                              
-// vec2 input_get_mouse_position_in_world_coordinates(mat4 PV);                 
-// vec2 input_get_mouse_change_in_position_in_world_coordinates(mat4 PV);       
-
-#if 0
-if (input.key_pressed['a']) { printf("you pressed the A key!\n"); }
-
-static Camera2D camera = { 5 };
-camera_move(&camera);
-mat4 PV = camera_get_PV(&camera);
-if (input.mouse_left_pressed) {
-    vec2 s_mouse = input_get_mouse_position_in_world_coordinates(PV);
-    printf("you lefted clicked at (%lf, %lf) in world coordinates\n", s_mouse.x, s_mouse.y);
-}
-#endif
-
-// NELEMS(fixed_size_array) gives the number of elements in a fixed-size array  
-// use at your own risk; careful not to call it on a pointer                    
-
-
-//                                                                              
-// implementation                                                               
-//                                                                              
 
 // begin submission                                                             
 
-void hw1a() {
+void hw2a() {
+    init();
+    // todo: calculate and print p
+    // todo: calculate and print distance from p to q
+}
+
+void hw2b() {
+    init();
+    Camera2D camera = { 10 };
+    vec2 circle_center = V2(0, 0);
+    double circle_radius = 2;
+    vec2 test_point = V2(0, 0);
     while (begin_frame()) {
-        static Camera2D camera = { 5 };
+        camera_move(&camera);
+        mat4 PV = camera_get_PV(&camera);
+        imgui_slider("r", &circle_radius, 0, 5);
+        imgui_slider("x", &circle_center.x, -5, 5);
+        imgui_slider("y", &circle_center.y, -5, 5);
+
+        bool inside = false; // todo: set to the correct value
+
+        basic_draw(POINTS, PV, 1, &test_point, (inside) ? monokai.green : monokai.red);
+        widget_drag(PV, 1, &test_point, 0, V4(1, 1, 1, .5));
+
+        gl_PV(PV);
+        gl_begin(LINE_LOOP);
+        gl_color(monokai.yellow);
+        for (double theta = 0; theta < 2 * PI; theta += .1) {
+            // gl_vertex(circle_center.x + circle_radius * cos(theta), circle_center.y + circle_radius * sin(theta));
+            // gl_vertex(circle_center + circle_radius * V2(cos(theta), sin(theta)));
+            gl_vertex(circle_center + circle_radius * e_theta(theta));
+        }
+        gl_end();
+    }
+}
+
+void hw2c() {
+    init();
+    // todo
+}
+
+void hw2d() {
+    init();
+    int the_first_frame_that_k_ends_in_47 = 0; // todo: set to the correct value
+
+    // begin don't modify this code
+    if (!the_first_frame_that_k_ends_in_47) {
+        unsigned int k = 0;
+        int frame = 0;
+        while (begin_frame()) {
+            unsigned int m_w = 1 + k;
+            unsigned int m_z = 2 + k;
+            m_z = 36969 * (m_z & 65535) + (m_z >> 16);
+            m_w = 18000 * (m_w & 65535) + (m_w >> 16);
+            k += (m_z << 17) + m_w;
+            ++frame;
+        }
+    } else {
+        while (begin_frame()) {
+            char r = char(the_first_frame_that_k_ends_in_47 * 233.111111111);
+            char g = char(the_first_frame_that_k_ends_in_47 * 2833.33333333) + 1;
+            char b = char(the_first_frame_that_k_ends_in_47 * 210.666666667);
+            clear_draw_buffer(r / 255., g / 255., b / 255., 1);
+        }
+    }
+    // end don't modify this code
+}
+
+void hw2e() {
+    init();
+    Camera2D camera = { 5 };
+    bool playing = false;
+    double t = 0;
+    double a = 0;
+    double b = 2;
+    while (begin_frame()) {
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
 
-        // todo draggable red square outline
+        imgui_checkbox("playing", &playing, 'p');
+        if (playing) {
+            t += 1. / 60;
+        }
+        if (imgui_button("reset", 'r')) {
+            t = 0;
+        }
+        imgui_slider("t", &t, -2, 2);
 
-        // todo green circle outline with slider to change number of vertices
+        imgui_slider("a", &a, -4, 4);
+        imgui_slider("b", &b, -4, 4);
+
+        gl_PV(PV);
+        gl_begin(LINES);
+        gl_color(monokai.blue);
+        gl_vertex(a, 10);
+        gl_vertex(a, -10);
+        gl_color(monokai.orange);
+        gl_vertex(b, 10);
+        gl_vertex(b, -10);
+        gl_end();
+
+        // todo: draw dots
     }
 }
 
-void hw1b() {
-    // Camera3D camera = { 5, RAD(45) };
-}
-
-void hw1c() {
-    #if 0
-    StretchyBuffer buffer = {};
-
-    ASSERT(buffer.length == 0);
-    ASSERT(buffer.capacity == 0);
-
-    sbuff_push_back(&buffer, {});
-
-    ASSERT(buffer.length == 1);
-    ASSERT(buffer.capacity == 16);
-
-    int N = 2048;
-    for (int i = 0; i < N; ++i) {
-        double theta = double(i) / 64 * 2 * PI;
-        double r = double(i) / N;
-        sbuff_push_back(&buffer, r * V2(cos(theta), sin(theta)));
-    }
-
+void hw2f() {
+    init();
+    Camera2D camera = { 3 };
+    vec2 a = V2(-1, -1);
+    vec2 b = V2(1, -1);
+    vec2 c = V2(0, .5 * sqrt(3));
+    vec2 p = V2(0, 0);
+    vec3 alpha_beta_gamma = V3(1, 1, 1); // (alpha, beta, gamma)
     while (begin_frame()) {
-        static Camera2D camera = { .8 };
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
 
-        static double time = 0;
-        time += .0167;
+        // todo: calculate alpha_beta_gamma
 
-        basic_draw(LINE_STRIP, PV * RotationZ(-10 * time), buffer.length, buffer.data, color_rainbow_swirl(.1 * time));
+        vec3 color = alpha_beta_gamma.x * V3(1, 0, 0) + alpha_beta_gamma.y * V3(0, 1, 0) + alpha_beta_gamma.z * V3(0, 0, 1);
+        basic_draw(POINTS, PV, 1, &p, color);
+        widget_drag(PV, 1, &p, 15, color);
+
+        imgui_readout("alpha", &alpha_beta_gamma.x);
+        imgui_readout("beta", &alpha_beta_gamma.y);
+        imgui_readout("gamma", &alpha_beta_gamma.z);
+
+        gl_PV(PV);
+        gl_begin(LINE_LOOP);
+        gl_color(V3(1, 0, 0)); gl_vertex(a);
+        gl_color(V3(0, 1, 0)); gl_vertex(b);
+        gl_color(V3(0, 0, 1)); gl_vertex(c);
+        gl_end();
+        widget_drag(PV, 1, &a);
+        widget_drag(PV, 1, &b);
+        widget_drag(PV, 1, &c);
+
     }
-
-    // note: we don't technically have to free here if the program is going
-    // to exit anyway; i just needed to call free somewhere to test it :)  
-    sbuff_free(&buffer);
-    ASSERT(buffer.length == 0);
-    ASSERT(buffer.capacity == 0);
-    ASSERT(buffer.data == NULL);
-    #endif
 }
 
-
-void hw1d() {
+void hw2g() {
+    // todo
 }
-
-
 
 void hw() {
-    hw1a();
-    hw1b();
-    hw1c();
-    hw1d();
-
-    // you can add additional apps to demo extra credit here
+    hw2a();
+    hw2b();
+    hw2c();
+    hw2d();
+    hw2e();
+    hw2f();
+    hw2g();
 }
 
 // end submission                                                               
 
-
 int main() {
-    init(false, "hw1 :)");
+    init(false, "hw2", 540, 950, 100);
     hw();
     return 0;
 }
-
-

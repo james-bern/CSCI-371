@@ -520,12 +520,12 @@ SnailVec<2> perpendicularTo(SnailVec<2> v) {
 // utility /////////////////////////////////////////////////////////////////////
 
 template <int T> void pprint(SnailVec<T> v) {
-    printf("[ ");
+    printf("V%d(", T);
     SNAIL_FOR_(i, T) {
         printf("%lf", v[i]);
         if (i != T - 1) printf(", ");
     }
-    printf(" ]\n");
+    printf(")\n");
 }
 template <int T> void pprint(SnailMat<T> M) {
     SNAIL_FOR_(r, T) {

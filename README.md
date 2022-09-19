@@ -1,4 +1,4 @@
-⚠ <b>now serving hw1</b> ⚠
+⚠ <b>now serving hw2</b> ⚠
 
 <b>if you are ready to start this week's hw...</b>
 - rename the CSCI-371 folder on your Desktop to something else
