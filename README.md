@@ -87,7 +87,7 @@ i highly recommended you get the code running on your own computer, however, the
 - **option a (so much better) -- debug with RemedyBG (vroom vroom)**
   - purchase here (i am happy to pay for it) https://remedybg.itch.io/remedybg
   - place remedybg.exe in CSCI-371 directory
-- **option a (maybe easier at first, but trust me it's not worth it) -- debug with Visual Studio Code**
+- **option b (maybe easier at first, but trust me it's not worth it) -- debug with Visual Studio Code**
   - **install VS Code if you don't have it:** https://code.visualstudio.com/download
 #### misc
 - **open file explorer:** start .
