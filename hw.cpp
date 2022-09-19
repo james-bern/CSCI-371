@@ -83,7 +83,7 @@ void hw2d() {
     } else {
         while (begin_frame()) {
             char r = char(the_first_frame_that_k_ends_in_47 * 233.111111111);
-            char g = char(the_first_frame_that_k_ends_in_47 * 2833.33333333) + char(1);
+            char g = (char) to_lower(the_first_frame_that_k_ends_in_47 * 2833.33333333) + 1;
             char b = char(the_first_frame_that_k_ends_in_47 * 210.666666667);
             clear_draw_buffer(r / 255., g / 255., b / 255., 1);
         }
