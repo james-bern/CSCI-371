@@ -105,9 +105,9 @@ SnailMat<4> snail_M4(double a0, double a1, double a2, double a3, double a4, doub
 #define V3 snail_V3
 #define V4 snail_V4
 
-#define M2 snail_V2
-#define M3 snail_V3
-#define M4 snail_V4
+#define M2 snail_M2
+#define M3 snail_M3
+#define M4 snail_M4
 
 #define Vec SnailVec
 #define Mat SnailMat
