@@ -73,7 +73,7 @@
     #if !defined(WIN32) && !defined(_WIN64)
     #include <signal.h>
     #endif
-    #if ((defined(__APPLE__) || defined(__MACH__)) && defined(__arm__) && defined(__arm64__)) // mac with Intel
+    #if ((defined(__APPLE__) || defined(__MACH__)) && (!defined(__arm__) && !defined(__arm64__))) // mac with Intel
     #include <xmmintrin.h>
     #endif
     #include <iostream>

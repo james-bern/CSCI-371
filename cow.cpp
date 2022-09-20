@@ -1975,7 +1975,7 @@ void enable_floating_point_exceptions() {
     env.__fpcr = env.__fpcr | __fpcr_trap_divbyzero /* | __fpcr_trap_overflow | __fpcr_trap_invalid */;
     fesetenv(&env);
     #else // Intel
-    _mm_setcsr(_MM_MASK_MASK & ~(_MM_MASK_DIV_ZERO | _MM_MASK_INVALID | _MM_MASK_OVERFLOW));
+    // _mm_setcsr(_MM_MASK_MASK & ~(_MM_MASK_DIV_ZERO | _MM_MASK_INVALID | _MM_MASK_OVERFLOW));
     #endif
 
     #elif defined(WIN32) || defined(_WIN64) // windows
