@@ -95,11 +95,19 @@ SnailVec<2> snail_V2(double x, double y) { SnailVec<2> ret = { x, y }; return re
 SnailVec<3> snail_V3(double x, double y, double z) { SnailVec<3> ret = { x, y, z }; return ret; }
 SnailVec<4> snail_V4(double x, double y, double z, double w) { SnailVec<4> ret = { x, y, z, w }; return ret; }
 
+SnailMat<2> snail_M2(double a0, double a1, double a2, double a3) { SnailMat<2> ret = { a0, a1, a2, a3 }; return ret; }
+SnailMat<3> snail_M3(double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8) { SnailMat<3> ret = { a0, a1, a2, a3, a4, a5, a6, a7, a8 }; return ret; }
+SnailMat<4> snail_M4(double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8, double a9, double a10, double a11, double a12, double a13, double a14, double a15) { SnailMat<4> ret = { a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15 }; return ret; }
+
 // short names /////////////////////////////////////////////////////////////////
 
 #define V2 snail_V2
 #define V3 snail_V3
 #define V4 snail_V4
+
+#define M2 snail_V2
+#define M3 snail_V3
+#define M4 snail_V4
 
 #define Vec SnailVec
 #define Mat SnailMat
