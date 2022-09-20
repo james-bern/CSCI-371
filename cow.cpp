@@ -1086,7 +1086,6 @@ void basic_draw(
     if (vertex_colors) ASSERT(dimension_of_colors == 3 || dimension_of_colors == 4);
     ASSERT(dimension_of_colors >= 0);
     ASSERT(vertex_positions);
-    bool has_vertex_colors = vertex_colors;
 
     int mesh_special_case = 0; {
         if (primitive == TRIANGLE_MESH || primitive == QUAD_MESH) {
@@ -1150,7 +1149,7 @@ void basic_draw(
     shader_set_uniform(shader_program, "aspect", window_get_aspect());
     shader_set_uniform_mat4(shader_program, "transform", transform);
     shader_set_uniform(shader_program, "primitive_radius", .5 * size_in_pixels / window_get_height_in_pixels());
-    shader_set_uniform(shader_program, "has_vertex_colors", has_vertex_colors);
+    shader_set_uniform(shader_program, "has_vertex_colors", vertex_colors != NULL);
     shader_set_uniform(shader_program, "overlay", overlay);
     shader_set_uniform_vec4(shader_program, "fallback_color", fallback_color);
 
@@ -1397,8 +1396,6 @@ void fancy_draw(
     ASSERT(V);
     ASSERT(M);
     ASSERT(vertex_positions);
-    bool has_vertex_normals = vertex_normals;
-    bool has_vertex_colors = vertex_colors;
     double fallback_color[4] = { r_fallback, g_fallback, b_fallback, 1 };
 
     glBindVertexArray(fancy.VAO);
@@ -1447,8 +1444,8 @@ void fancy_draw(
         linalg_mat4_transpose(N, N);
     }
     shader_set_uniform_mat4(fancy.shader_program, "N", N);
-    shader_set_uniform(fancy.shader_program, "has_vertex_colors", has_vertex_colors);
-    shader_set_uniform(fancy.shader_program, "has_vertex_normals", has_vertex_normals);
+    shader_set_uniform(fancy.shader_program, "has_vertex_colors", vertex_colors != NULL);
+    shader_set_uniform(fancy.shader_program, "has_vertex_normals", vertex_normals != NULL);
     shader_set_uniform_vec4(fancy.shader_program, "fallback_color", fallback_color);
 
     glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
