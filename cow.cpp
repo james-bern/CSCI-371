@@ -1257,6 +1257,7 @@ template<int D_pos, int D_col> void basic_draw(
         SnailVec<D_col> *vertex_colors,
         double size_in_pixels = 0,
         bool overlay = false) {
+    if (num_vertices == 0) { return; } // UPDATE: num_vertices zero is now valid input
     STATIC_ASSERT(D_pos == 2 || D_pos == 3 || D_pos == 4);
     STATIC_ASSERT(D_col == 3 || D_col == 4);
     ASSERT(vertex_positions);
@@ -1271,12 +1272,14 @@ template<int D_pos, int D_col = 3> void basic_draw(
         SnailVec<D_col> fallback_color = V3(1, 1, 1),
         double size_in_pixels = 0,
         bool overlay = false) {
+    if (num_vertices == 0) { return; } // UPDATE: num_vertices zero is now valid input
     STATIC_ASSERT(D_pos == 2 || D_pos == 3 || D_pos == 4);
     STATIC_ASSERT(D_col == 3 || D_col == 4);
     ASSERT(vertex_positions);
     basic_draw(primitive, transform.data, D_pos, D_col, num_vertices, (double *) vertex_positions, NULL, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, size_in_pixels, overlay);
 }
 template<int D_col = 3, int D_col2 = 3> void basic_draw(mat4 transform, BasicMesh mesh, SnailVec<D_col> fallback_color = V3(1, 1, 1), SnailVec<3> wireframe_color = V3(1, 1, 1)) {
+    if (num_vertices == 0) { return; } // UPDATE: num_vertices zero is now valid input
     STATIC_ASSERT(D_col == 3 || D_col == 4);
     STATIC_ASSERT(D_col2 == 3 || D_col2 == 4);
     basic_draw(transform.data, mesh, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, wireframe_color.r, wireframe_color.g, wireframe_color.b, D_col2 == 4 ? wireframe_color[3] : 1);
