@@ -219,6 +219,28 @@ void
   *                                    
 cow += 5     ;              }          
 ```
+
+```c
+// // struct / class basics
+
+// both the . and the -> let me access the fields of a struct/class
+// .  is when we have the thing                                    
+// -> is when we have a pointer to the thing                       
+// rule of thumb: pass by pointer when we need to modify the thing 
+// (e.g. sbuff_push_back)                                          
+
+struct Teacher {
+    double height;
+    char *mothers_maiden_name;
+    int social_security_number;
+};
+
+int main() {
+    Teacher jim = {};
+    jim.social_security_number = 123;
+    return 0;
+}
+```
 </details>
 
 <details>
