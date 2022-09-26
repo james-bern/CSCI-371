@@ -108,15 +108,6 @@ BasicTriangleMesh3D load_basic_mesh(char *filename, bool transform_vertex_positi
     { // () load_basic_mesh
         // TODO populate vertex_positions using sbuff_push_back      
         // HINT see load_fancy_mesh(...) (or follow your heart)      
-        FILE *fp = fopen(filename, "r");
-        ASSERT(fp);
-        char buffer[4096];
-        while (fgets(buffer, NELEMS(buffer), fp) != NULL) {
-            double x, y, z;
-            ASSERT(sscanf(buffer, "%lf %lf %lf", &x, &y, &z) == 3);
-            sbuff_push_back(&vertex_positions, { x, y, z });
-        }
-        fclose(fp);
     }
     basic_mesh.num_vertices = vertex_positions.length;
     basic_mesh.vertex_positions = vertex_positions.data; // NOTE stealing data pointer
