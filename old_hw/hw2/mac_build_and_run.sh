@@ -1,12 +1,11 @@
-#!/bin/bash
-
 if [ "$1" = "--help" ]; then
-    echo "build and   run in   debug mode: [36m./ubuntu_build_and_run.sh[0m"
-    echo "build and   run in release mode: [36m./ubuntu_build_and_run.sh --release[0m"
-    echo "build and debug in      VS Code: [36m./ubuntu_build_and_run.sh --debug-vscode[0m"
+    echo "build and   run in   debug mode: [36m./mac_build_and_run.bat[0m"
+    echo "build and   run in release mode: [36m./mac_build_and_run.bat --release[0m"
+    echo "build and debug in      VS Code: [36m./mac_build_and_run.bat --debug-vscode[0m"
 else
     if [ -f "executable.exe" ]; then
         rm executable.exe
+        rm -r executable.exe.dSYM
     fi
 
     clear
@@ -20,7 +19,7 @@ else
         echo "[36m[cow] compiling in debug mode[0m"
     fi
 
-    g++ -O$OPTARG -g -std=c++11 -Wall -Wextra -Wno-misleading-indentation -Wno-char-subscripts -Wno-conversion -Wno-write-strings -Wno-missing-field-initializers -o executable.exe hw.cpp -lglfw -lGL
+    clang++ -O$OPTARG -std=c++11 -g -Wall -Wextra -Wno-missing-braces -Wno-missing-field-initializers -Wno-char-subscripts -Wno-writable-strings -I./ext/glfw/include -I./ext/glad/include -L./ext/glfw/mac -o executable.exe hw.cpp -lglfw3 -framework Cocoa -framework OpenGL -framework IOKit
 
     if [ -f "executable.exe" ]; then
         if [ "$1" = "--debug-vscode" ]; then

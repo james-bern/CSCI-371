@@ -1,10 +1,6 @@
 // types
     #define u64 uint64_t
-    union int3 {
-        struct { int i, j, k; };
-        int data[3];
-        int &operator [](int index) { return data[index]; }
-    };
+    struct int3 { int i, j, k; };
 
 // macros
     #define ASSERT(b) do { if (!(b)) {                        \
@@ -30,10 +26,6 @@
     #define CLAMPED_LERP(t, a, b) LERP(CLAMP(t, 0, 1), a, b)
     #define INVERSE_LERP(c, a, b) (((c) - (a)) / double((b) - (a)))
 
-    #ifdef HUGE
-    #undef HUGE
-    #endif
-    #define HUGE 1e9
     #define TINY 1e-7
     #define IS_POSITIVE(a) ((a) > TINY)
     #define IS_NEGATIVE(a) ((a) < -TINY)
@@ -62,10 +54,6 @@
     #define INCHES(mm) ((mm) / 25.4)
     #define MM(inches) ((inches) * 25.4)
 
-// stb
-    #define STB_IMAGE_IMPLEMENTATION
-    #include "ext/stb/stb_image.h"
-
 // glfw, glad
     #if defined(unix) || defined(__unix__) || defined(__unix)
     #define GL_GLEXT_PROTOTYPES
@@ -85,7 +73,7 @@
     #if !defined(WIN32) && !defined(_WIN64)
     #include <signal.h>
     #endif
-    #if ((defined(__APPLE__) || defined(__MACH__)) && defined(__arm__) && defined(__arm64__)) // mac with Intel
+    #if ((defined(__APPLE__) || defined(__MACH__)) && (!defined(__arm__) && !defined(__arm64__))) // mac with Intel
     #include <xmmintrin.h>
     #endif
     #include <iostream>

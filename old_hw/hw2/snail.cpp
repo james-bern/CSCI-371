@@ -427,9 +427,9 @@ template <int T> SnailMat<T> IdentityMatrix() {
     }
     return ret;
 }
-const SnailMat<4> Identity4x4 = IdentityMatrix<4>();
+const SnailMat<4> Identity = IdentityMatrix<4>();
 SnailMat<4> Translation(double x, double y, double z = 0) {
-    SnailMat<4> ret = Identity4x4;
+    SnailMat<4> ret = Identity;
     ret(0, 3) = x;
     ret(1, 3) = y;
     ret(2, 3) = z;
@@ -459,25 +459,22 @@ SnailMat<4> Scaling(SnailVec<3> xyz) {
     return Scaling(xyz.x, xyz.y, xyz.z);
 }
 SnailMat<4> RotationX(double t) {
-    SnailMat<4> ret = Identity4x4;
+    SnailMat<4> ret = Identity;
     ret(1, 1) = cos(t); ret(1, 2) = -sin(t);
     ret(2, 1) = sin(t); ret(2, 2) =  cos(t);
     return ret;
 }
 SnailMat<4> RotationY(double t) {
-    SnailMat<4> ret = Identity4x4;
+    SnailMat<4> ret = Identity;
     ret(0, 0) =  cos(t); ret(0, 2) = sin(t);
     ret(2, 0) = -sin(t); ret(2, 2) = cos(t);
     return ret;
 }
 SnailMat<4> RotationZ(double t) {
-    SnailMat<4> ret = Identity4x4;
+    SnailMat<4> ret = Identity;
     ret(0, 0) = cos(t); ret(0, 1) = -sin(t);
     ret(1, 0) = sin(t); ret(1, 1) =  cos(t);
     return ret;
-}
-SnailMat<4> Rotation(double t) {
-    return RotationZ(t);
 }
 SnailMat<4> Rotation(SnailVec<3> axis, double angle) {
     double x = axis.x;

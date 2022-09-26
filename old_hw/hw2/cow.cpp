@@ -15,27 +15,6 @@ void xplat_run_to_line() { // debugger entry point
     do_once { xplat_debugbreak(); }
 }
 
-#define POINTS GL_POINTS
-#define LINES GL_LINES
-#define LINE_STRIP GL_LINE_STRIP
-#define LINE_LOOP GL_LINE_LOOP
-#define TRIANGLES GL_TRIANGLES
-#define TRIANGLE_FAN GL_TRIANGLE_FAN
-#define TRIANGLE_STRIP GL_TRIANGLE_STRIP
-#define QUADS 255
-#define QUAD_MESH 254
-#define TRIANGLE_MESH 253
-#ifndef GL_QUADS
-#define GL_QUADS QUADS
-#endif
-#define XY 2
-#define XYZ 3
-#define XYZW 4
-// #define XY__ 255
-#undef RGB // fornow
-#define RGB 3
-#define RGBA 4
-
 bool initialized;
 GLFWwindow *window;
 double _macbook_retina_scale; // D:
@@ -67,6 +46,26 @@ struct {
 } input;
 
 struct {
+    #define POINTS GL_POINTS
+    #define LINES GL_LINES
+    #define LINE_STRIP GL_LINE_STRIP
+    #define LINE_LOOP GL_LINE_LOOP
+    #define TRIANGLES GL_TRIANGLES
+    #define TRIANGLE_FAN GL_TRIANGLE_FAN
+    #define TRIANGLE_STRIP GL_TRIANGLE_STRIP
+    #define QUADS 255
+    #define QUAD_MESH 254
+    #define TRIANGLE_MESH 253
+    #ifndef GL_QUADS
+    #define GL_QUADS QUADS
+    #endif
+    #define XY 2
+    #define XYZ 3
+    #define XYZW 4
+    #define XY__ 255
+    #undef RGB // fornow
+    #define RGB 3
+    #define RGBA 4
     char *vert = R""""(
         #version 330 core
         layout (location = 0) in vec3 vertex;
@@ -218,16 +217,13 @@ struct {
         layout (location = 0) in vec3 vertex;
         layout (location = 1) in vec3 normal;
         layout (location = 2) in vec3 color;
-        layout (location = 3) in vec2 texture_coordinates;
 
         out BLOCK {
             vec3 position_World;
             vec3 normal_World;
             vec3 color;
-            vec2 texture_coordinates;
         } vs_out;
 
-        uniform bool has_texture_coordinates;
         uniform bool has_vertex_colors;
         uniform vec4 fallback_color;
 
@@ -239,7 +235,6 @@ struct {
             gl_Position = P * V * tmp;
             vs_out.normal_World = mat3(N) * normal;
             vs_out.color = has_vertex_colors ? color : vec3(fallback_color);
-            vs_out.texture_coordinates = has_texture_coordinates ? texture_coordinates : vec2(0);
         }
     )"""";
 
@@ -251,15 +246,12 @@ struct {
             vec3 position_World;
             vec3 normal_World;
             vec3 color;
-            vec2 texture_coordinates;
         } fs_in;
 
         out vec4 frag_color;
 
-        uniform bool has_texture_coordinates;
         uniform bool has_vertex_normals;
         uniform vec4 eye_World;
-        uniform sampler2D _texture;
 
         void main() {
             vec3 world_to_eye = vec3(eye_World) - fs_in.position_World;
@@ -267,12 +259,8 @@ struct {
             vec3 E = normalize(world_to_eye);
 
             vec3 color = fs_in.color;
-            if (has_texture_coordinates) {
-                // todo: ? if-else on _texture (see: https://blog.dengine.net/2021/01/wonders-and-mysteries-of-the-m1/)
-                // color = .5 * texture(_texture, fs_in.texture_coordinates).rgb;       
-            }
             if (has_vertex_normals) {
-                color *= .8;
+                color = .8 * fs_in.color;
                 vec3 base = vec3(1);
                 float distance = length(world_to_eye);
                 float attenuation = 1 / (1 + .02 * distance + .002 * distance * distance);
@@ -297,11 +285,9 @@ struct {
     int shader_program;
 
     // TODO: texture coordinates
-    // VAO is (VVVVNNNNCCCCTT)
+    // VAO is (VVVVNNNNCCCC)
     // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
     GLuint VAO, VBO, EBO;
-    int num_textures;
-    GLuint texture[16];
 } fancy;
 
 struct {
@@ -362,12 +348,6 @@ struct BasicMesh { // soup mesh compatible with basic_draw
     double *vertex_colors;
 };
 
-struct BasicTriangleMesh3D { // fornow
-    int num_vertices;
-    vec3 *vertex_positions;
-    vec3 *vertex_colors;
-};
-
 #ifdef SNAIL_WAS_INCLUDED
 struct OrthogonalCoordinateSystem3D {
     //   = [| | | |]   [\ | / |]
@@ -388,28 +368,26 @@ struct OrthogonalCoordinateSystem3D {
     //           [- 0 - 1]
 };
 
-struct FancyTriangleMesh3D { // 3D indexed triangle mesh compatible with fancy_draw
-    int num_vertices;
+struct FancyMesh { // 3D indexed triangle mesh compatible with fancy_draw
     int num_triangles;
+    int3 *triangle_indices;
+    // todo texture_coordiantes
+    int num_vertices;
     vec3 *vertex_positions;
     vec3 *vertex_normals;
     vec3 *vertex_colors;
-    vec2 *vertex_texture_coordinates;
-    int3 *triangle_indices;
-    int texture;
 };
 
 struct {
-    vec3 red    = { 249./255,  38./255, 114./255 };
-    vec3 orange = { 253./255, 151./255,  31./255 };
-    vec3 yellow = { 255./255, 255./255,  50./255 }; // not the actual monokai yellow cause i don't like it
-    vec3 green  = { 166./255, 226./255,  46./255 };
-    vec3 blue   = { 102./255, 217./255, 239./255 };
-    vec3 purple = { 174./255, 129./255, 255./255 };
-    vec3 white  = { 255./255, 255./255, 255./255 };
-    vec3 gray   = { 127./255, 127./255, 127./255 };
-    vec3 black  = {   0./255,   0./255,   0./255 };
-    vec3 brown  = { 123./255,  63./255,   0./255 }; // monokai doesn't actually define a brown
+    vec3 red    = { 249./255,  38./255, 114./ 255 };
+    vec3 orange = { 253./255, 151./255,  31./ 255 };
+    vec3 yellow = { 255./255, 255./255,  50./ 255 }; // not the actual monokai yellow cause i don't like it
+    vec3 green  = { 166./255, 226./255,  46./ 255 };
+    vec3 blue   = { 102./255, 217./255, 239./ 255 };
+    vec3 purple = { 174./255, 129./255, 255./ 255 };
+    vec3 white  = { 255./255, 255./255, 255./ 255 };
+    vec3 gray   = { 127./255, 127./255, 127./ 255 };
+    vec3 black  = {   0./255,   0./255,   0./ 255 };
 } monokai;
 
 struct {
@@ -443,31 +421,31 @@ struct {
     int fancy_tri_num_vertices = 3;
     vec3 fancy_tri_vertex_positions[3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 } };
     vec3 fancy_tri_vertex_normals[3] = { { 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 } };
-    FancyTriangleMesh3D fancy_tri = { fancy_tri_num_vertices, fancy_tri_num_triangles, fancy_tri_vertex_positions, fancy_tri_vertex_normals, NULL, NULL, fancy_tri_triangle_indices };
+    FancyMesh fancy_tri = { fancy_tri_num_triangles, fancy_tri_triangle_indices, fancy_tri_num_vertices, fancy_tri_vertex_positions, fancy_tri_vertex_normals };
 
     // [-1, 1]^3;
     // note: we split the box into six regions
     int fancy_box_num_triangles = 12;
     int fancy_box_num_vertices = 24;
-    FancyTriangleMesh3D fancy_box = { fancy_box_num_vertices, fancy_box_num_triangles, _meshlib_fancy_box_vertex_positions, _meshlib_fancy_box_vertex_normals, NULL, NULL, _meshlib_fancy_box_triangle_indices };
+    FancyMesh fancy_box = { fancy_box_num_triangles, _meshlib_fancy_box_triangle_indices, fancy_box_num_vertices, _meshlib_fancy_box_vertex_positions, _meshlib_fancy_box_vertex_normals };
 
     // unit radius and height; base is centered at origin; y is up
     // note: we split the cone into two regions
     int fancy_cone_num_triangles = 126;
     int fancy_cone_num_vertices = 129;
-    FancyTriangleMesh3D fancy_cone = { fancy_cone_num_vertices, fancy_cone_num_triangles, _meshlib_fancy_cone_vertex_positions, _meshlib_fancy_cone_vertex_normals, NULL, NULL, _meshlib_fancy_cone_triangle_indices };
+    FancyMesh fancy_cone = { fancy_cone_num_triangles, _meshlib_fancy_cone_triangle_indices, fancy_cone_num_vertices, _meshlib_fancy_cone_vertex_positions, _meshlib_fancy_cone_vertex_normals };
 
     // unit radius and height; base is centered at origin; y is up
     // note: we split the cylinder into three regions
     int fancy_cylinder_num_triangles = 252;
     int fancy_cylinder_num_vertices = 256;
-    FancyTriangleMesh3D fancy_cylinder = { fancy_cylinder_num_vertices, fancy_cylinder_num_triangles, _meshlib_fancy_cylinder_vertex_positions, _meshlib_fancy_cylinder_vertex_normals, NULL, NULL, _meshlib_fancy_cylinder_triangle_indices };
+    FancyMesh fancy_cylinder = { fancy_cylinder_num_triangles, _meshlib_fancy_cylinder_triangle_indices, fancy_cylinder_num_vertices, _meshlib_fancy_cylinder_vertex_positions, _meshlib_fancy_cylinder_vertex_normals };
 
     // r = 1; centered at origin
     // note: we want smooth normals for the sphere!
     int fancy_sphere_num_triangles = 1280;
     int fancy_sphere_num_vertices = 642;
-    FancyTriangleMesh3D fancy_sphere = { fancy_sphere_num_vertices, fancy_sphere_num_triangles, _meshlib_fancy_sphere_vertex_positions, _meshlib_fancy_sphere_vertex_normals, NULL, NULL, _meshlib_fancy_sphere_triangle_indices };
+    FancyMesh fancy_sphere = { fancy_sphere_num_triangles, _meshlib_fancy_sphere_triangle_indices, fancy_sphere_num_vertices, _meshlib_fancy_sphere_vertex_positions, _meshlib_fancy_sphere_vertex_normals };
 } meshlib;
 #endif
 
@@ -1062,13 +1040,10 @@ int shader_get_uniform_location(int ID, char *name) {
     int location = glGetUniformLocation(ID, name);
     return location;
 }
-void shader_set_uniform_double(int ID, char *name, double value) {
+void shader_set_uniform(int ID, char *name, double value) {
     glUniform1f(shader_get_uniform_location(ID, name), (float) value);
 }
-void shader_set_uniform_int(int ID, char *name, int value) {
-    glUniform1i(shader_get_uniform_location(ID, name), value);
-}
-void shader_set_uniform_bool(int ID, char *name, bool value) {
+void shader_set_uniform(int ID, char *name, bool value) {
     glUniform1ui(shader_get_uniform_location(ID, name), value);
 }
 void shader_set_uniform_vec4(int ID, char *name, double *value) {
@@ -1083,11 +1058,9 @@ void shader_set_uniform_mat4(int ID, char *name, double *value) {
     glUniformMatrix4fv(shader_get_uniform_location(ID, name), 1, GL_TRUE, as_floats);
 }
 #ifdef SNAIL_WAS_INCLUDED
-void shader_set_uniform_mat4(int ID, char *name, vec4 value) { shader_set_uniform_vec4(ID, name, value.data); }
-void shader_set_uniform_vec4(int ID, char *name, mat4 value) { shader_set_uniform_mat4(ID, name, value.data); }
+void shader_set_uniform(int ID, char *name, vec4 value) { shader_set_uniform_vec4(ID, name, value.data); }
+void shader_set_uniform(int ID, char *name, mat4 value) { shader_set_uniform_mat4(ID, name, value.data); }
 #endif
-
-
 
 void basic_draw(
         int primitive,
@@ -1142,10 +1115,10 @@ void basic_draw(
     double fallback_color[4] = { r_fallback, g_fallback, b_fallback, a_fallback };
 
     glBindVertexArray(basic.VAO);
+    glDisableVertexAttribArray(1); // fornow
     int i_attrib = 0;
     u64 offset = 0;
     auto guarded_push = [&](int buffer_size, void *array, int dim) {
-        glDisableVertexAttribArray(i_attrib); // fornow
         if (array) {
             glBufferSubData(GL_ARRAY_BUFFER, offset, buffer_size, array);
             glVertexAttribPointer(i_attrib, dim, GL_DOUBLE, 0, 0, (void *) offset);
@@ -1173,11 +1146,11 @@ void basic_draw(
     ASSERT(shader_program);
     glUseProgram(shader_program);
 
-    shader_set_uniform_double(shader_program, "aspect", window_get_aspect());
+    shader_set_uniform(shader_program, "aspect", window_get_aspect());
     shader_set_uniform_mat4(shader_program, "transform", transform);
-    shader_set_uniform_double(shader_program, "primitive_radius", .5 * size_in_pixels / window_get_height_in_pixels());
-    shader_set_uniform_bool(shader_program, "has_vertex_colors", vertex_colors != NULL);
-    shader_set_uniform_bool(shader_program, "overlay", overlay);
+    shader_set_uniform(shader_program, "primitive_radius", .5 * size_in_pixels / window_get_height_in_pixels());
+    shader_set_uniform(shader_program, "has_vertex_colors", vertex_colors != NULL);
+    shader_set_uniform(shader_program, "overlay", overlay);
     shader_set_uniform_vec4(shader_program, "fallback_color", fallback_color);
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -1254,7 +1227,7 @@ void basic_draw(
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
-void basic_draw(double *transform, BasicMesh mesh, double r_fallback, double g_fallback, double b_fallback, double a_fallback, double r_wireframe, double g_wireframe, double b_wireframe, double a_wireframe, double size_in_pixels = 0) {
+void basic_draw(double *transform, BasicMesh mesh, double r_fallback, double g_fallback, double b_fallback, double a_fallback, double r_wireframe, double g_wireframe, double b_wireframe, double a_wireframe) {
     basic_draw(
             mesh.primitive,
             transform,
@@ -1267,7 +1240,7 @@ void basic_draw(double *transform, BasicMesh mesh, double r_fallback, double g_f
             g_fallback,
             b_fallback,
             a_fallback,
-            size_in_pixels,
+            0,
             false,
             r_wireframe,
             g_wireframe,
@@ -1299,15 +1272,10 @@ template<int D_pos, int D_col = 3> void basic_draw(
     STATIC_ASSERT(D_col == 3 || D_col == 4);
     basic_draw(primitive, transform.data, D_pos, D_col, num_vertices, (double *) vertex_positions, NULL, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, size_in_pixels, overlay);
 }
-template<int D_col = 3, int D_col2 = 3> void basic_draw(mat4 transform, BasicMesh mesh, SnailVec<D_col> fallback_color = V3(1, 1, 1), SnailVec<3> wireframe_color = V3(1, 1, 1), double size_in_pixels = 0) {
+template<int D_col = 3, int D_col2 = 3> void basic_draw(mat4 transform, BasicMesh mesh, SnailVec<D_col> fallback_color = V3(1, 1, 1), SnailVec<3> wireframe_color = V3(1, 1, 1)) {
     STATIC_ASSERT(D_col == 3 || D_col == 4);
     STATIC_ASSERT(D_col2 == 3 || D_col2 == 4);
-    basic_draw(transform.data, mesh, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, wireframe_color.r, wireframe_color.g, wireframe_color.b, D_col2 == 4 ? wireframe_color[3] : 1, size_in_pixels);
-}
-void basic_draw(int primitive, mat4 transform, BasicTriangleMesh3D _mesh, vec3 fallback_color = V3(1, 1, 1), vec3 wireframe_color = V3(1, 1, 1), double size_in_pixels = 0) {
-    ASSERT(primitive == TRIANGLES || primitive == TRIANGLE_MESH);
-    BasicMesh mesh = { primitive, 3, 3, _mesh.num_vertices, (double *) _mesh.vertex_positions, (double *) _mesh.vertex_colors };
-    basic_draw(transform, mesh, fallback_color, wireframe_color, size_in_pixels);
+    basic_draw(transform.data, mesh, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, wireframe_color.r, wireframe_color.g, wireframe_color.b, D_col2 == 4 ? wireframe_color[3] : 1);
 }
 #endif
 void basic_text(
@@ -1407,28 +1375,10 @@ template<int D_color = 3> void basic_text(
 
 
 
-int fancy_load_texture(char *filename) {
-    int ret = fancy.num_textures;
-    glGenTextures(1, fancy.texture + fancy.num_textures);
-    glActiveTexture(GL_TEXTURE0 + fancy.num_textures);
-    glBindTexture(GL_TEXTURE_2D, fancy.texture[fancy.num_textures]);
-    ++fancy.num_textures;
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);   
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load(filename, &width, &height, &nrChannels, 0);
-    ASSERT(data);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
-    return ret;
-}
-
 // // fancy (circa 1975) draw
 // - assumes TRIANGLES, XYZ vertex_positions, RGB vertex_colors
+// - todo shadow map
+// - todo texture
 void fancy_draw(
         double *P,
         double *V,
@@ -1441,10 +1391,7 @@ void fancy_draw(
         double *vertex_colors = NULL,
         double r_fallback = 1,
         double g_fallback = 1,
-        double b_fallback = 1,
-        double *vertex_texture_coordinates = NULL,
-        int texture = -1) {
-    if (num_triangles == 0) { return; } // NOTE: num_triangles zero is now valid input
+        double b_fallback = 1) {
     ASSERT(P);
     ASSERT(V);
     ASSERT(M);
@@ -1455,7 +1402,6 @@ void fancy_draw(
     int i_attrib = 0;
     u64 offset = 0;
     auto guarded_push = [&](int buffer_size, void *array, int dim) {
-        glDisableVertexAttribArray(i_attrib); // fornow
         if (array) {
             glBufferSubData(GL_ARRAY_BUFFER, offset, buffer_size, array);
             glVertexAttribPointer(i_attrib, dim, GL_DOUBLE, 0, 0, (void *) offset);
@@ -1468,13 +1414,11 @@ void fancy_draw(
     int vvv_size = int(num_vertices * 3 * sizeof(double));
     int nnn_size = int(num_vertices * 3 * sizeof(double));
     int ccc_size = int(num_vertices * 3 * sizeof(double));
-    int ttt_size = int(num_vertices * 2 * sizeof(double));
     glBindBuffer(GL_ARRAY_BUFFER, fancy.VBO);
-    glBufferData(GL_ARRAY_BUFFER, vvv_size + nnn_size + ccc_size + ttt_size, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vvv_size + nnn_size + ccc_size, NULL, GL_DYNAMIC_DRAW);
     guarded_push(vvv_size, vertex_positions, 3);
     guarded_push(nnn_size, vertex_normals, 3);
     guarded_push(ccc_size, vertex_colors, 3);
-    guarded_push(ttt_size, vertex_texture_coordinates, 2);
 
     ASSERT(fancy.shader_program);
     glUseProgram(fancy.shader_program);
@@ -1500,14 +1444,9 @@ void fancy_draw(
         linalg_mat4_transpose(N, N);
     }
     shader_set_uniform_mat4(fancy.shader_program, "N", N);
-    shader_set_uniform_bool(fancy.shader_program, "has_vertex_colors", vertex_colors != NULL);
-    shader_set_uniform_bool(fancy.shader_program, "has_vertex_normals", vertex_normals != NULL);
-    shader_set_uniform_bool(fancy.shader_program, "has_texture_coordinates", (vertex_texture_coordinates != NULL) && (texture != -1));
+    shader_set_uniform(fancy.shader_program, "has_vertex_colors", vertex_colors != NULL);
+    shader_set_uniform(fancy.shader_program, "has_vertex_normals", vertex_normals != NULL);
     shader_set_uniform_vec4(fancy.shader_program, "fallback_color", fallback_color);
-    if ((vertex_texture_coordinates != NULL) && (texture != -1)) {
-        glActiveTexture(GL_TEXTURE0 + texture);
-        shader_set_uniform_int(fancy.shader_program, "_texture", texture);
-    }
 
     glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
 
@@ -1523,26 +1462,11 @@ void fancy_draw(
         vec3 *vertex_positions,
         vec3 *vertex_normals = NULL,
         vec3 *vertex_colors = NULL,
-        vec3 fallback_color = V3(1, 1, 1),
-        vec2 *vertex_texture_coordinates = NULL,
-        int texture = -1) {
-    fancy_draw(P.data, V.data, M.data, num_triangles, (int *) triangle_indices, num_vertices, (double *) vertex_positions, (double *) vertex_normals, (double *) vertex_colors, fallback_color.r, fallback_color.g, fallback_color.b, (double *) vertex_texture_coordinates, texture);
+        vec3 fallback_color = V3(1, 1, 1)) {
+    fancy_draw(P.data, V.data, M.data, num_triangles, (int *) triangle_indices, num_vertices, (double *) vertex_positions, (double *) vertex_normals, (double *) vertex_colors, fallback_color.r, fallback_color.g, fallback_color.b);
 }
-void fancy_draw(mat4 P, mat4 V, mat4 M, FancyTriangleMesh3D mesh, vec3 fallback_color = V3(1, 1, 1)) {
-    fancy_draw(
-            P,
-            V,
-            M,
-            mesh.num_triangles,
-            mesh.triangle_indices,
-            mesh.num_vertices,
-            mesh.vertex_positions,
-            mesh.vertex_normals,
-            mesh.vertex_colors,
-            fallback_color,
-            mesh.vertex_texture_coordinates,
-            mesh.texture
-            );
+void fancy_draw(mat4 P, mat4 V, mat4 M, FancyMesh mesh, vec3 fallback_color = V3(1, 1, 1)) {
+    fancy_draw(P, V, M, mesh.num_triangles, mesh.triangle_indices, mesh.num_vertices, mesh.vertex_positions, mesh.vertex_normals, mesh.vertex_colors, fallback_color);
 }
 #endif
 
@@ -2084,7 +2008,7 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
 
         window = glfwCreateWindow(16 * screen_height_in_pixels / 9, screen_height_in_pixels, (window_title) ? window_title : "cow.cpp! :D", NULL, NULL);
         if (!window) {
-            printf("[cow] something's gone wonky; if you weren't just messing with init(...) or something, please try restarting your computer and try again.\n");
+            printf("[cow] something's gone wonky; please try restarting your computer and try again.\n");
             ASSERT(0);
         }
 
@@ -2144,7 +2068,6 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         glGenVertexArrays(1, &fancy.VAO);
         glGenBuffers(1, &fancy.VBO);
         glGenBuffers(1, &fancy.EBO);
-        stbi_set_flip_vertically_on_load(true); // stb_image
     }
 
 }
