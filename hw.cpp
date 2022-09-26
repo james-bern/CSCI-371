@@ -133,7 +133,7 @@ BasicTriangleMesh3D fancy2basic(FancyTriangleMesh3D fancy_mesh) {
         // TODO set basic_mesh.num_vertices         
         // TODO allocate basic_mesh.vertex_positions
         // TODO write basic_mesh.vertex_positions   
-        fancy_mesh; // this is just here to temporarily remove unreferenced formal parameter compiler warning; please delete
+        fancy_mesh = fancy_mesh; // this is just here to temporarily remove unreferenced formal parameter compiler warning; please delete
 
     }
     return basic_mesh;
@@ -142,8 +142,8 @@ BasicTriangleMesh3D fancy2basic(FancyTriangleMesh3D fancy_mesh) {
 void mesh_transform_vertex_positions_to_double_unit_box(int num_vertices, vec3 *vertex_positions) {
     { // () mesh_transform_vertex_positions_to_double_unit_box
         // TODO overwrite entries of vetex_positions
-        num_vertices; // this is just here to temporarily remove unreferenced formal parameter compiler warning; please delete
-        vertex_positions; // this is just here to temporarily remove unreferenced formal parameter compiler warning; please delete
+        num_vertices = num_vertices; // this is just here to temporarily remove unreferenced formal parameter compiler warning; please delete
+        vertex_positions = vertex_positions; // this is just here to temporarily remove unreferenced formal parameter compiler warning; please delete
 
     }
 }
