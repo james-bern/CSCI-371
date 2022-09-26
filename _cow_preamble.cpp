@@ -7,6 +7,8 @@
     };
 
 // macros
+    #define FORNOW_UNUSED(expr) do { (void)(expr); } while (0)
+
     #define ASSERT(b) do { if (!(b)) {                        \
         printf("ASSERT Line %d in %s\n", __LINE__, __FILE__); \
         printf("press Enter to crash"); getchar();                \
