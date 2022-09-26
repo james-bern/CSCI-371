@@ -326,6 +326,7 @@ void hw3c() {
         mat4 V = camera_get_V(&camera);
 
         mat4 S = Scaling(1.25 - .25 * cos(5 * t), .722 + .278 * cos(5 * t), 1.25 - .25 * cos(5 * t));
+        basic_draw(P * V, meshlib.basic_axes);
         fancy_draw(P, V, Translation(-4.5, 0, 0) * S, meshlib.fancy_box, monokai.red);
         fancy_draw(P, V, Translation(-1.5, 0, 0) * S, meshlib.fancy_cone, monokai.yellow);
         fancy_draw(P, V, Translation( 1.5, 0, 0) * S, meshlib.fancy_cylinder, monokai.blue);

@@ -419,7 +419,7 @@ struct {
     int basic_axes_num_vertices = 6;
     vec3 basic_axes_vertex_positions[6] = { {}, { 1, 0, 0 }, {}, { 0, 1, 0 }, {}, { 0, 0, 1 } };
     vec3 basic_axes_vertex_colors[6] = { monokai.red, monokai.red, monokai.green, monokai.green, monokai.blue, monokai.blue };
-    BasicMesh axes = { basic_axes_primitive, basic_axes_vertex_dimension, basic_axes_color_dimension, basic_axes_num_vertices, (double *) basic_axes_vertex_positions, (double *) basic_axes_vertex_colors };
+    BasicMesh basic_axes = { basic_axes_primitive, basic_axes_vertex_dimension, basic_axes_color_dimension, basic_axes_num_vertices, (double *) basic_axes_vertex_positions, (double *) basic_axes_vertex_colors };
 
     int basic_tet_primitive = TRIANGLE_MESH;
     int basic_tet_vertex_dimension = 3;
