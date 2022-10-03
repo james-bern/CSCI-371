@@ -93,6 +93,8 @@ void hw4a() {
 // mat4 Scaling(vec3 s);                                
 // mat4 Scaling(double s_x, double s_y, double s_z);    
 //                                                      
+// mat4 xyzo2mat4(vec3 x, vec3 y, vec3 z, vec3 o);      
+//                                                      
 // bool IS_ZERO(double a); // whether a is approx. zero 
 // double norm(vecX v); // length of v                  
 #if 0
@@ -184,6 +186,7 @@ struct TrackingCamera {
 
 mat4 tracking_camera_get_C(TrackingCamera *track) { FORNOW_UNUSED(track);
     // TODO (see slides)
+    // HINT: mat4 xyzo2mat4(vec3 x, vec3 y, vec3 z, vec3 o);
     return Identity4x4;
 }
 
