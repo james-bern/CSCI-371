@@ -466,7 +466,7 @@ void hw4c() {
 
     mat4 R_prev = Identity4x4;
     mat4 R_curr = Identity4x4;
-    vec3 p_click = {};
+    vec3 p_click = {}; FORNOW_UNUSED(p_click);
 
     while (begin_frame()) {
 
@@ -481,7 +481,7 @@ void hw4c() {
             // TODO (see reading)
         }
 
-        mat4 R_arcball = R_curr * R_prev; // don't change this line (unless, e.g., to debug something)
+        mat4 R_arcball = R_curr * R_prev; // you don't change have to this line
 
 
         // begin don't change this code
