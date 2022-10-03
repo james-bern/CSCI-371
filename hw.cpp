@@ -232,7 +232,7 @@ void draw_basic_box_with_fake_shadows(mat4 PV, mat4 M, vec3 color) {
 
     if (tweaks.draw_fake_shadows) {
         // TODO set this matrix to go from world coordinates of the object to world coordinates of the shadow
-        // HINT my solution replaces four of the 0's with 1's (but which ones?! that is the question!)       
+        // HINT my solution has 4 non-zero entries
         mat4 M_FakeShadow = {
             0, 0, 0, 0,
             0, 0, 0, 0,
