@@ -43,6 +43,7 @@ double _macbook_retina_scale; // D:
 
 struct {
     #define KEY_TAB GLFW_KEY_TAB
+    #define KEY_ESCAPE GLFW_KEY_ESCAPE
 
     bool key_pressed[512];
     bool key_released[512];
@@ -85,7 +86,10 @@ struct {
         void main() {
             gl_Position = transform * vec4(vertex, 1);
             vs_out.position = gl_Position;
-            vs_out.color = has_vertex_colors ? color : fallback_color;
+            vs_out.color = fallback_color;
+            if (has_vertex_colors) {
+                vs_out.color = color;
+            }
 
             if (overlay) {
                 gl_Position.z = -.99 * gl_Position.w; // ?
@@ -106,6 +110,7 @@ struct {
         out vec4 frag_color;
 
         void main() {
+            fs_in.position; // fornow
             frag_color = fs_in.color;
         }
     )"""";
@@ -138,6 +143,7 @@ struct {
         }
 
         void main() {    
+            gs_in[0].position; // fornow
             position = gl_in[0].gl_Position / gl_in[0].gl_Position.w;
             emit(-1, -1);
             emit(1, -1);
@@ -159,6 +165,9 @@ struct {
         out vec4 frag_color;
 
         void main() {
+            fs_in.color; // fornow
+            fs_in.position; // fornow
+            fs_in.xy; // fornow
             if (length(fs_in.xy) > 1) {
                 discard;
             } else {
@@ -185,7 +194,8 @@ struct {
         } gs_out;
 
         void main() {    
-
+            gs_in[0].position; // fornow
+            gs_in[1].position; // fornow
             vec4 s = gl_in[0].gl_Position / gl_in[0].gl_Position.w;
             vec4 t = gl_in[1].gl_Position / gl_in[1].gl_Position.w;
 
@@ -218,16 +228,13 @@ struct {
         layout (location = 0) in vec3 vertex;
         layout (location = 1) in vec3 normal;
         layout (location = 2) in vec3 color;
-        layout (location = 3) in vec2 texture_coordinates;
 
         out BLOCK {
             vec3 position_World;
             vec3 normal_World;
             vec3 color;
-            vec2 texture_coordinates;
         } vs_out;
 
-        uniform bool has_texture_coordinates;
         uniform bool has_vertex_colors;
         uniform vec4 fallback_color;
 
@@ -239,7 +246,6 @@ struct {
             gl_Position = P * V * tmp;
             vs_out.normal_World = mat3(N) * normal;
             vs_out.color = has_vertex_colors ? color : vec3(fallback_color);
-            vs_out.texture_coordinates = has_texture_coordinates ? texture_coordinates : vec2(0);
         }
     )"""";
 
@@ -251,15 +257,12 @@ struct {
             vec3 position_World;
             vec3 normal_World;
             vec3 color;
-            vec2 texture_coordinates;
         } fs_in;
 
         out vec4 frag_color;
 
-        uniform bool has_texture_coordinates;
         uniform bool has_vertex_normals;
         uniform vec4 eye_World;
-        uniform sampler2D _texture;
 
         void main() {
             vec3 world_to_eye = vec3(eye_World) - fs_in.position_World;
@@ -267,10 +270,6 @@ struct {
             vec3 E = normalize(world_to_eye);
 
             vec3 color = fs_in.color;
-            if (has_texture_coordinates) {
-                // todo: ? if-else on _texture (see: https://blog.dengine.net/2021/01/wonders-and-mysteries-of-the-m1/)
-                // color = .5 * texture(_texture, fs_in.texture_coordinates).rgb;       
-            }
             if (has_vertex_normals) {
                 color *= .8;
                 vec3 base = vec3(1);
@@ -296,12 +295,9 @@ struct {
 
     int shader_program;
 
-    // TODO: texture coordinates
-    // VAO is (VVVVNNNNCCCCTT)
+    // VAO is (VVVVNNNNCCCC)
     // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
     GLuint VAO, VBO, EBO;
-    int num_textures;
-    GLuint texture[16];
 } fancy;
 
 struct {
@@ -345,7 +341,7 @@ struct Camera3D {
     // the sphere radius (camera distance) is given by*      
     //     (screen_height_World / 2) / tan(angle_of_view / 2)
     // *we define it this way for compatability with Camera2D
-    double distance; //sphere_radius
+    double distance_to_origin; //sphere_radius
     double angle_of_view;
     double theta; // yaw
     double phi; // pitch
@@ -394,9 +390,7 @@ struct FancyTriangleMesh3D { // 3D indexed triangle mesh compatible with fancy_d
     vec3 *vertex_positions;
     vec3 *vertex_normals;
     vec3 *vertex_colors;
-    vec2 *vertex_texture_coordinates;
     int3 *triangle_indices;
-    int texture;
 };
 
 struct {
@@ -433,7 +427,14 @@ struct {
     int basic_box_vertex_dimension = 3;
     int basic_box_color_dimension = 0;
     int basic_box_num_vertices = 24;
-    vec3 *basic_box_vertex_positions = _meshlib_fancy_box_vertex_positions;
+    vec3 basic_box_vertex_positions[24] = {
+        {1,1,1},{1,1,-1},{1,-1,-1},{1,-1,1},
+        {-1,-1,1}, {-1,-1,-1}, {-1,1,-1}, {-1,1,1},
+        {-1,1,1}, {-1,1,-1}, {1,1,-1}, {1,1,1},
+        {1,-1,1},{1,-1,-1},{-1,-1,-1},{-1,-1,1},
+        {1,1,1},{1,-1,1},{-1,-1,1},{-1,1,1},
+        {-1,1,-1}, {-1,-1,-1}, {1,-1,-1}, {1,1,-1},
+    };
     vec3 *basic_box_vertex_colors = NULL;
     BasicMesh basic_box = { basic_box_primitive, basic_box_vertex_dimension, basic_box_color_dimension, basic_box_num_vertices, (double *) basic_box_vertex_positions, (double *) basic_box_vertex_colors };
 
@@ -443,31 +444,31 @@ struct {
     int fancy_tri_num_vertices = 3;
     vec3 fancy_tri_vertex_positions[3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 } };
     vec3 fancy_tri_vertex_normals[3] = { { 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 } };
-    FancyTriangleMesh3D fancy_tri = { fancy_tri_num_vertices, fancy_tri_num_triangles, fancy_tri_vertex_positions, fancy_tri_vertex_normals, NULL, NULL, fancy_tri_triangle_indices };
+    FancyTriangleMesh3D fancy_tri = { fancy_tri_num_vertices, fancy_tri_num_triangles, fancy_tri_vertex_positions, fancy_tri_vertex_normals, NULL, fancy_tri_triangle_indices };
 
     // [-1, 1]^3;
     // note: we split the box into six regions
     int fancy_box_num_triangles = 12;
     int fancy_box_num_vertices = 24;
-    FancyTriangleMesh3D fancy_box = { fancy_box_num_vertices, fancy_box_num_triangles, _meshlib_fancy_box_vertex_positions, _meshlib_fancy_box_vertex_normals, NULL, NULL, _meshlib_fancy_box_triangle_indices };
+    FancyTriangleMesh3D fancy_box = { fancy_box_num_vertices, fancy_box_num_triangles, _meshlib_fancy_box_vertex_positions, _meshlib_fancy_box_vertex_normals, NULL, _meshlib_fancy_box_triangle_indices };
 
     // unit radius and height; base is centered at origin; y is up
     // note: we split the cone into two regions
     int fancy_cone_num_triangles = 126;
     int fancy_cone_num_vertices = 129;
-    FancyTriangleMesh3D fancy_cone = { fancy_cone_num_vertices, fancy_cone_num_triangles, _meshlib_fancy_cone_vertex_positions, _meshlib_fancy_cone_vertex_normals, NULL, NULL, _meshlib_fancy_cone_triangle_indices };
+    FancyTriangleMesh3D fancy_cone = { fancy_cone_num_vertices, fancy_cone_num_triangles, _meshlib_fancy_cone_vertex_positions, _meshlib_fancy_cone_vertex_normals, NULL, _meshlib_fancy_cone_triangle_indices };
 
     // unit radius and height; base is centered at origin; y is up
     // note: we split the cylinder into three regions
     int fancy_cylinder_num_triangles = 252;
     int fancy_cylinder_num_vertices = 256;
-    FancyTriangleMesh3D fancy_cylinder = { fancy_cylinder_num_vertices, fancy_cylinder_num_triangles, _meshlib_fancy_cylinder_vertex_positions, _meshlib_fancy_cylinder_vertex_normals, NULL, NULL, _meshlib_fancy_cylinder_triangle_indices };
+    FancyTriangleMesh3D fancy_cylinder = { fancy_cylinder_num_vertices, fancy_cylinder_num_triangles, _meshlib_fancy_cylinder_vertex_positions, _meshlib_fancy_cylinder_vertex_normals, NULL, _meshlib_fancy_cylinder_triangle_indices };
 
     // r = 1; centered at origin
     // note: we want smooth normals for the sphere!
     int fancy_sphere_num_triangles = 1280;
     int fancy_sphere_num_vertices = 642;
-    FancyTriangleMesh3D fancy_sphere = { fancy_sphere_num_vertices, fancy_sphere_num_triangles, _meshlib_fancy_sphere_vertex_positions, _meshlib_fancy_sphere_vertex_normals, NULL, NULL, _meshlib_fancy_sphere_triangle_indices };
+    FancyTriangleMesh3D fancy_sphere = { fancy_sphere_num_vertices, fancy_sphere_num_triangles, _meshlib_fancy_sphere_vertex_positions, _meshlib_fancy_sphere_vertex_normals, NULL, _meshlib_fancy_sphere_triangle_indices };
 } meshlib;
 #endif
 
@@ -530,7 +531,7 @@ void linalg_mat4_times_vec4_persp_divide(double *b, double *A, double *x) { // b
         for (int i = 0; i < 4; ++i) for (int j = 0; j < 4; ++j) tmp[i] += _4x4(A, i, j) * x[j];
         if (!IS_ZERO(tmp[3])) {
             ASSERT(!IS_ZERO(x[3]));
-            for (int i = 0; i < 3; ++i) tmp[i] /= tmp[3]; 
+            for (int i = 0; i < 4; ++i) tmp[i] /= tmp[3]; 
         }
     }
     memcpy(b, tmp, sizeof(tmp));
@@ -769,8 +770,8 @@ void tform_get_P_perspective(double *P, double angle_of_view) {
     // => a + (2 * f) / (f - n) = 1    
     // => a = -(n + f) / (f - n)       
     //       = (n + f) / (n - f)       
-    double n = -.001;
-    double f = -1000;
+    double n = -.1;
+    double f = -10000;
     _4x4(P, 2, 2) = (n + f) / (n - f);     // a
     _4x4(P, 2, 3) = (2 * n * f) / (f - n); // b
 }
@@ -881,10 +882,10 @@ void camera_get_PV(Camera2D *camera, double *PV) {
     tform_get_PV_ortho(PV, camera->screen_height_World, camera->o_x, camera->o_y);
 }
 double camera_get_screen_height_World(Camera3D *camera) {
-    return tform_get_screen_height_World(camera->distance, camera->angle_of_view);
+    return tform_get_screen_height_World(camera->distance_to_origin, camera->angle_of_view);
 }
 void camera_get_coordinate_system(Camera3D *camera, double *C_out, double *x_out = 0, double *y_out = 0, double *z_out = 0, double *o_out = 0, double *R_out = 0) {
-    double camera_o_z = camera->distance;
+    double camera_o_z = camera->distance_to_origin;
 
     double C[16]; {
         double T[16] = {
@@ -992,7 +993,7 @@ void camera_move(Camera3D *camera, bool disable_pan = false, bool disable_zoom =
     { // 2D transforms
         Camera2D tmp = { camera_get_screen_height_World(camera), camera->_o_x, camera->_o_y };
         camera_move(&tmp, disable_pan, disable_zoom);
-        camera->distance = tform_get_distance_to_film_plane(tmp.screen_height_World, camera->angle_of_view);
+        camera->distance_to_origin = tform_get_distance_to_film_plane(tmp.screen_height_World, camera->angle_of_view);
         camera->_o_x = tmp.o_x;
         camera->_o_y = tmp.o_y;
     }
@@ -1254,7 +1255,19 @@ void basic_draw(
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
-void basic_draw(double *transform, BasicMesh mesh, double r_fallback, double g_fallback, double b_fallback, double a_fallback, double r_wireframe, double g_wireframe, double b_wireframe, double a_wireframe, double size_in_pixels = 0) {
+void basic_draw(
+        double *transform,
+        BasicMesh mesh,
+        double r_fallback,
+        double g_fallback,
+        double b_fallback,
+        double a_fallback,
+        double size_in_pixels = 0,
+        bool overlay = false,
+        double r_wireframe = 1,
+        double g_wireframe = 1,
+        double b_wireframe = 1,
+        double a_wireframe = 1) {
     basic_draw(
             mesh.primitive,
             transform,
@@ -1268,7 +1281,7 @@ void basic_draw(double *transform, BasicMesh mesh, double r_fallback, double g_f
             b_fallback,
             a_fallback,
             size_in_pixels,
-            false,
+            overlay,
             r_wireframe,
             g_wireframe,
             b_wireframe,
@@ -1282,10 +1295,27 @@ template<int D_pos, int D_col> void basic_draw(
         SnailVec<D_pos> *vertex_positions,
         SnailVec<D_col> *vertex_colors,
         double size_in_pixels = 0,
-        bool overlay = false) {
+        bool overlay = false,
+        vec3 wireframe_color = V3(1, 1, 1)) {
     STATIC_ASSERT(D_pos == 2 || D_pos == 3 || D_pos == 4);
     STATIC_ASSERT(D_col == 3 || D_col == 4);
-    basic_draw(primitive, transform.data, D_pos, D_col, num_vertices, (double *) vertex_positions, (double *) vertex_colors, 0, 0, 0, 0, size_in_pixels, overlay);
+    basic_draw(
+            primitive,
+            transform.data,
+            D_pos, D_col,
+            num_vertices,
+            (double *) vertex_positions,
+            (double *) vertex_colors,
+            0,
+            0,
+            0,
+            0,
+            size_in_pixels,
+            overlay,
+            wireframe_color.r,
+            wireframe_color.g,
+            wireframe_color.b,
+            1);
 }
 template<int D_pos, int D_col = 3> void basic_draw(
         int primitive,
@@ -1294,20 +1324,53 @@ template<int D_pos, int D_col = 3> void basic_draw(
         SnailVec<D_pos> *vertex_positions,
         SnailVec<D_col> fallback_color = V3(1, 1, 1),
         double size_in_pixels = 0,
-        bool overlay = false) {
+        bool overlay = false,
+        vec3 wireframe_color = V3(1, 1, 1)) {
     STATIC_ASSERT(D_pos == 2 || D_pos == 3 || D_pos == 4);
     STATIC_ASSERT(D_col == 3 || D_col == 4);
-    basic_draw(primitive, transform.data, D_pos, D_col, num_vertices, (double *) vertex_positions, NULL, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, size_in_pixels, overlay);
+    basic_draw(
+            primitive,
+            transform.data,
+            D_pos,
+            D_col,
+            num_vertices,
+            (double *) vertex_positions,
+            NULL,
+            fallback_color.r,
+            fallback_color.g,
+            fallback_color.b,
+            D_col == 4 ? fallback_color[3] : 1,
+            size_in_pixels,
+            overlay,
+            wireframe_color.r,
+            wireframe_color.g,
+            wireframe_color.b,
+            1);
 }
-template<int D_col = 3, int D_col2 = 3> void basic_draw(mat4 transform, BasicMesh mesh, SnailVec<D_col> fallback_color = V3(1, 1, 1), SnailVec<3> wireframe_color = V3(1, 1, 1), double size_in_pixels = 0) {
+template<int D_col = 3, int D_col2 = 3> void basic_draw(
+        mat4 transform,
+        BasicMesh mesh,
+        SnailVec<D_col> fallback_color = V3(1, 1, 1),
+        double size_in_pixels = 0,
+        bool overlay = false,
+        SnailVec<3> wireframe_color = V3(1, 1, 1)
+        ) {
     STATIC_ASSERT(D_col == 3 || D_col == 4);
     STATIC_ASSERT(D_col2 == 3 || D_col2 == 4);
-    basic_draw(transform.data, mesh, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, wireframe_color.r, wireframe_color.g, wireframe_color.b, D_col2 == 4 ? wireframe_color[3] : 1, size_in_pixels);
+    basic_draw(transform.data, mesh, fallback_color.r, fallback_color.g, fallback_color.b, D_col == 4 ? fallback_color[3] : 1, size_in_pixels, overlay, wireframe_color.r, wireframe_color.g, wireframe_color.b, D_col2 == 4 ? wireframe_color[3] : 1);
 }
-void basic_draw(int primitive, mat4 transform, BasicTriangleMesh3D _mesh, vec3 fallback_color = V3(1, 1, 1), vec3 wireframe_color = V3(1, 1, 1), double size_in_pixels = 0) {
+void basic_draw(
+        int primitive,
+        mat4 transform,
+        BasicTriangleMesh3D _mesh,
+        vec3 fallback_color = V3(1, 1, 1),
+        double size_in_pixels = 0,
+        bool overlay = false,
+        vec3 wireframe_color = V3(1, 1, 1)
+        ) {
     ASSERT(primitive == TRIANGLES || primitive == TRIANGLE_MESH);
     BasicMesh mesh = { primitive, 3, 3, _mesh.num_vertices, (double *) _mesh.vertex_positions, (double *) _mesh.vertex_colors };
-    basic_draw(transform, mesh, fallback_color, wireframe_color, size_in_pixels);
+    basic_draw(transform, mesh, fallback_color, size_in_pixels, overlay, wireframe_color);
 }
 #endif
 void basic_text(
@@ -1354,30 +1417,33 @@ void basic_text(
         read_head += (3 * sizeof(float) + 4);
     }
 
-    double transform[16] = {}; {
-        // Translation(s_NDC) * app_NDC_from_Screen() * Translation(ds_Screen + dims / 2) * Scaling(size, size);
-
-        double s_NDC[4] = {}; {
-            double s_world[4] = { x_world, y_world, z_world, 1 };
-            linalg_mat4_times_vec4_persp_divide(s_NDC, PV, s_world);
-        }
-
-        double TS[16] = {
-            font_size_in_pixels / 12, 0, 0, dx_in_pixels + W_in_pixels / 2,
-            0, font_size_in_pixels / 12, 0, dy_in_pixels + H_in_pixels / 2,
-            0, 0, 1, 0,
-            0, 0, 0, 1,
-        };
-
-        double NDC_from_Screen[16] = {}; {
-            window_get_NDC_from_Screen(NDC_from_Screen);
-        }
-
-        linalg_mat4_times_mat4(transform, NDC_from_Screen, TS);
-        for (int d = 0; d < 3; ++d) transform[4 * d + 3] += s_NDC[d];
+    double s_NDC[4] = {}; {
+        double s_world[4] = { x_world, y_world, z_world, 1 };
+        linalg_mat4_times_vec4_persp_divide(s_NDC, PV, s_world);
     }
 
-    basic_draw(QUADS, transform, XY, RGBA, num_vertices, vertex_positions, NULL, r, g, b, a, 0, overlay);
+    if (IN_RANGE(s_NDC[2], -1, 1)) {
+
+        double transform[16] = {}; {
+            // Translation(s_NDC) * app_NDC_from_Screen() * Translation(ds_Screen + dims / 2) * Scaling(size, size);
+
+            double TS[16] = {
+                font_size_in_pixels / 12, 0, 0, dx_in_pixels + W_in_pixels / 2,
+                0, font_size_in_pixels / 12, 0, dy_in_pixels + H_in_pixels / 2,
+                0, 0, 1, 0,
+                0, 0, 0, 1,
+            };
+
+            double NDC_from_Screen[16] = {}; {
+                window_get_NDC_from_Screen(NDC_from_Screen);
+            }
+
+            linalg_mat4_times_mat4(transform, NDC_from_Screen, TS);
+            for (int d = 0; d < 3; ++d) transform[4 * d + 3] += s_NDC[d];
+        }
+
+        basic_draw(QUADS, transform, XY, RGBA, num_vertices, vertex_positions, NULL, r, g, b, a, 0, overlay);
+    }
 }
 #ifdef SNAIL_WAS_INCLUDED
 template<int D_pos, int D_color = 3> void basic_text(
@@ -1407,26 +1473,6 @@ template<int D_color = 3> void basic_text(
 
 
 
-int fancy_load_texture(char *filename) {
-    int ret = fancy.num_textures;
-    glGenTextures(1, fancy.texture + fancy.num_textures);
-    glActiveTexture(GL_TEXTURE0 + fancy.num_textures);
-    glBindTexture(GL_TEXTURE_2D, fancy.texture[fancy.num_textures]);
-    ++fancy.num_textures;
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);   
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load(filename, &width, &height, &nrChannels, 0);
-    ASSERT(data);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
-    return ret;
-}
-
 // // fancy (circa 1975) draw
 // - assumes TRIANGLES, XYZ vertex_positions, RGB vertex_colors
 void fancy_draw(
@@ -1441,9 +1487,7 @@ void fancy_draw(
         double *vertex_colors = NULL,
         double r_fallback = 1,
         double g_fallback = 1,
-        double b_fallback = 1,
-        double *vertex_texture_coordinates = NULL,
-        int texture = -1) {
+        double b_fallback = 1) {
     if (num_triangles == 0) { return; } // NOTE: num_triangles zero is now valid input
     ASSERT(P);
     ASSERT(V);
@@ -1474,7 +1518,6 @@ void fancy_draw(
     guarded_push(vvv_size, vertex_positions, 3);
     guarded_push(nnn_size, vertex_normals, 3);
     guarded_push(ccc_size, vertex_colors, 3);
-    guarded_push(ttt_size, vertex_texture_coordinates, 2);
 
     ASSERT(fancy.shader_program);
     glUseProgram(fancy.shader_program);
@@ -1502,12 +1545,7 @@ void fancy_draw(
     shader_set_uniform_mat4(fancy.shader_program, "N", N);
     shader_set_uniform_bool(fancy.shader_program, "has_vertex_colors", vertex_colors != NULL);
     shader_set_uniform_bool(fancy.shader_program, "has_vertex_normals", vertex_normals != NULL);
-    shader_set_uniform_bool(fancy.shader_program, "has_texture_coordinates", (vertex_texture_coordinates != NULL) && (texture != -1));
     shader_set_uniform_vec4(fancy.shader_program, "fallback_color", fallback_color);
-    if ((vertex_texture_coordinates != NULL) && (texture != -1)) {
-        glActiveTexture(GL_TEXTURE0 + texture);
-        shader_set_uniform_int(fancy.shader_program, "_texture", texture);
-    }
 
     glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
 
@@ -1523,10 +1561,8 @@ void fancy_draw(
         vec3 *vertex_positions,
         vec3 *vertex_normals = NULL,
         vec3 *vertex_colors = NULL,
-        vec3 fallback_color = V3(1, 1, 1),
-        vec2 *vertex_texture_coordinates = NULL,
-        int texture = -1) {
-    fancy_draw(P.data, V.data, M.data, num_triangles, (int *) triangle_indices, num_vertices, (double *) vertex_positions, (double *) vertex_normals, (double *) vertex_colors, fallback_color.r, fallback_color.g, fallback_color.b, (double *) vertex_texture_coordinates, texture);
+        vec3 fallback_color = V3(1, 1, 1)) {
+    fancy_draw(P.data, V.data, M.data, num_triangles, (int *) triangle_indices, num_vertices, (double *) vertex_positions, (double *) vertex_normals, (double *) vertex_colors, fallback_color.r, fallback_color.g, fallback_color.b);
 }
 void fancy_draw(mat4 P, mat4 V, mat4 M, FancyTriangleMesh3D mesh, vec3 fallback_color = V3(1, 1, 1)) {
     fancy_draw(
@@ -1539,9 +1575,7 @@ void fancy_draw(mat4 P, mat4 V, mat4 M, FancyTriangleMesh3D mesh, vec3 fallback_
             mesh.vertex_positions,
             mesh.vertex_normals,
             mesh.vertex_colors,
-            fallback_color,
-            mesh.vertex_texture_coordinates,
-            mesh.texture
+            fallback_color
             );
 }
 #endif
@@ -1803,7 +1837,7 @@ void imgui_readout(char *name, Camera3D *t) {
     char *join1 = " ";
     #define Q(field) _imgui_printf("%s%s%s%s%lf", name, join0, XSTR(field), join1, t->field);
     #define R(field) _imgui_printf("%s%s%s%s%lf (%d deg)", name, join0, XSTR(field), join1, t->field, int(round(DEG(t->field))));
-    Q(distance);
+    Q(distance_to_origin);
     R(angle_of_view);
     R(theta);
     R(phi);
@@ -1858,13 +1892,18 @@ void _imgui_slider(char *text, void *t, bool is_int, double *t_copy, double a, d
     }
     imgui.x_curr -= w + 16;
 }
-void imgui_slider(char *name, int *t, int a, int b, char j = 0, char k = 0, bool loop = false) {
+void imgui_slider(char *name, int *t, int a, int b, int j = 0, int k = 0, bool loop = false) {
     double tmp = double(*t);
     static char text[256]; {
         if (!j && !k) {
             snprintf(text, sizeof(text), "%s", name);
         } else {
-            snprintf(text, sizeof(text), "%s `%c' `%c'", name, j ? j : '~', k ? k : '~');
+            if (k == KEY_TAB) {
+                ASSERT(!j);
+                snprintf(text, sizeof(text), "%s TAB", name);
+            } else {
+                snprintf(text, sizeof(text), "%s `%c' `%c'", name, j ? j : '~', k ? k : '~');
+            }
         }
     }
     _imgui_slider(text, t, true, &tmp, a, b);
@@ -2029,7 +2068,7 @@ bool begin_frame(double r = 0, double g = 0, double b = 0, double a = 0) {
             basic_text(NULL, text, 0, 0, 0, (display_fps < 45) ? 1 : 0, (display_fps > 30) ? 1 : 0, 0);
         }
     }
-    return !(input.key_pressed['Q'] || input.key_pressed[GLFW_KEY_ESCAPE] || glfwWindowShouldClose(window));
+    return !(input.key_pressed['Q'] || glfwWindowShouldClose(window));
 }
 void enable_floating_point_exceptions() {
     // ! can't trap invalid on apple silicon (glfw throws)

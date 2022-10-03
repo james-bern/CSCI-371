@@ -295,7 +295,7 @@ template <int T> double norm(SnailVec<T> v) {
 }
 template <int T> SnailVec<T> normalized(SnailVec<T> v) {
     double norm_v = norm(v);
-    SNAIL_ASSERT(fabs(norm_v) > 1e-7);
+    // SNAIL_ASSERT(fabs(norm_v) > 1e-7);
     return (1 / norm_v) * v;
 }
 
@@ -391,7 +391,7 @@ SnailMat<4> inverse(SnailMat<4> M) {
 
 // using 4x4 transforms ////////////////////////////////////////////////////////
 
-template <int T> SnailVec<T> transform_point(const SnailMat<4> &M, SnailVec<T> p) {
+template <int T> SnailVec<T> transformPoint(const SnailMat<4> &M, SnailVec<T> p) {
     SnailVec<4> p_hom = {};
     memcpy(p_hom.data, p.data, T * sizeof(double));
     p_hom.w = 1;
@@ -401,7 +401,7 @@ template <int T> SnailVec<T> transform_point(const SnailMat<4> &M, SnailVec<T> p
     memcpy(ret.data, ret_hom.data, T * sizeof(double));
     return ret;
 }
-template <int T> SnailVec<T> transform_direction(const SnailMat<4> &M, SnailVec<T> p) {
+template <int T> SnailVec<T> transformVector(const SnailMat<4> &M, SnailVec<T> p) {
     SnailVec<4> p_hom = {};
     memcpy(p_hom.data, p.data, T * sizeof(double));
     SnailVec<4> ret_hom = M * p_hom;
@@ -409,7 +409,7 @@ template <int T> SnailVec<T> transform_direction(const SnailMat<4> &M, SnailVec<
     memcpy(ret.data, ret_hom.data, T * sizeof(double));
     return ret;
 }
-template <int T> SnailVec<T> transform_normal(const SnailMat<4> &M, SnailVec<T> p) {
+template <int T> SnailVec<T> transformNormal(const SnailMat<4> &M, SnailVec<T> p) {
     SnailVec<4> p_hom = {};
     memcpy(p_hom.data, p.data, T * sizeof(double));
     SnailVec<4> ret_hom = inverse(transpose(M)) * p_hom;
@@ -521,11 +521,37 @@ template <int T> SnailVec<T> cwiseAbs(SnailVec<T> A) {
     for (int i = 0; i < T; ++i) A[i] = abs(A[i]);
     return A;
 }
+template <int T> SnailVec<T> cwiseMin(SnailVec<T> A, SnailVec<T> B) {
+    SnailVec<T> ret = {};
+    for (int i = 0; i < T; ++i) ret[i] = (A[i] < B[i]) ? A[i] : B[i];
+    return ret;
+}
+template <int T> SnailVec<T> cwiseMax(SnailVec<T> A, SnailVec<T> B) {
+    SnailVec<T> ret = {};
+    for (int i = 0; i < T; ++i) ret[i] = (A[i] > B[i]) ? A[i] : B[i];
+    return ret;
+}
+template <int T> SnailVec<T> cwiseProduct(SnailVec<T> a, SnailVec<T> b) {
+    SnailVec<T> ret = {};
+    for (int i = 0; i < T; ++i) ret[i] = a[i] * b[i];
+    return ret;
+}
 SnailVec<2> e_theta(double theta) {
     return { cos(theta), sin(theta) };
 }
+mat2 R_theta_2x2(double theta) {
+    return { cos(theta), -sin(theta), sin(theta), cos(theta) };
+}
 SnailVec<2> perpendicularTo(SnailVec<2> v) {
     return { v.y, -v.x };
+}
+mat4 xyzo2mat4(vec3 x, vec3 y, vec3 z, vec3 o) {
+    return {
+        x[0], y[0], z[0], o[0],
+        x[1], y[1], z[1], o[1],
+        x[2], y[2], z[2], o[2],
+        0, 0, 0, 1
+    };
 }
 
 // utility /////////////////////////////////////////////////////////////////////

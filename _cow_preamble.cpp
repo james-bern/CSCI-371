@@ -6,6 +6,12 @@
         int &operator [](int index) { return data[index]; }
     };
 
+// glsl analogs
+    double fract(double x) {
+        double intpart;
+        return modf(x, &intpart);
+    }
+
 // macros
     #define FORNOW_UNUSED(expr) do { (void)(expr); } while (0)
 
@@ -27,6 +33,7 @@
     #define AVG(a, b) (.5 * (a) + .5 * (b))
 
     #define CLAMP(t, a, b) MIN(MAX(t, a), b)
+    #define WRAP(t, a, b) ((a) + fmod((t) - (a), (b) - (a)))
     #define LERP(t, a, b) ((1 - (t)) * (a) + (t) * (b))
     #define COS_LERP(t, a, b) LERP(.5 - .5 * cos((t)*PI), a, b)
     #define CLAMPED_LERP(t, a, b) LERP(CLAMP(t, 0, 1), a, b)
@@ -53,6 +60,7 @@
     #define XSTR(foo) STR(foo)
     #define CONCAT_(a, b) a ## b
     #define CONCAT(a, b) CONCAT_(a, b)
+    #define _NOOP(foo) foo
 
     // do_once (this is an unorthodox macro, but we need it to work around a vs code bug)
     #define do_once \
