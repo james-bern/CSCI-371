@@ -147,7 +147,7 @@ void orbit_camera_move(OrbitCamera *orbit) { FORNOW_UNUSED(orbit);
         // TODO overwrite orbit->theta
         // TODO overwrite orbit->phi (make sure you clamp phi or it will be possible to "pass over the north or south poles")
     }
-    // TODO overwrite orbit->distance
+    // TODO overwrite orbit->distance (when user moves the mouse wheel)
 }
 
 // --------------------------------------------------
