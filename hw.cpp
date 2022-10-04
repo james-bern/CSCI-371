@@ -45,7 +45,7 @@ void hw4a() {
 
             // // orbit camera setup               
             //                                     
-            //                      +             ^
+            //                      +   -  -  -   ^
             //                  -   |             |
             //               -      |             |
             //            -         |             |
@@ -55,13 +55,13 @@ void hw4a() {
             //            -         |             |
             //               -      |             |
             //                  -   |             |
-            //                      +             V
+            //                      +   -  -  -   V
             //                                     
             //       <------D------->              
 
             // HINT Your answer should involve dividing by 2 twice.
 
-            // camera.distance_to_origin = ...;
+            // camera.distance_to_origin = ...; // what is D as a function of theta and H?
         }
 
         mat4 PV = camera_get_PV(&camera);
