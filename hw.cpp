@@ -267,9 +267,12 @@ void hw4b() {
 
     Mode mode = Orbit;
 
+    bool gui = true; // SET THIS FALSE IF RUNNING SLOW
+
     while (begin_frame()) {
 
-        { // gui
+        imgui_checkbox(".", &gui);
+        if (gui) { // gui
             { // tweaks
                 imgui_checkbox("human_AI", &tweaks.human_AI, 'z');
                 imgui_checkbox("draw_axes", &tweaks.draw_axes, 'x');
