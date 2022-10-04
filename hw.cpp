@@ -274,7 +274,7 @@ void hw4b() {
 
     while (begin_frame()) {
 
-        imgui_checkbox(".", &gui);
+        imgui_checkbox("", &gui);
         if (gui) { // gui
             { // tweaks
                 imgui_checkbox("human_AI", &tweaks.human_AI, 'z');
