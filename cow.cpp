@@ -219,7 +219,7 @@ struct {
 
     // VAO is (VVVVCCCC)
     // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-    GLuint VAO, VBO, EBO[3];
+    GLuint VAO, VBO[2], EBO[3];
 } basic;
 
 struct {
@@ -297,7 +297,7 @@ struct {
 
     // VAO is (VVVVNNNNCCCC)
     // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-    GLuint VAO, VBO, EBO;
+    GLuint VAO, VBO[3], EBO;
 } fancy;
 
 struct {
@@ -1144,21 +1144,18 @@ void basic_draw(
 
     glBindVertexArray(basic.VAO);
     int i_attrib = 0;
-    u64 offset = 0;
     auto guarded_push = [&](int buffer_size, void *array, int dim) {
         glDisableVertexAttribArray(i_attrib); // fornow
         if (array) {
-            glBufferSubData(GL_ARRAY_BUFFER, offset, buffer_size, array);
-            glVertexAttribPointer(i_attrib, dim, GL_DOUBLE, 0, 0, (void *) offset);
+            glBindBuffer(GL_ARRAY_BUFFER, basic.VBO[i_attrib]);
+            glBufferData(GL_ARRAY_BUFFER, buffer_size, array, GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(i_attrib, dim, GL_DOUBLE, 0, 0, NULL);
             glEnableVertexAttribArray(i_attrib);
         }
-        offset += buffer_size;
         ++i_attrib;
     };
     int vvv_size = int(num_vertices * dimension_of_positions * sizeof(double));
     int ccc_size = int(num_vertices * dimension_of_colors * sizeof(double));
-    glBindBuffer(GL_ARRAY_BUFFER, basic.VBO);
-    glBufferData(GL_ARRAY_BUFFER, vvv_size + ccc_size, NULL, GL_DYNAMIC_DRAW);
     guarded_push(vvv_size, vertex_positions, dimension_of_positions);
     guarded_push(ccc_size, vertex_colors, dimension_of_colors);
 
@@ -1497,24 +1494,20 @@ void fancy_draw(
 
     glBindVertexArray(fancy.VAO);
     int i_attrib = 0;
-    u64 offset = 0;
     auto guarded_push = [&](int buffer_size, void *array, int dim) {
         glDisableVertexAttribArray(i_attrib); // fornow
         if (array) {
-            glBufferSubData(GL_ARRAY_BUFFER, offset, buffer_size, array);
-            glVertexAttribPointer(i_attrib, dim, GL_DOUBLE, 0, 0, (void *) offset);
+            glBindBuffer(GL_ARRAY_BUFFER, fancy.VBO[i_attrib]);
+            glBufferData(GL_ARRAY_BUFFER, buffer_size, array, GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(i_attrib, dim, GL_DOUBLE, 0, 0, NULL);
             glEnableVertexAttribArray(i_attrib);
         }
-        offset += buffer_size;
         ++i_attrib;
     };
 
     int vvv_size = int(num_vertices * 3 * sizeof(double));
     int nnn_size = int(num_vertices * 3 * sizeof(double));
     int ccc_size = int(num_vertices * 3 * sizeof(double));
-    int ttt_size = int(num_vertices * 2 * sizeof(double));
-    glBindBuffer(GL_ARRAY_BUFFER, fancy.VBO);
-    glBufferData(GL_ARRAY_BUFFER, vvv_size + nnn_size + ccc_size + ttt_size, NULL, GL_DYNAMIC_DRAW);
     guarded_push(vvv_size, vertex_positions, 3);
     guarded_push(nnn_size, vertex_normals, 3);
     guarded_push(ccc_size, vertex_colors, 3);
@@ -2174,14 +2167,14 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         basic.shader_program_LINES = shader_build_program(basic.vert, basic.frag, basic.geom_LINES);
         basic.shader_program_TRIANGLES = shader_build_program(basic.vert, basic.frag);
         glGenVertexArrays(1, &basic.VAO);
-        glGenBuffers(1, &basic.VBO);
-        glGenBuffers(3, basic.EBO);
+        glGenBuffers(NELEMS(basic.VBO), basic.VBO);
+        glGenBuffers(NELEMS(basic.EBO), basic.EBO);
     }
 
     { // fancy
         fancy.shader_program = shader_build_program(fancy.vert, fancy.frag);
         glGenVertexArrays(1, &fancy.VAO);
-        glGenBuffers(1, &fancy.VBO);
+        glGenBuffers(NELEMS(fancy.VBO), fancy.VBO);
         glGenBuffers(1, &fancy.EBO);
         stbi_set_flip_vertically_on_load(true); // stb_image
     }
