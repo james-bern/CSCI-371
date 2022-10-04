@@ -93,6 +93,8 @@ void hw4a() {
 // mat4 Scaling(vec3 s);                                
 // mat4 Scaling(double s_x, double s_y, double s_z);    
 //                                                      
+// mat4 xyzo2mat4(vec3 x, vec3 y, vec3 z, vec3 o);      
+//                                                      
 // bool IS_ZERO(double a); // whether a is approx. zero 
 // double norm(vecX v); // length of v                  
 #if 0
@@ -184,6 +186,7 @@ struct TrackingCamera {
 
 mat4 tracking_camera_get_C(TrackingCamera *track) { FORNOW_UNUSED(track);
     // TODO (see slides)
+    // HINT: mat4 xyzo2mat4(vec3 x, vec3 y, vec3 z, vec3 o);
     return Identity4x4;
 }
 
@@ -232,7 +235,7 @@ void draw_basic_box_with_fake_shadows(mat4 PV, mat4 M, vec3 color) {
 
     if (tweaks.draw_fake_shadows) {
         // TODO set this matrix to go from world coordinates of the object to world coordinates of the shadow
-        // HINT my solution replaces four of the 0's with 1's (but which ones?! that is the question!)       
+        // HINT my solution has 4 non-zero entries
         mat4 M_FakeShadow = {
             0, 0, 0, 0,
             0, 0, 0, 0,
