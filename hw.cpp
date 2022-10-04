@@ -82,12 +82,12 @@ void hw4a() {
 
 // // you may want these functions                      
 //                                                      
-// vec3 transformPoint (mat4 M, vec3 p);                
+// vec3 transformPoint(mat4 M, vec3 p);                 
 // vec3 transformVector(mat4 M, vec3 v);                
 //                                                      
-// mat4 RotationX(mat4 M, double angle_in_radians);     
-// mat4 RotationY(mat4 M, double angle_in_radians);     
-// mat4 RotationZ(mat4 M, double angle_in_radians);     
+// mat4 RotationX(double angle_in_radians);             
+// mat4 RotationY(double angle_in_radians);             
+// mat4 RotationZ(double angle_in_radians);             
 // mat4 Translation(vec3 t);                            
 // mat4 Translation(double t_x, double t_y, double t_z);
 // mat4 Scaling(vec3 s);                                
