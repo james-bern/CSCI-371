@@ -187,6 +187,9 @@ struct TrackingCamera {
 mat4 tracking_camera_get_C(TrackingCamera *track) { FORNOW_UNUSED(track);
     // TODO (see slides)
     // HINT: mat4 xyzo2mat4(vec3 x, vec3 y, vec3 z, vec3 o);
+
+    vec3 t = *(track->target);
+
     return Identity4x4;
 }
 
