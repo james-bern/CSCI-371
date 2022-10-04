@@ -18,11 +18,11 @@ void hw4a() {
     BasicTriangleMesh3D basic_teapot = load_basic_mesh("data_basic_teapot", true);
     int mesh = 0;
 
-    double height_of_camera_field_of_view_at_origin = 8; // H
+    double height_of_camera_field_of_view_at_origin = 8; // H in figure below
 
     Camera3D camera = {};
-    camera.distance_to_origin = 15; // D
-    camera.angle_of_view = RAD(45); // theta
+    camera.distance_to_origin = 15; // D in figure below
+    camera.angle_of_view = RAD(45); // theta in figure below
 
     while (begin_frame()) {
 
