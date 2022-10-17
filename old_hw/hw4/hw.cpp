@@ -98,7 +98,7 @@ void hw4a() {
 // bool IS_ZERO(double a); // whether a is approx. zero 
 // double norm(vecX v); // length of v                  
 #if 0
-vec2 ds = transformVector(RotationY(human->theta), V3(0, 0, -1));
+vec3 ds = transformVector(RotationY(human->theta), V3(0, 0, -1));
 #endif
 
 // // you may want this input state                                                                              

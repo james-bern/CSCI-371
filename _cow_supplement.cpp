@@ -1,3 +1,5 @@
+// stuff you already implemented in the homeworks :)
+
 template <typename T> struct StretchyBuffer {
     int length;
     int capacity;
@@ -130,4 +132,34 @@ FancyTriangleMesh3D load_fancy_mesh(char *filename, bool transform_vertex_positi
         fancy_mesh_alloc_compute_and_store_area_weighted_vertex_normals(&fancy_mesh);
     }
     return fancy_mesh;
+}
+
+struct FPSCamera {
+    vec3 origin;
+    double angle_of_view;
+    double theta;
+    double phi;
+};
+
+mat4 fps_camera_get_C(FPSCamera *human) {
+    return Translation(human->origin) * RotationY(human->theta) * RotationX(human->phi);
+}
+
+void fps_camera_move(FPSCamera *human) {
+    vec3 ds = {}; {
+        if (input.key_held['w']) { ds += transformVector(RotationY(human->theta), V3(0, 0, -1)); }
+        if (input.key_held['s']) { ds += transformVector(RotationY(human->theta), V3( 0, 0, 1)); }
+        if (input.key_held['a']) { ds += transformVector(RotationY(human->theta), V3(-1, 0, 0)); }
+        if (input.key_held['d']) { ds += transformVector(RotationY(human->theta), V3( 1, 0, 0)); }
+    }
+    double norm_ds = norm(ds);
+    if (!IS_ZERO(norm_ds)) {
+        ds /= norm_ds;
+        human->origin += ds;
+    }
+    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) { // pointer lock
+        human->theta -= input._mouse_dx_NDC;
+        human->phi += input._mouse_dy_NDC;
+        human->phi = CLAMP(human->phi, RAD(-80), RAD(80));
+    }
 }

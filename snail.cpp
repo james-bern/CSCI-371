@@ -94,6 +94,7 @@ template <> union SnailVec<4> {
 SnailVec<2> snail_V2(double x, double y) { SnailVec<2> ret = { x, y }; return ret; }
 SnailVec<3> snail_V3(double x, double y, double z) { SnailVec<3> ret = { x, y, z }; return ret; }
 SnailVec<4> snail_V4(double x, double y, double z, double w) { SnailVec<4> ret = { x, y, z, w }; return ret; }
+SnailVec<4> snail_V4(SnailVec<3> xyz, double w) { SnailVec<4> ret = { xyz.x, xyz.y, xyz.z, w }; return ret; }
 
 SnailMat<2> snail_M2(double a0, double a1, double a2, double a3) { SnailMat<2> ret = { a0, a1, a2, a3 }; return ret; }
 SnailMat<3> snail_M3(double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8) { SnailMat<3> ret = { a0, a1, a2, a3, a4, a5, a6, a7, a8 }; return ret; }
@@ -578,3 +579,17 @@ template <int T> void pprint(SnailMat<T> M) {
 #undef SNAIL_FOR_
 #undef SNAIL_ASSERT
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+

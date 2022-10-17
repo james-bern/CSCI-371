@@ -217,9 +217,7 @@ struct {
     int shader_program_LINES;
     int shader_program_TRIANGLES;
 
-    // VAO is (VVVVCCCC)
-    // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-    GLuint VAO, VBO[2], EBO[3];
+    GLuint VAO[3], VBO[2], EBO[3];
 } basic;
 
 struct {
@@ -228,15 +226,19 @@ struct {
         layout (location = 0) in vec3 vertex;
         layout (location = 1) in vec3 normal;
         layout (location = 2) in vec3 color;
+        layout (location = 3) in vec2 texCoord;
 
         out BLOCK {
             vec3 position_World;
             vec3 normal_World;
             vec3 color;
+            vec2 texCoord;
         } vs_out;
 
         uniform bool has_vertex_colors;
         uniform vec4 fallback_color;
+
+        uniform bool has_vertex_texCoords;
 
         uniform mat4 P, V, M, N;
 
@@ -246,6 +248,7 @@ struct {
             gl_Position = P * V * tmp;
             vs_out.normal_World = mat3(N) * normal;
             vs_out.color = has_vertex_colors ? color : vec3(fallback_color);
+            vs_out.texCoord = has_vertex_texCoords ? texCoord : vec2(0., 0.);
         }
     )"""";
 
@@ -257,12 +260,18 @@ struct {
             vec3 position_World;
             vec3 normal_World;
             vec3 color;
+            vec2 texCoord;
         } fs_in;
 
         out vec4 frag_color;
 
         uniform bool has_vertex_normals;
+
+        uniform bool has_vertex_texCoords;
+        uniform sampler2D i_texture;
+
         uniform vec4 eye_World;
+
 
         void main() {
             vec3 world_to_eye = vec3(eye_World) - fs_in.position_World;
@@ -270,6 +279,12 @@ struct {
             vec3 E = normalize(world_to_eye);
 
             vec3 color = fs_in.color;
+            float a = 1.;
+            if (has_vertex_texCoords) {
+                vec4 tmp = texture(i_texture, fs_in.texCoord);
+                color = tmp.rgb;
+                a = tmp.a;
+            }
             if (has_vertex_normals) {
                 color *= .8;
                 vec3 base = vec3(1);
@@ -289,15 +304,17 @@ struct {
                 color += attenuation * .8 * fresnel * vec3(.2, .2, 1);
             }
 
-            frag_color = vec4(color, 1);
+            frag_color = vec4(color, a);
         }
     )"""";
-
     int shader_program;
+    GLuint VAO, VBO[4], EBO;
 
-    // VAO is (VVVVNNNNCCCC)
-    // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-    GLuint VAO, VBO[3], EBO;
+    #define FANCY_MAX_NUM_TEXTURES 16
+    #define FANCY_MAX_SIZE_TEXTURE_FILENAME 256
+    char texture_filenames[FANCY_MAX_NUM_TEXTURES][FANCY_MAX_SIZE_TEXTURE_FILENAME];
+    GLuint textures[FANCY_MAX_NUM_TEXTURES];
+    int num_textures;
 } fancy;
 
 struct {
@@ -384,6 +401,14 @@ struct OrthogonalCoordinateSystem3D {
     //           [- 0 - 1]
 };
 
+struct Texture {
+    char *filename;
+    int width;
+    int height;
+    int nrChannels;
+    unsigned char *data;
+};
+
 struct FancyTriangleMesh3D { // 3D indexed triangle mesh compatible with fancy_draw
     int num_vertices;
     int num_triangles;
@@ -391,6 +416,8 @@ struct FancyTriangleMesh3D { // 3D indexed triangle mesh compatible with fancy_d
     vec3 *vertex_normals;
     vec3 *vertex_colors;
     int3 *triangle_indices;
+    vec2 *vertex_texCoords;
+    char *texture_filename;
 };
 
 struct {
@@ -446,11 +473,19 @@ struct {
     vec3 fancy_tri_vertex_normals[3] = { { 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 } };
     FancyTriangleMesh3D fancy_tri = { fancy_tri_num_vertices, fancy_tri_num_triangles, fancy_tri_vertex_positions, fancy_tri_vertex_normals, NULL, fancy_tri_triangle_indices };
 
+    // a square useful for checking if textures are loaded correctly
+    int fancy_square_num_triangles = 2;
+    int3 fancy_square_triangle_indices[2] = { { 0, 1, 2 }, { 0, 2, 3 } };
+    int fancy_square_num_vertices = 4;
+    vec3 fancy_square_vertex_positions[4] = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 }, { -1, 1, 0 } };
+    vec3 fancy_square_vertex_normals[4] = { { 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 }, { 0, 0, 1 } };
+    vec2 fancy_square_texCoords[4] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+    FancyTriangleMesh3D fancy_square = { fancy_square_num_vertices, fancy_square_num_triangles, fancy_square_vertex_positions, fancy_square_vertex_normals, NULL, fancy_square_triangle_indices, fancy_square_texCoords };
     // [-1, 1]^3;
     // note: we split the box into six regions
     int fancy_box_num_triangles = 12;
     int fancy_box_num_vertices = 24;
-    FancyTriangleMesh3D fancy_box = { fancy_box_num_vertices, fancy_box_num_triangles, _meshlib_fancy_box_vertex_positions, _meshlib_fancy_box_vertex_normals, NULL, _meshlib_fancy_box_triangle_indices };
+    FancyTriangleMesh3D fancy_box = { fancy_box_num_vertices, fancy_box_num_triangles, _meshlib_fancy_box_vertex_positions, _meshlib_fancy_box_vertex_normals, NULL, _meshlib_fancy_box_triangle_indices, _meshlib_fancy_box_vertex_texCoords };
 
     // unit radius and height; base is centered at origin; y is up
     // note: we split the cone into two regions
@@ -687,8 +722,13 @@ void window_get_NDC_from_Screen(double *A) {
 
 
 
-void tform_get_P_perspective(double *P, double angle_of_view) {
+void tform_get_P_perspective(double *P, double angle_of_view, double n = 0, double f = 0, double aspect = 0) {
+    if (IS_ZERO(n)) { n = -.1; }
+    if (IS_ZERO(f)) { f = -10000; }
+    if (IS_ZERO(aspect)) { aspect = window_get_aspect(); }
     ASSERT(P);
+    ASSERT(n < 0);
+    ASSERT(f < 0);
 
     // consider a point with coordinates (x, y, -z) in the camera's coordinate system
     //                                                                   where z < 0*
@@ -696,33 +736,33 @@ void tform_get_P_perspective(double *P, double angle_of_view) {
 
     // 1) imagine projecting the point onto some film plane with height r_y and distance D
 
-    //             r_y                               
-    //            -|                                 
-    //           - |                                 
-    //          -  |           y <~ vertex           
-    // theta_y -   |       -   |                     
-    //       |-    |   -       |                     
-    //       v     +                                 
-    //      -) -   |           |                     
-    //   eye-------+-----------+----->               
-    //             D          -z                     
+    //                r_y                               
+    //               -|                                 
+    //              - |                                 
+    //  angle_y    -  |           y <~ vertex           
+    //         \  -   |       -   |                     
+    //          |-    |   -       |                     
+    //          v     +           |                     
+    //         -) -   |           |                     
+    //        0-------+-----------+----->               
+    //                D          -z                     
 
     // 2) scale film plane by 1 / r_y to yield NDC film plane (with height 1) and distance Q_y
     // y' is the projected position of vertex y in NDC; i.e., if we can get y', we're done :) 
 
-    //             1 <~ edge of NDC film plane
-    //            -|                          
-    //           - |                          
-    //          -  |           y              
-    // theta_y -   |       -   |              
-    //       |-    |   -       |              
-    //       v     y'                         
-    //      -) -   |           |              
-    //   eye-------+-----------+----->        
-    //           D / r_y      -z              
-    //             ^                          
-    //             |                          
-    //             cot(theta_y) := Q_y        
+    //                1 <~ edge of NDC film plane
+    //               -|                          
+    //              - |                          
+    //  angle_y    -  |           y              
+    //         \  -   |       -   |              
+    //          |-    |   -       |              
+    //          v     y'          |              
+    //         -) -   |           |              
+    //        0-------+-----------+----->        
+    //              D / r_y      -z              
+    //                ^                          
+    //                |                          
+    //                cot(angle_y) := Q_y        
 
     // similar triangles has y' / Q_y = y / -z                     
     //                          => y' = -Q_y * (y / z) (Equation 1)
@@ -730,11 +770,11 @@ void tform_get_P_perspective(double *P, double angle_of_view) {
     // we can repeat this procedure in x      
     // the only difference is Q_x vs. Q_y     
     // -------------------------------------- 
-    // cot(theta_x) = D / r_x                 
-    // cot(theta_y) = D / r_y                 
-    // => r_x cot(theta_x) = r_y cot(theta_y) 
+    // cot(angle_x) = D / r_x                 
+    // cot(angle_y) = D / r_y                 
+    // => r_x cot(angle_x) = r_y cot(angle_y) 
     // recall: aspect := r_x / r_y            
-    //  => aspect cot(theta_x) = cot(theta_y) 
+    //  => aspect cot(angle_x) = cot(angle_y) 
     //                  => Q_x = Q_y / aspect.
 
     // encode Equation 1 (and the variant for x) into a homogeneous matrix equation
@@ -745,9 +785,9 @@ void tform_get_P_perspective(double *P, double angle_of_view) {
     // [z'] = [  0   0  a  b] [z] = [  az + b] ~> [      -a - b/z]
     // [ 1] = [  0   0 -1  0] [1] = [      -z] ~> [             1]
 
-    double theta_y = angle_of_view / 2;
-    double Q_y = 1 / tan(theta_y);
-    double Q_x = Q_y / window_get_aspect();
+    double angle_y = angle_of_view / 2;
+    double Q_y = 1 / tan(angle_y);
+    double Q_x = Q_y / aspect;
 
     memset(P, 0, 16 * sizeof(double));
     _4x4(P, 0, 0) = Q_x;
@@ -770,8 +810,6 @@ void tform_get_P_perspective(double *P, double angle_of_view) {
     // => a + (2 * f) / (f - n) = 1    
     // => a = -(n + f) / (f - n)       
     //       = (n + f) / (n - f)       
-    double n = -.1;
-    double f = -10000;
     _4x4(P, 2, 2) = (n + f) / (n - f);     // a
     _4x4(P, 2, 3) = (2 * n * f) / (f - n); // b
 }
@@ -871,7 +909,7 @@ double tform_get_screen_height_World(double distance_to_film_plane, double angle
     return 2 * tan(theta) * distance_to_film_plane;
 }
 #ifdef SNAIL_WAS_INCLUDED
-mat4 tform_get_P_perspective(double angle_of_view) { mat4 ret; tform_get_P_perspective(ret.data, angle_of_view); return ret; }
+mat4 tform_get_P_perspective(double angle_of_view, double n = 0, double f = 0, double aspect = 0) { mat4 ret; tform_get_P_perspective(ret.data, angle_of_view, n, f, aspect); return ret; }
 mat4 tform_get_P_ortho(double screen_height_World) { mat4 ret; tform_get_P_ortho(ret.data, screen_height_World); return ret; }
 mat4 tform_get_PV_hud() { mat4 ret; tform_get_PV_hud(ret.data); return ret; }
 #endif
@@ -1001,7 +1039,7 @@ void camera_move(Camera3D *camera, bool disable_pan = false, bool disable_zoom =
         double fac = 2;
         camera->theta -= fac * input._mouse_dx_NDC;
         camera->phi += fac * input._mouse_dy_NDC;
-        camera->phi = CLAMP(camera->phi, -RAD(77), RAD(77));
+        camera->phi = CLAMP(camera->phi, -RAD(90), RAD(90));
     }
 }
 #ifdef SNAIL_WAS_INCLUDED
@@ -1009,6 +1047,7 @@ mat4 camera_get_PV(Camera2D *camera) { mat4 ret; camera_get_PV(camera, ret.data)
 OrthogonalCoordinateSystem3D camera_get_coordinate_system(Camera3D *camera) {  mat4 C; vec3 x, y, z, o; mat4 R; camera_get_coordinate_system(camera, C.data, x.data, y.data, z.data, o.data, R.data); return { C, x, y, z, o, R }; }
 mat4 camera_get_P(Camera3D *camera) { mat4 ret; camera_get_P(camera, ret.data); return ret; }
 mat4 camera_get_V(Camera3D *camera) { mat4 ret; camera_get_V(camera, ret.data); return ret; }
+mat4 camera_get_C(Camera3D *camera) { mat4 ret; camera_get_coordinate_system(camera, ret.data); return ret; }
 mat4 camera_get_PV(Camera3D *camera) { mat4 ret; camera_get_PV(camera, ret.data); return ret; }
 #endif
 
@@ -1142,7 +1181,7 @@ void basic_draw(
 
     double fallback_color[4] = { r_fallback, g_fallback, b_fallback, a_fallback };
 
-    glBindVertexArray(basic.VAO);
+    glBindVertexArray(basic.VAO[mesh_special_case]);
     int i_attrib = 0;
     auto guarded_push = [&](int buffer_size, void *array, int dim) {
         glDisableVertexAttribArray(i_attrib); // fornow
@@ -1228,6 +1267,7 @@ void basic_draw(
                     glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_VERTICES / 3 * 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
                 }
             } else {
+                ASSERT(mesh_special_case == 2);
                 num_vertices = (num_vertices / 4) * 8;
                 static GLuint *indices;
                 if (!indices) {
@@ -1470,6 +1510,81 @@ template<int D_color = 3> void basic_text(
 
 
 
+bool fancy_texture_find(int *i_texture, char *texture_filename) {
+    // FORNOW O(n); TODO hash table
+    bool already_loaded = false;
+    for ((*i_texture) = 0; (*i_texture) < fancy.num_textures; (*i_texture)++) {
+        if (strcmp(texture_filename, fancy.texture_filenames[*i_texture]) == 0) {
+            already_loaded = true;
+            break;
+        }
+    }
+    return already_loaded;
+}
+int _fancy_texture_create_load(char *texture_filename) {
+    int i_texture;
+    ASSERT(fancy.num_textures < FANCY_MAX_NUM_TEXTURES);
+    ASSERT(strlen(texture_filename) < FANCY_MAX_SIZE_TEXTURE_FILENAME);
+    i_texture = fancy.num_textures++;
+    glGenTextures(1, fancy.textures + i_texture);
+    strcpy(fancy.texture_filenames[i_texture], texture_filename);
+
+    glActiveTexture(GL_TEXTURE0 + i_texture);
+    glBindTexture(GL_TEXTURE_2D, fancy.textures[i_texture]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return i_texture;
+}
+int _fancy_texture_get_format(int nrChannels) {
+    ASSERT(nrChannels == 1 || nrChannels == 3 || nrChannels == 4);
+    return (nrChannels == 1) ? GL_RED : (nrChannels == 3) ? GL_RGB : GL_RGBA;
+}
+int fancy_texture_create(char *texture_filename, int width, int height, int nrChannels, unsigned char *data) {
+    int i_texture = _fancy_texture_create_load(texture_filename);
+    ASSERT(width > 0);
+    ASSERT(height > 0);
+    ASSERT(data);
+    int format = _fancy_texture_get_format(nrChannels);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    return i_texture;
+}
+void fancy_texture_update(char *texture_filename, int width, int height, int nrChannels, unsigned char *data) {
+    ASSERT(width > 0);
+    ASSERT(height > 0);
+    ASSERT(data);
+    int format = _fancy_texture_get_format(nrChannels);
+
+    int i_texture;
+    ASSERT(fancy_texture_find(&i_texture, texture_filename));
+    glActiveTexture(GL_TEXTURE0 + i_texture);
+    glBindTexture(GL_TEXTURE_2D, fancy.textures[i_texture]);
+
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, GL_UNSIGNED_BYTE, data);
+}
+int fancy_texture_load(char *texture_filename) {
+    int i_texture = _fancy_texture_create_load(texture_filename);
+
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(texture_filename, &width, &height, &nrChannels, 0);
+    ASSERT(data);
+    ASSERT(nrChannels == 3 || nrChannels == 4);
+    int format = (nrChannels == 3) ? GL_RGB : GL_RGBA;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+    return i_texture;
+}
+int fancy_texture_create(Texture *texture) {
+    return fancy_texture_create(texture->filename, texture->width, texture->height, texture->nrChannels, texture->data);
+}
+void fancy_texture_update(Texture *texture) {
+    fancy_texture_update(texture->filename, texture->width, texture->height, texture->nrChannels, texture->data);
+}
+
 // // fancy (circa 1975) draw
 // - assumes TRIANGLES, XYZ vertex_positions, RGB vertex_colors
 void fancy_draw(
@@ -1484,13 +1599,23 @@ void fancy_draw(
         double *vertex_colors = NULL,
         double r_fallback = 1,
         double g_fallback = 1,
-        double b_fallback = 1) {
+        double b_fallback = 1,
+        double *vertex_texCoords = NULL,
+        char *texture_filename = NULL
+        ) {
     if (num_triangles == 0) { return; } // NOTE: num_triangles zero is now valid input
     ASSERT(P);
     ASSERT(V);
     ASSERT(M);
     ASSERT(vertex_positions);
     double fallback_color[4] = { r_fallback, g_fallback, b_fallback, 1 };
+
+    int i_texture = -1;
+    if (texture_filename) {
+        if (!fancy_texture_find(&i_texture, texture_filename)) { // FORNOW load textures on demand
+            i_texture = fancy_texture_load(texture_filename);
+        }
+    }
 
     glBindVertexArray(fancy.VAO);
     int i_attrib = 0;
@@ -1508,9 +1633,11 @@ void fancy_draw(
     int vvv_size = int(num_vertices * 3 * sizeof(double));
     int nnn_size = int(num_vertices * 3 * sizeof(double));
     int ccc_size = int(num_vertices * 3 * sizeof(double));
+    int tt_size = int(num_vertices * 2 * sizeof(double));
     guarded_push(vvv_size, vertex_positions, 3);
     guarded_push(nnn_size, vertex_normals, 3);
     guarded_push(ccc_size, vertex_colors, 3);
+    guarded_push(tt_size, vertex_texCoords, 2);
 
     ASSERT(fancy.shader_program);
     glUseProgram(fancy.shader_program);
@@ -1538,10 +1665,11 @@ void fancy_draw(
     shader_set_uniform_mat4(fancy.shader_program, "N", N);
     shader_set_uniform_bool(fancy.shader_program, "has_vertex_colors", vertex_colors != NULL);
     shader_set_uniform_bool(fancy.shader_program, "has_vertex_normals", vertex_normals != NULL);
+    shader_set_uniform_bool(fancy.shader_program, "has_vertex_texCoords", vertex_texCoords != NULL);
+    shader_set_uniform_int(fancy.shader_program, "i_texture", i_texture);
     shader_set_uniform_vec4(fancy.shader_program, "fallback_color", fallback_color);
 
     glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
-
 }
 #ifdef SNAIL_WAS_INCLUDED
 void fancy_draw(
@@ -1554,8 +1682,10 @@ void fancy_draw(
         vec3 *vertex_positions,
         vec3 *vertex_normals = NULL,
         vec3 *vertex_colors = NULL,
-        vec3 fallback_color = V3(1, 1, 1)) {
-    fancy_draw(P.data, V.data, M.data, num_triangles, (int *) triangle_indices, num_vertices, (double *) vertex_positions, (double *) vertex_normals, (double *) vertex_colors, fallback_color.r, fallback_color.g, fallback_color.b);
+        vec3 fallback_color = V3(1, 1, 1),
+        vec2 *vertex_texCoords = NULL,
+        char *texture_filename = NULL) {
+    fancy_draw(P.data, V.data, M.data, num_triangles, (int *) triangle_indices, num_vertices, (double *) vertex_positions, (double *) vertex_normals, (double *) vertex_colors, fallback_color.r, fallback_color.g, fallback_color.b, (double *) vertex_texCoords, texture_filename);
 }
 void fancy_draw(mat4 P, mat4 V, mat4 M, FancyTriangleMesh3D mesh, vec3 fallback_color = V3(1, 1, 1)) {
     fancy_draw(
@@ -1568,7 +1698,9 @@ void fancy_draw(mat4 P, mat4 V, mat4 M, FancyTriangleMesh3D mesh, vec3 fallback_
             mesh.vertex_positions,
             mesh.vertex_normals,
             mesh.vertex_colors,
-            fallback_color
+            fallback_color,
+            mesh.vertex_texCoords,
+            mesh.texture_filename
             );
 }
 #endif
@@ -1720,7 +1852,12 @@ bool imgui_button(char *t, int shortcut_key = 0) {
     // fornow
     static char text[256];
     if (shortcut_key) {
-        snprintf(text, sizeof(text), "%s `%c'", t, shortcut_key);
+        if (shortcut_key != KEY_TAB) {
+            snprintf(text, sizeof(text), "%s `%c'", t, shortcut_key);
+        } else {
+            ASSERT(shortcut_key == KEY_TAB);
+            snprintf(text, sizeof(text), "%s TAB", t);
+        }
     } else {
         strcpy(text, t);
     }
@@ -1774,9 +1911,9 @@ void imgui_checkbox(char *name, bool *t, int shortcut_key = 0) {
     };
     bool hot = IN_RANGE(s_mouse[0], box[0], box[2]) && IN_RANGE(s_mouse[1], box[1], box[5]);
 
-    if (!imgui.selected_widget_ID && ((hot && input.mouse_left_pressed) || input.key_pressed[shortcut_key])) {
+    if ((hot && input.mouse_left_pressed) || input.key_pressed[shortcut_key]) {
         *t = !(*t);
-        imgui.selected_widget_ID = t;
+        if (!imgui.selected_widget_ID) imgui.selected_widget_ID = t;
     }
     if (imgui.selected_widget_ID == t) {
         if (input.mouse_left_released || input.key_released[shortcut_key]) {
@@ -1839,7 +1976,7 @@ void imgui_readout(char *name, Camera3D *t) {
     #undef Q
     #undef R
 }
-void _imgui_slider(char *text, void *t, bool is_int, double *t_copy, double a, double b) {
+void _imgui_slider(char *text, void *t, bool is_int, double *t_copy, double a, double b, bool display_in_degrees = false) {
     imgui.y_curr += 8;
     double PV[16] = {};
     tform_get_PV_hud(PV);
@@ -1881,7 +2018,12 @@ void _imgui_slider(char *text, void *t, bool is_int, double *t_copy, double a, d
     if (is_int) {
         imgui_readout(text, (int *) t);
     } else {
-        imgui_readout(text, (double *) t);
+        if (!display_in_degrees) {
+            imgui_readout(text, (double *) t);
+        } else {
+            int tmp = (int) round(DEG(*((double *) t)));
+            _imgui_printf("%s %d deg", text, tmp);
+        }
     }
     imgui.x_curr -= w + 16;
 }
@@ -1907,8 +2049,8 @@ void imgui_slider(char *name, int *t, int a, int b, int j = 0, int k = 0, bool l
         *t = (!loop) ? CLAMP(*t, a, b) : a + MODULO(*t - a, (b + 1) - a);
     }
 }
-void imgui_slider(char *name, double *t, double a, double b) {
-    _imgui_slider(name, t, false, t, a, b);
+void imgui_slider(char *name, double *t, double a, double b, bool display_in_degrees = false) {
+    _imgui_slider(name, t, false, t, a, b, display_in_degrees);
 }
 
 
@@ -2055,6 +2197,7 @@ bool begin_frame(double r = 0, double g = 0, double b = 0, double a = 0) {
             if (util_time_in_millis() - stamp > 166) {
                 stamp = util_time_in_millis();
                 display_fps = measured_fps;
+                // printf("fps: %d\n", display_fps);
             }
             char text[256] = {};
             snprintf(text, sizeof(text), "fps: %d", display_fps);
@@ -2091,6 +2234,10 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         if (window_title) window_set_title(window_title);
         memset(&input, 0, sizeof(input));
         widget_active_widget_ID = 0;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        fancy.num_textures = 0;
+        memset(fancy.textures, 0, sizeof(fancy.textures));
+        memset(&gl, 0, sizeof(gl));
         return;
     }
 
@@ -2166,7 +2313,7 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         basic.shader_program_POINTS = shader_build_program(basic.vert, basic.frag_POINTS, basic.geom_POINTS);
         basic.shader_program_LINES = shader_build_program(basic.vert, basic.frag, basic.geom_LINES);
         basic.shader_program_TRIANGLES = shader_build_program(basic.vert, basic.frag);
-        glGenVertexArrays(1, &basic.VAO);
+        glGenVertexArrays(NELEMS(basic.VAO), basic.VAO);
         glGenBuffers(NELEMS(basic.VBO), basic.VBO);
         glGenBuffers(NELEMS(basic.EBO), basic.EBO);
     }
