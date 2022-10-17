@@ -223,9 +223,9 @@ void hw6c() {
                 vec3 a_camera = transformPoint(V_rasterizer, a_world);
                 vec3 b_camera = transformPoint(V_rasterizer, b_world);
                 vec3 c_camera = transformPoint(V_rasterizer, c_world);
-                vec3 a_NDC = transformPoint(P_rasterizer, a_camera);
-                vec3 b_NDC = transformPoint(P_rasterizer, b_camera);
-                vec3 c_NDC = transformPoint(P_rasterizer, c_camera);
+                vec3 a_NDC = transformPoint(P_rasterizer, a_camera).xy;
+                vec3 b_NDC = transformPoint(P_rasterizer, b_camera).xy;
+                vec3 c_NDC = transformPoint(P_rasterizer, c_camera).xy;
                 vec3 fallback_color = V3(1, 0, 1); {
                     // TODOLATER fallback__color <- V3(.5, .5, .5) + .5 * face_normal
                     // NOTE the bunny should now look rather wonderful               
