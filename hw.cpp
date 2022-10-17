@@ -4,7 +4,7 @@
 #include "cow.cpp"
 #include "_cow_supplement.cpp"
 
-void hw5a() {
+void hw6a() {
     init();
 
     // texture
@@ -55,7 +55,7 @@ void hw5a() {
     }
 }
 
-void hw5b() {
+void hw6b() {
     init();
     FPSCamera human = { V3(0, 10, 20), RAD(60), 0, 0 };
     while (begin_frame()) {
@@ -106,7 +106,7 @@ void hw5b() {
     }
 }
 
-void hw5c_draw_textured_square(mat4 P, mat4 V, mat4 M, char *texture_filename) {
+void hw6c_draw_textured_square(mat4 P, mat4 V, mat4 M, char *texture_filename) {
     // please ignore; this function is hack-a-saurus rex
     static FancyTriangleMesh3D square;
     if (!square.num_vertices) {
@@ -119,7 +119,7 @@ void hw5c_draw_textured_square(mat4 P, mat4 V, mat4 M, char *texture_filename) {
             square.vertex_texCoords, texture_filename);
 };
 
-void hw5c() {
+void hw6c() {
     init();
 
     struct {
@@ -326,7 +326,7 @@ void hw5c() {
                 if (tweaks.draw_film_plane) {
                     double s = LERP(INVERSE_LERP(renderer_distance_to_film_plane, -n, -f), r_n, r_f);
                     mat4 M = C_rasterizer * Translation(0, 0, -renderer_distance_to_film_plane) * Scaling(s);
-                    hw5c_draw_textured_square(P_observer, V_observer, M, (!tweaks.draw_depth_buffer) ? color_buffer.filename : depth_buffer.filename);
+                    hw6c_draw_textured_square(P_observer, V_observer, M, (!tweaks.draw_depth_buffer) ? color_buffer.filename : depth_buffer.filename);
                     { // outline
                         vec3 tmp[] = { { -1, -1, 0 }, { -1,  1, 0 }, {  1,  1, 0 }, {  1, -1, 0 }, };
                         basic_draw(LINE_LOOP, P_observer * V_observer * M, 4, tmp);
@@ -341,9 +341,9 @@ void hw5c() {
 }
 
 int main() {
-    hw5a();
-    hw5b();
-    hw5c();
+    hw6a();
+    hw6b();
+    hw6c();
     return 0;
 }
 
