@@ -36,7 +36,7 @@ void hw5a() {
     };
 
     Camera3D orbit = { 3, RAD(60) };
-    double t = 0;
+    double t = 0; FORNOW_UNUSED(t);
     while (begin_frame()) {
         t += 1. / 60;
         camera_move(&orbit);
@@ -63,7 +63,7 @@ void hw5b() {
         mat4 C = fps_camera_get_C(&human);
         mat4 P = tform_get_P_perspective(human.angle_of_view);
         mat4 V = inverse(C);
-        mat4 PV = P * V;
+        mat4 PV = P * V; FORNOW_UNUSED(PV);
         { // pointer lock
             if (widget_active_widget_ID == 0 && input.mouse_left_pressed) {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -233,6 +233,8 @@ void hw5c() {
                 vec3 color_a = (mesh->vertex_colors != NULL) ? mesh->vertex_colors[3 * triangle_i + 0] : fallback_color;
                 vec3 color_b = (mesh->vertex_colors != NULL) ? mesh->vertex_colors[3 * triangle_i + 1] : fallback_color;
                 vec3 color_c = (mesh->vertex_colors != NULL) ? mesh->vertex_colors[3 * triangle_i + 2] : fallback_color;
+                FORNOW_UNUSED(a_NDC); FORNOW_UNUSED(b_NDC); FORNOW_UNUSED(c_NDC);
+                FORNOW_UNUSED(color_a); FORNOW_UNUSED(color_b); FORNOW_UNUSED(color_c);
                 // // TODO rasterize                                                                   
                 // // NOTE start this problem early! (it may be a doozy)                               
                 // // HINT be careful with unsigned char's (don't, e.g., use a regular char by mistake)
