@@ -227,8 +227,8 @@ void hw6c() {
                 vec2 b_NDC = transformPoint(P_rasterizer, b_camera).xy;
                 vec2 c_NDC = transformPoint(P_rasterizer, c_camera).xy;
                 vec3 fallback_color = V3(1, 0, 1); {
-                    // TODOLATER fallback__color <- V3(.5, .5, .5) + .5 * face_normal
-                    // NOTE the bunny should now look rather wonderful               
+                    // TODOLATER fallback__color <- V3(.5, .5, .5) + .5 * face_normal (in world coords)
+                    // NOTE the bunny should now look rather wonderful                                 
                 }
                 vec3 color_a = (mesh->vertex_colors != NULL) ? mesh->vertex_colors[3 * triangle_i + 0] : fallback_color;
                 vec3 color_b = (mesh->vertex_colors != NULL) ? mesh->vertex_colors[3 * triangle_i + 1] : fallback_color;
