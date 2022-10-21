@@ -266,8 +266,8 @@ struct {
         out vec4 frag_color;
 
         uniform bool has_vertex_normals;
-
         uniform bool has_vertex_texCoords;
+
         uniform sampler2D i_texture;
 
         uniform vec4 eye_World;
@@ -1665,8 +1665,8 @@ void fancy_draw(
     shader_set_uniform_mat4(fancy.shader_program, "N", N);
     shader_set_uniform_bool(fancy.shader_program, "has_vertex_colors", vertex_colors != NULL);
     shader_set_uniform_bool(fancy.shader_program, "has_vertex_normals", vertex_normals != NULL);
-    shader_set_uniform_bool(fancy.shader_program, "has_vertex_texCoords", vertex_texCoords != NULL);
-    shader_set_uniform_int(fancy.shader_program, "i_texture", i_texture);
+    shader_set_uniform_bool(fancy.shader_program, "has_vertex_texCoords", (vertex_texCoords != NULL) && (texture_filename != NULL));
+    shader_set_uniform_int(fancy.shader_program, "i_texture", MAX(0, i_texture));
     shader_set_uniform_vec4(fancy.shader_program, "fallback_color", fallback_color);
 
     glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
