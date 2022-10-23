@@ -83,16 +83,16 @@
     #define GL_SILENCE_DEPRECATION
     #define GLFW_INCLUDE_GL_COREARB
     #include <OpenGL/gl3.h>
-    #elif defined(WIN32) || defined(_WIN64)
+    #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
     #define GLFW_EXPOSE_NATIVE_WIN32
     #include "ext/glad/src/glad.c"
     #else
-    #pragma message "[cow] operating system not recognized"
+    #pragma message("[cow] operating system not recognized")
     #endif
     #include <GLFW/glfw3.h>
 
 // // ?
-    #if !defined(WIN32) && !defined(_WIN64)
+    #if !defined(WIN32) && !defined(_WIN32) && !defined(_WIN64)
     #include <signal.h>
     #endif
     #if ((defined(__APPLE__) || defined(__MACH__)) && defined(__arm__) && defined(__arm64__)) // mac with Intel
@@ -112,7 +112,7 @@
 // debugbreak
     void xplat_debugbreak() {
         printf("[cow] debugbreak() tripped; run debugger to break (and continue from) here\n");
-        #if defined(WIN32) || defined(_WIN64)
+        #if defined(WIN32) || defined(_WIN32) || defined(_WIN64)
         __debugbreak();
         #else
         raise(SIGTRAP);
