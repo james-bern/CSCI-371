@@ -285,6 +285,7 @@ void hw7c() {
         }
         light_positions[0] = { 0, 0, 3 };
     }
+    bool draw_light_positions = true;
 
     // misc opengl
     GLuint VAO, VBO[2], EBO; {
@@ -314,6 +315,7 @@ void hw7c() {
             imgui_slider("num_lights", &num_lights, 0, MAX_NUM_LIGHTS, 'j', 'k');
             imgui_checkbox("debug_draw_color_by_normal", &debug_draw_color_by_normal, 'z');
             imgui_checkbox("debug_draw_bad_normal_transform", &debug_draw_bad_normal_transform, 'x');
+            imgui_checkbox("draw_light_positions", &draw_light_positions, 'c');
             imgui_checkbox("playing", &playing, 'p');
             if (imgui_button("reset", 'r')) {
                 time = 0;
@@ -324,7 +326,7 @@ void hw7c() {
         { // draw
             FancyTriangleMesh3D *mesh = meshes[mesh_index];
 
-            { // annotate
+            if (draw_light_positions) {
                 basic_draw(POINTS, P * V, num_lights, light_positions, light_colors);
             }
             glBindVertexArray(VAO);
