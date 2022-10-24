@@ -4,7 +4,7 @@ template <typename T> struct StretchyBuffer {
     int length;
     int capacity;
     T *data;
-        T &operator [](int index) { return data[index]; }
+    T &operator [](int index) { return data[index]; }
 };
 
 template <typename T> void sbuff_push_back(StretchyBuffer<T> *buffer, T element) {
@@ -161,5 +161,112 @@ void fps_camera_move(FPSCamera *human) {
         human->theta -= input._mouse_dx_NDC;
         human->phi += input._mouse_dy_NDC;
         human->phi = CLAMP(human->phi, RAD(-80), RAD(80));
+    }
+}
+
+void line_line_closest_points(vec3 a1, vec3 a2, vec3 b1, vec3 b2, vec3 *out_a_star, vec3 *out_b_star) {
+    // http://www.geomalgorithms.com/algorithms.html#dist3D_Segment_to_Segment()
+    // https://stackoverflow.com/questions/66979936/closest-two-3d-point-between-two-line-segment-of-varied-magnitude-in-different-p
+    vec3 u = a2 - a1;
+    vec3 v = b2 - b1;
+    vec3 w = a1 - b1;
+    double a = dot(u, u);         // always >= 0
+    double b = dot(u, v);
+    double c = dot(v, v);         // always >= 0
+    double d = dot(u, w);
+    double e = dot(v, w);
+    double sc, sN, sD = a*c - b*b;  // sc = sN / sD, sD >= 0
+    double tc, tN, tD = a*c - b*b;  // tc = tN / tD, tD >= 0
+    double tol = 1e-15;
+    // compute the line parameters of the two closest points
+    if (sD < tol) {            // the lines are almost parallel
+        sN = 0.0;              // force using point a1 on segment AB
+        sD = 1.0;              // to prevent possible division by 0.0 later
+        tN = e;
+        tD = c;
+    }
+    else {                     // get the closest points on the infinite lines
+        sN = (b*e - c*d);
+        tN = (a*e - b*d);
+    }
+    // finally do the division to get sc and tc
+    sc = (fabs(sN) < tol ? 0.0 : sN / sD);
+    tc = (fabs(tN) < tol ? 0.0 : tN / tD);
+    if (out_a_star) *out_a_star = a1 + (sc * u);
+    if (out_b_star) *out_b_star = b1 + (tc * v);
+}
+
+void jank_widget_translate3D(mat4 PV, int num_points, vec3 *points) {
+    if (widget_active_widget_ID != 0 && widget_active_widget_ID != WIDGET_ID_TRANSLATE) return;
+    // please ignore; this function is jank
+    static vec3 *selected_point;
+    static vec3 *selected_handle;
+    vec3 handle_colors[] = { monokai.white, monokai.white, monokai.white };
+    double _L_handle_NDC = .1;
+    double tol = .05;
+
+    vec3 *hot = 0; {
+        for (int i = 0; i < num_points; ++i) {
+            vec3 *point = points + i;
+            if (norm(transformPoint(PV, *point).xy - V2(input._mouse_x_NDC, input._mouse_y_NDC)) < tol) {
+                hot = point;
+            }
+        }
+    }
+
+    static bool STILL_HOLDING_MOUSE_AFTER_SELECTING_POINT;
+    if (!input.mouse_left_held) STILL_HOLDING_MOUSE_AFTER_SELECTING_POINT = false;
+    if (hot && input.mouse_left_pressed) {
+        STILL_HOLDING_MOUSE_AFTER_SELECTING_POINT = true;
+        selected_point = (selected_point != hot) ? hot : 0;
+    }
+
+    if (hot) {
+        basic_draw(POINTS, PV, 1, hot, !selected_point ? monokai.white : monokai.white, 10, true);
+    }
+
+    if (selected_point) {
+        double L_handle = norm(*selected_point - transformPoint(inverse(PV), transformPoint(PV, *selected_point) + V3(_L_handle_NDC, 0, 0)));
+
+        vec3 *hot_handle = 0;
+        vec3 handles[3] = { *selected_point + V3(L_handle, 0, 0), *selected_point + V3(0, L_handle, 0), *selected_point + V3(0, 0, L_handle) };
+        vec3 vertex_positions[] = { *selected_point, handles[0], *selected_point, handles[1], *selected_point, handles[2] };
+        vec3 vertex_colors[] = { handle_colors[0], handle_colors[0], handle_colors[1], handle_colors[1], handle_colors[2], handle_colors[2] };
+        basic_draw(LINES, PV, 6, vertex_positions, vertex_colors, 0);
+        if (!STILL_HOLDING_MOUSE_AFTER_SELECTING_POINT) {
+            for (int d = 0; d < 3; ++d) {
+                if (norm(transformPoint(PV, handles[d]).xy - V2(input._mouse_x_NDC, input._mouse_y_NDC)) < tol) {
+                    hot_handle = handles + d;
+                }
+            }
+        }
+        if (!selected_handle) {
+            if (hot_handle) {
+                basic_draw(POINTS, PV, 1, hot_handle, monokai.white, 6, true);
+                if (input.mouse_left_pressed) {
+                    selected_handle = hot_handle;
+                }
+            }
+        } else {
+            basic_draw(POINTS, PV, 1, selected_handle, monokai.white, 10, true);
+        }
+        if (input.mouse_left_held && selected_handle) {
+            mat4 World_from_NDC = inverse(PV);
+            vec3 s = transformPoint(World_from_NDC, V3(V2(input._mouse_x_NDC, input._mouse_y_NDC).x, V2(input._mouse_x_NDC, input._mouse_y_NDC).y, -1));
+            vec3 t = transformPoint(World_from_NDC, V3(V2(input._mouse_x_NDC, input._mouse_y_NDC).x, V2(input._mouse_x_NDC, input._mouse_y_NDC).y, 1));
+            vec3 new_handle_position;
+            line_line_closest_points(*selected_point, *selected_handle, s, t, &new_handle_position, 0);
+            *selected_point += new_handle_position - *selected_handle;
+
+            {
+                vec3 tmp = 16 * normalized(new_handle_position - *selected_point);
+                vec3 tmp2[2] = { *selected_point - tmp, *selected_point + tmp };
+                basic_draw(LINE_STRIP, PV, 2, tmp2, handle_colors[int(selected_handle - handles)], 2);
+            }
+            widget_active_widget_ID = WIDGET_ID_TRANSLATE;
+        } else if (input.mouse_left_released) {
+            selected_handle = 0;
+            widget_active_widget_ID = 0;
+        }
     }
 }

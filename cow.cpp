@@ -39,6 +39,7 @@ void xplat_run_to_line() { // debugger entry point
 bool initialized;
 GLFWwindow *window;
 double _macbook_retina_scale; // D:
+int widget_active_widget_ID; // fornow
 
 
 struct {
@@ -719,6 +720,13 @@ void window_get_NDC_from_Screen(double *A) {
     _4x4(A, 2, 2) = 1;
     _4x4(A, 3, 3) = 1;
 }
+#ifdef SNAIL_WAS_INCLUDED
+vec2 window_get_dimensions_in_pixels() {
+    int W, H;
+    window_get_dimensions_in_pixels(&W, &H);
+    return V2(W, H);
+}
+#endif
 
 
 
@@ -1028,6 +1036,7 @@ void camera_move(Camera2D *camera, bool disable_pan = false, bool disable_zoom =
 }
 void camera_move(Camera3D *camera, bool disable_pan = false, bool disable_zoom = false, bool disable_rotate = false) {
     disable_rotate |= (imgui.selected_widget_ID != NULL); // fornow
+    disable_rotate |= (widget_active_widget_ID != 0); // fornow
     { // 2D transforms
         Camera2D tmp = { camera_get_screen_height_World(camera), camera->_o_x, camera->_o_y };
         camera_move(&tmp, disable_pan, disable_zoom);
@@ -1045,6 +1054,7 @@ void camera_move(Camera3D *camera, bool disable_pan = false, bool disable_zoom =
 #ifdef SNAIL_WAS_INCLUDED
 mat4 camera_get_PV(Camera2D *camera) { mat4 ret; camera_get_PV(camera, ret.data); return ret; }
 OrthogonalCoordinateSystem3D camera_get_coordinate_system(Camera3D *camera) {  mat4 C; vec3 x, y, z, o; mat4 R; camera_get_coordinate_system(camera, C.data, x.data, y.data, z.data, o.data, R.data); return { C, x, y, z, o, R }; }
+vec3 camera_get_origin(Camera3D *camera) {  vec3 o; camera_get_coordinate_system(camera, NULL, NULL, NULL, NULL, o.data, NULL); return o; }
 mat4 camera_get_P(Camera3D *camera) { mat4 ret; camera_get_P(camera, ret.data); return ret; }
 mat4 camera_get_V(Camera3D *camera) { mat4 ret; camera_get_V(camera, ret.data); return ret; }
 mat4 camera_get_C(Camera3D *camera) { mat4 ret; camera_get_coordinate_system(camera, ret.data); return ret; }
@@ -1111,6 +1121,14 @@ void shader_set_uniform_int(int ID, char *name, int value) {
 void shader_set_uniform_bool(int ID, char *name, bool value) {
     glUniform1ui(shader_get_uniform_location(ID, name), value);
 }
+void shader_set_uniform_vec2(int ID, char *name, double *value) {
+    ASSERT(value);
+    glUniform2f(shader_get_uniform_location(ID, name), (float) value[0], (float) value[1]);
+}
+void shader_set_uniform_vec3(int ID, char *name, double *value) {
+    ASSERT(value);
+    glUniform3f(shader_get_uniform_location(ID, name), (float) value[0], (float) value[1], (float) value[2]);
+}
 void shader_set_uniform_vec4(int ID, char *name, double *value) {
     ASSERT(value);
     glUniform4f(shader_get_uniform_location(ID, name), (float) value[0], (float) value[1], (float) value[2], (float) value[3]);
@@ -1123,8 +1141,23 @@ void shader_set_uniform_mat4(int ID, char *name, double *value) {
     glUniformMatrix4fv(shader_get_uniform_location(ID, name), 1, GL_TRUE, as_floats);
 }
 #ifdef SNAIL_WAS_INCLUDED
-void shader_set_uniform_mat4(int ID, char *name, vec4 value) { shader_set_uniform_vec4(ID, name, value.data); }
-void shader_set_uniform_vec4(int ID, char *name, mat4 value) { shader_set_uniform_mat4(ID, name, value.data); }
+void shader_set_uniform_vec2(int ID, char *name, vec2 value) { shader_set_uniform_vec2(ID, name, value.data); }
+void shader_set_uniform_vec3(int ID, char *name, vec3 value) { shader_set_uniform_vec3(ID, name, value.data); }
+void shader_set_uniform_vec4(int ID, char *name, vec4 value) { shader_set_uniform_vec4(ID, name, value.data); }
+void shader_set_uniform_mat4(int ID, char *name, mat4 value) { shader_set_uniform_mat4(ID, name, value.data); }
+
+// fornow
+void shader_set_uniform_array_vec3(int ID, char *name, int count, vec3 *value) {
+    ASSERT(value);
+    float *tmp = (float *) malloc(count * 3 * sizeof(float)); 
+    for (int i = 0; i < count; ++i) {
+        for (int d = 0; d < 3; ++d) { 
+            tmp[3 * i + d] = (float) value[i][d];
+        }
+    }
+    glUniform3fv(shader_get_uniform_location(ID, name), count, tmp);
+    free(tmp);
+}
 #endif
 
 
@@ -1710,7 +1743,7 @@ void fancy_draw(mat4 P, mat4 V, mat4 M, FancyTriangleMesh3D mesh, vec3 fallback_
 #define WIDGET_ID_IMGUI 1
 #define WIDGET_ID_ANNOTATE 2
 #define WIDGET_ID_DRAG 3
-int widget_active_widget_ID;
+#define WIDGET_ID_TRANSLATE 4
 
 void widget_drag(double *PV, int num_vertices, double *vertex_positions, double size_in_pixels = 0, double r = 1, double g = 1, double b = 1, double a = 1) {
     if (widget_active_widget_ID != 0 && widget_active_widget_ID != WIDGET_ID_DRAG) return;
@@ -2232,7 +2265,17 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
 
     if (initialized) {
         if (window_title) window_set_title(window_title);
-        memset(&input, 0, sizeof(input));
+        {
+            double _mouse_x_Screen = input._mouse_x_Screen;
+            double _mouse_y_Screen = input._mouse_y_Screen;
+            double _mouse_x_NDC = input._mouse_x_NDC;
+            double _mouse_y_NDC = input._mouse_y_NDC;
+            memset(&input, 0, sizeof(input));
+            input._mouse_x_Screen = _mouse_x_Screen;
+            input._mouse_y_Screen = _mouse_y_Screen;
+            input._mouse_x_NDC = _mouse_x_NDC;
+            input._mouse_y_NDC = _mouse_y_NDC;
+        }
         widget_active_widget_ID = 0;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         fancy.num_textures = 0;
