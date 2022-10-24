@@ -218,7 +218,7 @@ void hw7c() {
         uniform mat4 P, V, M;
         uniform float time;
 
-        uniform bool debug_draw_bad_normal_transform;
+        uniform bool draw_bad_normal_transform;
 
         out vec3 p_world;
         out vec3 _n_world;
@@ -228,7 +228,7 @@ void hw7c() {
             //      i have it the way it is for clarity :)  
             p_world = (M * vec4(_p_model, 1)).xyz;
             _n_world = (transpose(inverse(M)) * vec4(_n_model, 0)).xyz; // correct normal transform
-            if (debug_draw_bad_normal_transform) { _n_world = (M * vec4(_n_model, 0)).xyz; } // _incorrect_ normal transform
+            if (draw_bad_normal_transform) { _n_world = (M * vec4(_n_model, 0)).xyz; } // _incorrect_ normal transform
             gl_Position = P * V * vec4(p_world, 1);
         }
     )"""";
@@ -237,7 +237,7 @@ void hw7c() {
 
         out vec4 fragColor;
 
-        uniform bool debug_draw_color_by_normal;
+        uniform bool draw_color_by_normal;
 
         in vec3 p_world;
         in vec3 _n_world;
@@ -253,7 +253,7 @@ void hw7c() {
             vec3 n_world = normalize(_n_world); // question: why do we need to normalize?
 
             vec3 col;
-            if (debug_draw_color_by_normal) {
+            if (draw_color_by_normal) {
                 col = .5 + .5 * n_world;
             } else {
                 col = vec3(.1); // ambient light approximation
@@ -298,8 +298,8 @@ void hw7c() {
     Camera3D camera = { 10, RAD(45) };
     double time = 0;
     bool playing = false;
-    bool debug_draw_color_by_normal = false;
-    bool debug_draw_bad_normal_transform = false;
+    bool draw_color_by_normal = false;
+    bool draw_bad_normal_transform = false;
 
     // fornow
     srand(0);
@@ -313,8 +313,8 @@ void hw7c() {
         { // imgui and widgets
             imgui_slider("mesh_index", &mesh_index, 0, NELEMS(meshes) - 1, 'h', 'l', true);
             imgui_slider("num_lights", &num_lights, 0, MAX_NUM_LIGHTS, 'j', 'k');
-            imgui_checkbox("debug_draw_color_by_normal", &debug_draw_color_by_normal, 'z');
-            imgui_checkbox("debug_draw_bad_normal_transform", &debug_draw_bad_normal_transform, 'x');
+            imgui_checkbox("draw_color_by_normal", &draw_color_by_normal, 'z');
+            imgui_checkbox("draw_bad_normal_transform", &draw_bad_normal_transform, 'x');
             imgui_checkbox("draw_light_positions", &draw_light_positions, 'c');
             imgui_checkbox("playing", &playing, 'p');
             if (imgui_button("reset", 'r')) {
@@ -355,8 +355,8 @@ void hw7c() {
             shader_set_uniform_int(shader_program, "num_lights", num_lights);
             shader_set_uniform_array_vec3(shader_program, "light_positions", num_lights, light_positions);
             shader_set_uniform_array_vec3(shader_program, "light_colors", num_lights, light_colors);
-            shader_set_uniform_bool(shader_program, "debug_draw_color_by_normal", debug_draw_color_by_normal);
-            shader_set_uniform_bool(shader_program, "debug_draw_bad_normal_transform", debug_draw_bad_normal_transform);
+            shader_set_uniform_bool(shader_program, "draw_color_by_normal", draw_color_by_normal);
+            shader_set_uniform_bool(shader_program, "draw_bad_normal_transform", draw_bad_normal_transform);
 
             glDrawElements(GL_TRIANGLES, 3 * mesh->num_triangles, GL_UNSIGNED_INT, NULL);
         }
