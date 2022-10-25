@@ -1081,6 +1081,22 @@ int shader_compile(char *source, GLenum type) {
     }
     return shader;
 };
+int _shader_load_from_file_and_compile(char *filename, GLenum type) {
+    FILE *fp = fopen(filename, "r");
+    ASSERT(fp);
+    fseek(fp, 0L, SEEK_END);
+    long lSize = ftell(fp);
+    rewind(fp);
+    char *buffer = (char *) calloc(1, lSize+1);
+    fread(buffer, lSize, 1, fp);
+
+    int ret = shader_compile(buffer, type);
+
+    fclose(fp);
+    free(buffer);
+
+    return ret;
+}
 int shader_build_program(int vertex_shader, int fragment_shader, int geometry_shader = 0) {
     int shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex_shader);
