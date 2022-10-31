@@ -1,0 +1,18 @@
+*.exe
+*.pdb
+*.exp
+*.ilk
+*.dSYM
+*.DS_Store
+*.swp
+.vs/*
+ignore/*
+vcvars.bat
+work.bat
+scrap.cpp
+run.bat
+debug.bat
+baregrep.exe - Shortcut.lnk
+aggropush.bat
+git_delete_history.bat
+hw.obj

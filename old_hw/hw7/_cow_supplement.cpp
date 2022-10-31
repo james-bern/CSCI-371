@@ -203,7 +203,7 @@ void jank_widget_translate3D(mat4 PV, int num_points, vec3 *points) {
     static vec3 *selected_handle;
     vec3 handle_colors[] = { monokai.white, monokai.white, monokai.white };
     double _L_handle_NDC = .1;
-    double tol = .02;
+    double tol = .05;
 
     vec3 *hot = 0; {
         for (int i = 0; i < num_points; ++i) {
@@ -242,7 +242,7 @@ void jank_widget_translate3D(mat4 PV, int num_points, vec3 *points) {
         }
         if (!selected_handle) {
             if (hot_handle) {
-                basic_draw(POINTS, PV, 1, hot_handle, monokai.white, 8, true);
+                basic_draw(POINTS, PV, 1, hot_handle, monokai.white, 6, true);
                 if (input.mouse_left_pressed) {
                     selected_handle = hot_handle;
                 }

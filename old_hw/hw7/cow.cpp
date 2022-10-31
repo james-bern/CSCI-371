@@ -324,7 +324,6 @@ struct {
     void *selected_widget_ID;
     void *hot_widget_ID;
     double _dx_accumulator;
-    bool no_draw_override;
 } imgui;
 
 struct {
@@ -1885,15 +1884,13 @@ void imgui_begin_frame() {
     imgui.y_curr = 48;
 }
 void _imgui_printf(const char *format, ...) {
-    if (!imgui.no_draw_override) {
-        static char text[256] = {};
-        va_list arg;
-        va_start(arg, format);
-        vsnprintf(text, sizeof(text), format, arg);
-        va_end(arg);
-        basic_text(NULL, text, imgui.x_curr, imgui.y_curr);
-        imgui.y_curr += 28;
-    }
+    static char text[256] = {};
+    va_list arg;
+    va_start(arg, format);
+    vsnprintf(text, sizeof(text), format, arg);
+    va_end(arg);
+    basic_text(NULL, text, imgui.x_curr, imgui.y_curr);
+    imgui.y_curr += 28;
 }
 bool imgui_button(char *t, int shortcut_key = 0) {
     double PV[16] = {};
@@ -1939,10 +1936,8 @@ bool imgui_button(char *t, int shortcut_key = 0) {
         r += nudge; 
         if (hot || input.key_held[shortcut_key]) r += nudge; 
     }
-    if (!imgui.no_draw_override) {
-        basic_draw(QUADS, PV, XY, RGB, 4, box, NULL, r, r, r, 1, 0, true);
-        basic_draw(LINE_LOOP, PV, XY, RGB, 4, box, NULL, 1, 1, 1, 1, 4, true);
-    }
+    basic_draw(QUADS, PV, XY, RGB, 4, box, NULL, r, r, r, 1, 0, true);
+    basic_draw(LINE_LOOP, PV, XY, RGB, 4, box, NULL, 1, 1, 1, 1, 4, true);
     imgui.x_curr += 8;
     imgui.y_curr += 4;
     _imgui_printf(text);
@@ -1981,10 +1976,8 @@ void imgui_checkbox(char *name, bool *t, int shortcut_key = 0) {
         r += nudge; 
         if (hot || input.key_held[shortcut_key]) r += nudge; 
     }
-    if (!imgui.no_draw_override) {
-        basic_draw(QUADS, PV, XY, RGB, 4, box, NULL, r, r, r, 1, 0, true);
-        basic_draw(LINE_LOOP, PV, XY, RGB, 4, box, NULL, 1, 1, 1, 1, 4, true);
-    }
+    basic_draw(QUADS, PV, XY, RGB, 4, box, NULL, r, r, r, 1, 0, true);
+    basic_draw(LINE_LOOP, PV, XY, RGB, 4, box, NULL, 1, 1, 1, 1, 4, true);
     imgui.x_curr += 2 * L;
     if (shortcut_key) {
         if (shortcut_key != KEY_TAB) {
@@ -2066,11 +2059,9 @@ void _imgui_slider(char *text, void *t, bool is_int, double *t_copy, double a, d
             imgui.selected_widget_ID = 0;
         }
     }
-    if (!imgui.no_draw_override) {
-        basic_draw(LINES, PV, XY, RGB, 2, band, NULL, .6, .6, .6, 1, 6, true);
-        double r = (imgui.selected_widget_ID == t) ? 1 : (imgui.hot_widget_ID == t) ? .9 : .8;
-        basic_draw(POINTS, PV, XY, RGB, 1, s_dot, NULL, r, r, r, 1, (imgui.hot_widget_ID == t && imgui.selected_widget_ID != t) ? 12 : 10, true);
-    }
+    basic_draw(LINES, PV, XY, RGB, 2, band, NULL, .6, .6, .6, 1, 6, true);
+    double r = (imgui.selected_widget_ID == t) ? 1 : (imgui.hot_widget_ID == t) ? .9 : .8;
+    basic_draw(POINTS, PV, XY, RGB, 1, s_dot, NULL, r, r, r, 1, (imgui.hot_widget_ID == t && imgui.selected_widget_ID != t) ? 12 : 10, true);
     imgui.y_curr -= 8;
     imgui.x_curr += w + 16;
     if (is_int) {
@@ -2219,11 +2210,7 @@ void poll_input() {
 }
 void swap_draw_buffers() {
     ASSERT(initialized);
-    #ifndef COW_SINGLE_BUFFER
     glfwSwapBuffers(window);
-    #else
-    glFlush();
-    #endif
 }
 void clear_draw_buffer(double r, double g, double b, double a) {
     ASSERT(initialized);
@@ -2264,11 +2251,6 @@ bool begin_frame(double r = 0, double g = 0, double b = 0, double a = 0) {
             char text[256] = {};
             snprintf(text, sizeof(text), "fps: %d", display_fps);
             basic_text(NULL, text, 0, 0, 0, (display_fps < 45) ? 1 : 0, (display_fps > 30) ? 1 : 0, 0);
-        }
-    }
-    { // imgui
-        if (input.key_pressed['-']) {
-            imgui.no_draw_override = !imgui.no_draw_override;
         }
     }
     return !(input.key_pressed['Q'] || glfwWindowShouldClose(window));
@@ -2335,9 +2317,6 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         if (transparent_framebuffer) glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
-        #ifdef COW_SINGLE_BUFFER
-        glfwWindowHint( GLFW_DOUBLEBUFFER,GL_FALSE );
-        #endif
 
         // glfwWindowHint(GLFW_SAMPLES, 4); // multisampling
 

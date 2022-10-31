@@ -33,7 +33,6 @@
     #define AVG(a, b) (.5 * (a) + .5 * (b))
 
     #define CLAMP(t, a, b) MIN(MAX(t, a), b)
-    #define MAG_CLAMP(t, a) CLAMP(t, -a, a);
     #define WRAP(t, a, b) ((a) + fmod((t) - (a), (b) - (a)))
     #define LERP(t, a, b) ((1 - (t)) * (a) + (t) * (b))
     #define COS_LERP(t, a, b) LERP(.5 - .5 * cos((t)*PI), a, b)
