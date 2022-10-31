@@ -228,8 +228,10 @@ void hw8a() {
                                 }
 
                                 // TODO intersect with the scene
-                                // if (...) {
-                                //     hw8a_set_pixel(i, j, color);
+                                // for (...) {
+                                //     if (...) {
+                                //         hw8a_set_pixel(i, j, color);
+                                //     }
                                 // }
                             }
                         }
