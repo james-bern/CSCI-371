@@ -1,5 +1,3 @@
-⚠ <b>now serving hw6</b> ⚠
-
 <b>if you are ready to start this week's hw...</b>
 - rename the CSCI-371 folder on your Desktop to something else
 - repeat the cloning instructions below to get a new CSCI-371 folder with the files and docs for this week's hw 🙂🤙
