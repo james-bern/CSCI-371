@@ -281,7 +281,7 @@ void hw8b() {
 
     // shaders
     char *vert = R""""(
-            #version 330 core
+        #version 330 core
         layout (location = 0) in vec3 _p_model;
         void main() {
             gl_Position = vec4(_p_model, 1);
@@ -345,7 +345,6 @@ void hw8b() {
             float t = 0.0;
             int step = 0;
             while (step++ < MAX_STEPS && t < MAX_MARCH_DISTANCE) {
-
                 // get current position of ray's head
                 vec3 p = o + t * dir;
 
@@ -359,110 +358,110 @@ void hw8b() {
                     }
                     {
                         // f = min(f, sdTorus(p - vec3(0.0, 1.0 * sin(time), 0.0), vec2(1.0, 0.25)));
-    vec3 torus_position = vec3(0.0, sin(time), 0.0);
-    float torus_major_radius = 1.0;
-    float torus_minor_radius = 0.25;
-    vec2 torus_radii = vec2(torus_major_radius, torus_minor_radius);
-    float distance_to_torus = sdTorus(p - torus_position, torus_radii);
-    f = min(f, distance_to_torus);
-}
-}
+                        vec3 torus_position = vec3(0.0, sin(time), 0.0);
+                        float torus_major_radius = 1.0;
+                        float torus_minor_radius = 0.25;
+                        vec2 torus_radii = vec2(torus_major_radius, torus_minor_radius);
+                        float distance_to_torus = sdTorus(p - torus_position, torus_radii);
+                        f = min(f, distance_to_torus);
+                    }
+                }
 
-if (f < HIT_TOLERANCE) { // hit!
-    return plasma(.5 + .5 * cos(t));
-}
+                if (f < HIT_TOLERANCE) { // hit!
+                    return plasma(.5 + .5 * cos(t));
+                }
 
-// NOTE if you're getting weird "overstepping" artifacts
-// (weird missing slices in the geometry)               
-// a (hacky) solution is to replace t += f; with e.g.   
-// t += min(f, .5);
-t += f;
-}
-return vec3(0.0);
-}
-
-void main() {
-    vec3 o = o_renderer;
-    vec3 dir; {
-        // NOTE assume unit distance to film plane
-        vec2 ds; { // [-R, R]
-            float theta = renderer_angle_of_view / 2;
-            float _R = tan(theta);
-            ds = gl_FragCoord.xy;
-            ds -= vec2(iResolution.x / 2, iResolution.y / 2);
-            ds *= _R * 2. / iResolution.y;
-        }
-        // vec3 p_world = o_renderer - z_renderer + dx * x_renderer + dy * y_renderer;
-        // dir = p_world - o_renderer;
-        dir = -z_renderer + ds.x * x_renderer + ds.y * y_renderer;
-    }
-    vec3 col = march(o, dir);
-    fragColor = vec4(col, 1);
-}
-)"""";
-int shader_program = shader_build_program(vert, frag);
-ASSERT(shader_program);
-
-// misc opengl
-GLuint VAO, VBO, EBO; {
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-}
-
-// misc cow
-bool playing = false;
-double time = 0;
-Camera3D renderer = { 8, RAD(45) };
-
-while (begin_frame()) {
-    camera_move(&renderer);
-
-    { // imgui
-        { // reset
-            static Camera3D _camera_0 = renderer;
-            if (imgui_button("reset", 'r')) {
-                renderer = _camera_0;
-                time = 0;
+                // NOTE if you're getting weird "overstepping" artifacts
+                // (weird missing slices in the geometry)               
+                // a (hacky) solution is to replace t += f; with e.g.   
+                // t += min(f, .5);
+                t += f;
             }
+            return vec3(0.0);
         }
-        imgui_checkbox("playing", &playing, 'p');
-    }
 
-    { // draw
-        glBindVertexArray(VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, num_vertices * 3 * sizeof(double), vertex_positions, GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
-        glEnableVertexAttribArray(0);
-
-        glUseProgram(shader_program);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * num_triangles * sizeof(int), triangle_indices, GL_DYNAMIC_DRAW);
-
-        shader_set_uniform_vec2(shader_program, "iResolution", window_get_dimensions_in_pixels());
-        {
-            shader_set_uniform_double(shader_program, "time", time);
-
-            shader_set_uniform_double(shader_program, "renderer_angle_of_view", renderer.angle_of_view);
-            vec3 x_renderer, y_renderer, z_renderer, o_renderer; {
-                camera_get_coordinate_system(&renderer, NULL, x_renderer.data, y_renderer.data, z_renderer.data, o_renderer.data);
+        void main() {
+            vec3 o = o_renderer;
+            vec3 dir; {
+                // NOTE assume unit distance to film plane
+                vec2 ds; { // [-R, R]
+                    float theta = renderer_angle_of_view / 2;
+                    float _R = tan(theta);
+                    ds = gl_FragCoord.xy;
+                    ds -= vec2(iResolution.x / 2, iResolution.y / 2);
+                    ds *= _R * 2. / iResolution.y;
+                }
+                // vec3 p_world = o_renderer - z_renderer + dx * x_renderer + dy * y_renderer;
+                // dir = p_world - o_renderer;
+                dir = -z_renderer + ds.x * x_renderer + ds.y * y_renderer;
             }
-            shader_set_uniform_vec3(shader_program, "x_renderer", x_renderer);
-            shader_set_uniform_vec3(shader_program, "y_renderer", y_renderer);
-            shader_set_uniform_vec3(shader_program, "z_renderer", z_renderer);
-            shader_set_uniform_vec3(shader_program, "o_renderer", o_renderer);
+            vec3 col = march(o, dir);
+            fragColor = vec4(col, 1);
+        }
+    )"""";
+    int shader_program = shader_build_program(vert, frag);
+    ASSERT(shader_program);
+
+    // misc opengl
+    GLuint VAO, VBO, EBO; {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+    }
+
+    // misc cow
+    bool playing = false;
+    double time = 0;
+    Camera3D renderer = { 8, RAD(45) };
+
+    while (begin_frame()) {
+        camera_move(&renderer);
+
+        { // imgui
+            { // reset
+                static Camera3D _camera_0 = renderer;
+                if (imgui_button("reset", 'r')) {
+                    renderer = _camera_0;
+                    time = 0;
+                }
+            }
+            imgui_checkbox("playing", &playing, 'p');
         }
 
+        { // draw
+            glBindVertexArray(VAO);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, num_vertices * 3 * sizeof(double), vertex_positions, GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(0);
 
-        glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
-    }
+            glUseProgram(shader_program);
 
-    if (playing || input.key_pressed['.']) {
-        time += .0167;
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * num_triangles * sizeof(int), triangle_indices, GL_DYNAMIC_DRAW);
+
+            shader_set_uniform_vec2(shader_program, "iResolution", window_get_dimensions_in_pixels());
+            {
+                shader_set_uniform_double(shader_program, "time", time);
+
+                shader_set_uniform_double(shader_program, "renderer_angle_of_view", renderer.angle_of_view);
+                vec3 x_renderer, y_renderer, z_renderer, o_renderer; {
+                    camera_get_coordinate_system(&renderer, NULL, x_renderer.data, y_renderer.data, z_renderer.data, o_renderer.data);
+                }
+                shader_set_uniform_vec3(shader_program, "x_renderer", x_renderer);
+                shader_set_uniform_vec3(shader_program, "y_renderer", y_renderer);
+                shader_set_uniform_vec3(shader_program, "z_renderer", z_renderer);
+                shader_set_uniform_vec3(shader_program, "o_renderer", o_renderer);
+            }
+
+
+            glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
+        }
+
+        if (playing || input.key_pressed['.']) {
+            time += .0167;
+        }
     }
-}
 }
 
 
