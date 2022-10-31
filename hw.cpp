@@ -220,12 +220,6 @@ void hw8a() {
 
                                 double theta = renderer.angle_of_view;
                                 vec3 dir = {}; { // TODO ray direction
-                                    // from class
-                                    // dir = V3(
-                                    //         (2. * i / (S) - 1) * tan(theta / 2),
-                                    //         (2. * j / (S) - 1) * tan(theta / 2),
-                                    //         -1
-                                    //         );
                                 }
                                 if (hw8a_tweaks.draw_rays) {
                                     gl_color(monokai.red);
