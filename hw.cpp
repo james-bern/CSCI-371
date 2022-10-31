@@ -269,6 +269,118 @@ void hw8a() {
     }
 }
 
+char *hw8b_frag = R""""(
+    #version 330 core
+
+    vec3 plasma(float t) {
+        const vec3 c0 = vec3(0.05873234392399702, 0.02333670892565664, 0.5433401826748754);
+        const vec3 c1 = vec3(2.176514634195958, 0.2383834171260182, 0.7539604599784036);
+        const vec3 c2 = vec3(-2.689460476458034, -7.455851135738909, 3.110799939717086);
+        const vec3 c3 = vec3(6.130348345893603, 42.3461881477227, -28.51885465332158);
+        const vec3 c4 = vec3(-11.10743619062271, -82.66631109428045, 60.13984767418263);
+        const vec3 c5 = vec3(10.02306557647065, 71.41361770095349, -54.07218655560067);
+        const vec3 c6 = vec3(-3.658713842777788, -22.93153465461149, 18.19190778539828);
+        return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6)))));
+    }
+
+    // https://iquilezles.org/articles/distfunctions/
+    float dot2(vec2 v) { return dot(v,v); }
+    float dot2(vec3 v) { return dot(v,v); }
+    float ndot(vec2 a, vec2 b) { return a.x*b.x - a.y*b.y; }
+
+    // for computing ray directions
+    uniform vec3 x_renderer;
+    uniform vec3 y_renderer;
+    uniform vec3 z_renderer;
+    uniform vec3 o_renderer;
+    uniform float renderer_angle_of_view;
+    uniform vec2 iResolution;
+
+    uniform float time; // for time-varying distance fields
+
+    out vec4 fragColor;
+
+    // begin https://iquilezles.org/articles/distfunctions/
+    float sdSphere(vec3 p, float r) {
+        return length(p) - r;
+    }
+    float sdTorus(vec3 p, vec2 t) {
+        vec2 q = vec2(length(p.xz)-t.x,p.y);
+        return length(q)-t.y;
+    }
+    // end
+
+    vec3 march(vec3 o, vec3 dir) {
+        // https://michaelwalczyk.com/blog-ray-marching.html
+
+        const int MAX_STEPS = 64;
+        const float HIT_TOLERANCE = 0.001;
+        const float MAX_MARCH_DISTANCE = 100.0;
+
+        // p   -- current position along ray
+        // o   -- camera origin             
+        // t   -- distance marched along ray
+        // dir -- camera direction          
+        // f   -- distance to surface       
+
+        float t = 0.0;
+        int step = 0;
+        while (step++ < MAX_STEPS && t < MAX_MARCH_DISTANCE) {
+            // get current position of ray's head
+            vec3 p = o + t * dir;
+
+            // compute distance to implicit surface
+            float f = MAX_MARCH_DISTANCE; {
+                {
+                    vec3 sphere_position = vec3(0.0, 0.0, 0.0);
+                    float sphere_radius = 1.0;
+                    float distance_to_sphere = sdSphere(p - sphere_position, sphere_radius);
+                    f = min(f, distance_to_sphere);
+                }
+                {
+                    // f = min(f, sdTorus(p - vec3(0.0, 1.0 * sin(time), 0.0), vec2(1.0, 0.25)));
+                    vec3 torus_position = vec3(0.0, sin(time), 0.0);
+                    float torus_major_radius = 1.0;
+                    float torus_minor_radius = 0.25;
+                    vec2 torus_radii = vec2(torus_major_radius, torus_minor_radius);
+                    float distance_to_torus = sdTorus(p - torus_position, torus_radii);
+                    f = min(f, distance_to_torus);
+                }
+            }
+
+            if (f < HIT_TOLERANCE) { // hit!
+                return plasma(.5 + .5 * cos(t));
+            }
+
+            // NOTE if you're getting weird "overstepping" artifacts
+            // (weird missing slices in the geometry)               
+            // a (hacky) solution is to replace t += f; with e.g.   
+            // t += min(f, .5);
+            t += f;
+        }
+        return vec3(0.0);
+    }
+
+    void main() {
+        vec3 o = o_renderer;
+        vec3 dir; {
+            // NOTE assume unit distance to film plane
+            vec2 ds; { // [-R, R]
+                float theta = renderer_angle_of_view / 2;
+                float _R = tan(theta);
+                ds = gl_FragCoord.xy;
+                ds -= vec2(iResolution.x / 2, iResolution.y / 2);
+                ds *= _R * 2. / iResolution.y;
+            }
+            // vec3 p_world = o_renderer - z_renderer + dx * x_renderer + dy * y_renderer;
+            // dir = p_world - o_renderer;
+            dir = -z_renderer + ds.x * x_renderer + ds.y * y_renderer;
+        }
+        vec3 col = march(o, dir);
+        fragColor = vec4(col, 1);
+    }
+)"""";
+
 void hw8b() {
     init();
 
@@ -287,118 +399,7 @@ void hw8b() {
         }
     )"""";
 
-    char *frag = R""""(
-        #version 330 core
-
-        vec3 plasma(float t) {
-            const vec3 c0 = vec3(0.05873234392399702, 0.02333670892565664, 0.5433401826748754);
-            const vec3 c1 = vec3(2.176514634195958, 0.2383834171260182, 0.7539604599784036);
-            const vec3 c2 = vec3(-2.689460476458034, -7.455851135738909, 3.110799939717086);
-            const vec3 c3 = vec3(6.130348345893603, 42.3461881477227, -28.51885465332158);
-            const vec3 c4 = vec3(-11.10743619062271, -82.66631109428045, 60.13984767418263);
-            const vec3 c5 = vec3(10.02306557647065, 71.41361770095349, -54.07218655560067);
-            const vec3 c6 = vec3(-3.658713842777788, -22.93153465461149, 18.19190778539828);
-            return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6)))));
-        }
-
-        // https://iquilezles.org/articles/distfunctions/
-        float dot2(vec2 v) { return dot(v,v); }
-        float dot2(vec3 v) { return dot(v,v); }
-        float ndot(vec2 a, vec2 b) { return a.x*b.x - a.y*b.y; }
-
-        // for computing ray directions
-        uniform vec3 x_renderer;
-        uniform vec3 y_renderer;
-        uniform vec3 z_renderer;
-        uniform vec3 o_renderer;
-        uniform float renderer_angle_of_view;
-        uniform vec2 iResolution;
-
-        uniform float time; // for time-varying distance fields
-
-        out vec4 fragColor;
-
-        // begin https://iquilezles.org/articles/distfunctions/
-        float sdSphere(vec3 p, float r) {
-            return length(p) - r;
-        }
-        float sdTorus(vec3 p, vec2 t) {
-            vec2 q = vec2(length(p.xz)-t.x,p.y);
-            return length(q)-t.y;
-        }
-        // end
-
-        vec3 march(vec3 o, vec3 dir) {
-            // https://michaelwalczyk.com/blog-ray-marching.html
-
-            const int MAX_STEPS = 64;
-            const float HIT_TOLERANCE = 0.001;
-            const float MAX_MARCH_DISTANCE = 100.0;
-
-            // p   -- current position along ray
-            // o   -- camera origin             
-            // t   -- distance marched along ray
-            // dir -- camera direction          
-            // f   -- distance to surface       
-
-            float t = 0.0;
-            int step = 0;
-            while (step++ < MAX_STEPS && t < MAX_MARCH_DISTANCE) {
-                // get current position of ray's head
-                vec3 p = o + t * dir;
-
-                // compute distance to implicit surface
-                float f = MAX_MARCH_DISTANCE; {
-                    {
-                        vec3 sphere_position = vec3(0.0, 0.0, 0.0);
-                        float sphere_radius = 1.0;
-                        float distance_to_sphere = sdSphere(p - sphere_position, sphere_radius);
-                        f = min(f, distance_to_sphere);
-                    }
-                    {
-                        // f = min(f, sdTorus(p - vec3(0.0, 1.0 * sin(time), 0.0), vec2(1.0, 0.25)));
-                        vec3 torus_position = vec3(0.0, sin(time), 0.0);
-                        float torus_major_radius = 1.0;
-                        float torus_minor_radius = 0.25;
-                        vec2 torus_radii = vec2(torus_major_radius, torus_minor_radius);
-                        float distance_to_torus = sdTorus(p - torus_position, torus_radii);
-                        f = min(f, distance_to_torus);
-                    }
-                }
-
-                if (f < HIT_TOLERANCE) { // hit!
-                    return plasma(.5 + .5 * cos(t));
-                }
-
-                // NOTE if you're getting weird "overstepping" artifacts
-                // (weird missing slices in the geometry)               
-                // a (hacky) solution is to replace t += f; with e.g.   
-                // t += min(f, .5);
-                t += f;
-            }
-            return vec3(0.0);
-        }
-
-        void main() {
-            vec3 o = o_renderer;
-            vec3 dir; {
-                // NOTE assume unit distance to film plane
-                vec2 ds; { // [-R, R]
-                    float theta = renderer_angle_of_view / 2;
-                    float _R = tan(theta);
-                    ds = gl_FragCoord.xy;
-                    ds -= vec2(iResolution.x / 2, iResolution.y / 2);
-                    ds *= _R * 2. / iResolution.y;
-                }
-                // vec3 p_world = o_renderer - z_renderer + dx * x_renderer + dy * y_renderer;
-                // dir = p_world - o_renderer;
-                dir = -z_renderer + ds.x * x_renderer + ds.y * y_renderer;
-            }
-            vec3 col = march(o, dir);
-            fragColor = vec4(col, 1);
-        }
-    )"""";
-    int shader_program = shader_build_program(vert, frag);
+    int shader_program = shader_build_program(vert, hw8b_frag);
     ASSERT(shader_program);
 
     // misc opengl
