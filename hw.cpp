@@ -219,8 +219,7 @@ void hw8a() {
                             for (int j = 0; j < S; ++j) {
 
                                 double theta = renderer.angle_of_view;
-                                vec3 dir = {}; { // TODO ray direction
-                                }
+                                vec3 dir = V3(i - double(S) / 2, j - double(S) / 2, -(double(S) / 2) / tan(theta / 2));
                                 if (hw8a_tweaks.draw_rays) {
                                     gl_color(monokai.red);
                                     gl_vertex(o_renderer);
