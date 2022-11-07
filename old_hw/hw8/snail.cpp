@@ -540,9 +540,6 @@ template <int T> SnailVec<T> cwiseProduct(SnailVec<T> a, SnailVec<T> b) {
 SnailVec<2> e_theta(double theta) {
     return { cos(theta), sin(theta) };
 }
-inline SnailVec<2> rotated(SnailVec<2> a, double theta) {
-    return { cos(theta) * a.x - sin(theta) * a.y, sin(theta) * a.x + cos(theta) * a.y };
-}
 mat2 R_theta_2x2(double theta) {
     return { cos(theta), -sin(theta), sin(theta), cos(theta) };
 }

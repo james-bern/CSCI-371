@@ -1762,8 +1762,8 @@ void fancy_draw(mat4 P, mat4 V, mat4 M, FancyTriangleMesh3D mesh, vec3 fallback_
 #define WIDGET_ID_DRAG 3
 #define WIDGET_ID_TRANSLATE 4
 
-bool widget_drag(double *PV, int num_vertices, double *vertex_positions, double size_in_pixels = 0, double r = 1, double g = 1, double b = 1, double a = 1) {
-    if (widget_active_widget_ID != 0 && widget_active_widget_ID != WIDGET_ID_DRAG) return false;
+void widget_drag(double *PV, int num_vertices, double *vertex_positions, double size_in_pixels = 0, double r = 1, double g = 1, double b = 1, double a = 1) {
+    if (widget_active_widget_ID != 0 && widget_active_widget_ID != WIDGET_ID_DRAG) return;
     static double *selected;
     if (selected) { // fornow: allows multiple calls to this function between begin_frame
         bool found = false;
@@ -1773,7 +1773,7 @@ bool widget_drag(double *PV, int num_vertices, double *vertex_positions, double 
                 break;
             }
         }
-        if (!found) return false;
+        if (!found) return;
     }
     double *hot = selected;
     if (!selected) {
@@ -1808,10 +1808,9 @@ bool widget_drag(double *PV, int num_vertices, double *vertex_positions, double 
     }
 
     widget_active_widget_ID = (hot || selected) ? WIDGET_ID_DRAG : 0;
-    return selected;
 }
 #ifdef SNAIL_WAS_INCLUDED
-template<int D_color = 3> bool widget_drag(mat4 PV, int num_vertices, vec2 *vertex_positions, double size_in_pixels = 0, SnailVec<D_color> color = V3(1, 1, 1)) {
+template<int D_color = 3> void widget_drag(mat4 PV, int num_vertices, vec2 *vertex_positions, double size_in_pixels = 0, SnailVec<D_color> color = V3(1, 1, 1)) {
     STATIC_ASSERT(D_color == 3 || D_color == 4);
     return widget_drag(PV.data, num_vertices, (double *) vertex_positions, size_in_pixels, color.r, color.g, color.b, D_color == 4 ? color[3] : 1);
 }
@@ -2124,16 +2123,6 @@ vec3 color_rainbow_swirl(double t) {
     return { Q(0), Q(.33), Q(-.33) };
     #undef Q
 }
-vec3 color_plasma(double t) {
-    const vec3 c0 = V3(0.05873234392399702, 0.02333670892565664, 0.5433401826748754);
-    const vec3 c1 = V3(2.176514634195958, 0.2383834171260182, 0.7539604599784036);
-    const vec3 c2 = V3(-2.689460476458034, -7.455851135738909, 3.110799939717086);
-    const vec3 c3 = V3(6.130348345893603, 42.3461881477227, -28.51885465332158);
-    const vec3 c4 = V3(-11.10743619062271, -82.66631109428045, 60.13984767418263);
-    const vec3 c5 = V3(10.02306557647065, 71.41361770095349, -54.07218655560067);
-    const vec3 c6 = V3(-3.658713842777788, -22.93153465461149, 18.19190778539828);
-    return c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6)))));
-}
 #endif
 
 
@@ -2418,6 +2407,8 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
     }
 
 }
+
+
 
 
 
