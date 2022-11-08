@@ -204,17 +204,11 @@ void hw9b() {
     vec2 bone_rest_positions[NUM_BONES + 1] = {};
     double skeleton_total_length = 0;
     {
-        for_(bone_i, NUM_BONES) {
+        for (int bone_i = 0; bone_i < NUM_BONES; ++bone_i) {
             bone_lengths[bone_i] = LERP(double(bone_i) / MAX(1, NUM_BONES - 1), 2.5, 1);
+            bone_rest_positions[bone_i + 1] = bone_rest_positions[bone_i] + V2(bone_lengths[bone_i], 0);
         }
-        for (int bone_i = 1; bone_i < NUM_BONES + 1; ++bone_i) {
-            bone_rest_positions[bone_i] = bone_rest_positions[bone_i - 1] + V2(bone_lengths[bone_i - 1], 0);
-        }
-        {
-            for_(bone_i, NUM_BONES) {
-                skeleton_total_length += bone_lengths[bone_i];
-            }
-        }
+        skeleton_total_length = bone_rest_positions[NUM_BONES].x;
     }
 
     enum Mode {
