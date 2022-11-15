@@ -3,7 +3,7 @@
 #include "cow.cpp"
 #include "_cow_supplement.cpp"
 #include "jim.cpp"
-// #define EIGEN_LINEAR_SOLVER // TODO Thursday
+// #define EIGEN_LINEAR_SOLVER // will discuss Thursday
 #include "_cow_optimization.cpp"
 
 struct {
@@ -440,7 +440,7 @@ Simulation build_beam(int num_rows, int num_cols) {
     }
     { // springs
         StretchyBuffer<int2> _springs = {};
-        { // TODO sbuff_push_back(&_springs, { node_i, node_j });
+        {
             for_(row, num_rows) for_(col, num_cols - 1) sbuff_push_back(&_springs, { INDEX(row, col), INDEX(row, col + 1) });
             for_(row, num_rows - 1) for_(col, num_cols) sbuff_push_back(&_springs, { INDEX(row, col), INDEX(row + 1, col) });
             for_(row, num_rows - 1) for_(col, num_cols - 1) {
@@ -453,7 +453,7 @@ Simulation build_beam(int num_rows, int num_cols) {
     }
     { // pins
         StretchyBuffer<int> _pins = {};
-        { // TODO sbuff_push_back(&_pins, pin_i);
+        {
             for_(j, num_rows) {
                 sbuff_push_back(&_pins, INDEX(j, 0));
                 sbuff_push_back(&_pins, INDEX(j, num_cols - 1));
@@ -504,7 +504,7 @@ void hw10() {
             imgui_checkbox("springs", &enabled.springs, 's');
             imgui_checkbox("playing", &tweaks.playing, 'p');
             imgui_slider("timestep", &params.timestep, .001, .1);
-            imgui_slider("springSpringConstant", &params.springSpringConstant, 1e0, 1e3); // TODO log
+            imgui_slider("springSpringConstant", &params.springSpringConstant, 1e0, 1e3);
             imgui_slider("pinSpringConstant", &params.pinSpringConstant, 1e0, 1e3);
             imgui_slider("theta_gravity", &tweaks.theta_gravity, -RAD(90) -PI, -RAD(90) + PI, true);
             { // rebuild
