@@ -89,7 +89,7 @@ void simulation_draw(mat4 PV, Simulation *sim, State *state, Parameters *, Enabl
     }
     { // pins
         // TODO pins as POINTS (at x[pin]) and LINES (from x[pin] to X[pin])
-        //      dark blue if enabled->pins; otherwise gray                  
+        //      yellow if enabled->pins; otherwise gray                     
 
 
     }
