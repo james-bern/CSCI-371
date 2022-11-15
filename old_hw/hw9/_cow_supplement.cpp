@@ -22,9 +22,7 @@ template <typename T> void sbuff_push_back(StretchyBuffer<T> *buffer, T element)
 template <typename T> void sbuff_free(StretchyBuffer<T> *buffer) {
     buffer->length = 0;
     buffer->capacity = 0;
-    if (buffer->data) {
-        free(buffer->data);
-    }
+    free(buffer->data);
     buffer->data = NULL;
 }
 

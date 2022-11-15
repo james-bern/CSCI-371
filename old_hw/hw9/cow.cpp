@@ -338,7 +338,7 @@ struct {
     double _size_in_pixels;
     double _PV[16], _M[16];
     bool _multiply_by_M;
-    double _color[4] = { 1, 0, 1, 1 };
+    double _color[4];
 } gl;
 
 
@@ -1795,16 +1795,16 @@ bool widget_drag(double *PV, int num_vertices, double *vertex_positions, double 
         }
     }
 
+    if (hot || selected) {
+        basic_draw(POINTS, PV, XY, RGB, 1, hot, NULL, r, g, b, a, size_in_pixels, true);
+    }
+
     double mouse_xy_World[2];
     input_get_mouse_position_and_change_in_position_in_world_coordinates(PV, mouse_xy_World, mouse_xy_World + 1, NULL, NULL);
     if (input.mouse_left_held && selected) {
         for (int d = 0; d < 2; ++d) *(selected + d) = mouse_xy_World[d];
     } else if (input.mouse_left_released) {
         selected = NULL;
-    }
-
-    if (hot || selected) {
-        basic_draw(POINTS, PV, XY, RGB, 1, hot, NULL, r, g, b, a, size_in_pixels, true);
     }
 
     widget_active_widget_ID = (hot || selected) ? WIDGET_ID_DRAG : 0;
@@ -2325,9 +2325,7 @@ void init(bool transparent_framebuffer = false, char *window_title = 0, int scre
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         fancy.num_textures = 0;
         memset(fancy.textures, 0, sizeof(fancy.textures));
-        // memset(&gl, 0, sizeof(gl));
-        gl._began = false;
-        gl._num_vertices = 0;
+        memset(&gl, 0, sizeof(gl));
         return;
     }
 

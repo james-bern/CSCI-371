@@ -3,72 +3,489 @@
 #include "cow.cpp"
 #include "_cow_supplement.cpp"
 #include "jim.cpp"
+// #define EIGEN_LINEAR_SOLVER // TODO Thursday
+#include "_cow_optimization.cpp"
 
+struct {
+    bool playing = false;
+    bool check_derivatives = false;
+    int num_rows = 2;
+    bool noisy = false;
+    double theta_gravity = -RAD(90);
+} tweaks = {};
 
-double h = .02;   // simulation timestep               
-double L = 1;     // pendulum length                   
-double g = -9.81; // gravitational acceleration        
-double m = 1;     // mass (of point at end of pendulum)
+struct Simulation {
+    // num_*
+    int num_nodes;
+    int num_springs;
+    int num_pins;
 
-vec2 hw9a_get_p(double theta) {
-    // position of the pendulum's mass (end point)
-    // convention: theta = 0 <-> straight down
-    return L * V2(sin(theta), -cos(theta));
-}
+    // data
+    double *X; // node_rest_positions
+    int2 *springs;
+    int *pins;
 
-double hw9a_get_alpha(double theta) {
-    // TODO angular acceleration
-    FORNOW_UNUSED(theta);
-    return 0;
+    // convenience
+    int num_bytes_x; // sim.X, state.x, state.x_prev, state.x_prev_prev
+    int N; // 2 * num_nodes
 };
 
-double hw9a_get_PE(double theta) {
-    // TODO potential energy
-    FORNOW_UNUSED(theta);
-    return 0;
-}
-double hw9a_get_KE(double omega) {
-    // TODO kinetic energy
-    FORNOW_UNUSED(omega);
-    return 0;
-}
-double hw9a_get_E(double theta, double omega) {
-    // total energy
-    return hw9a_get_PE(theta) + hw9a_get_KE(omega);
+struct State {
+    double *x;           // node_current_positions           (x_k  )
+    double *x_prev;      // node_previous_positions          (x_km1)
+    double *x_prev_prev; // node_previous_previous_positions (x_km2)
 };
 
-void hw9a() {
-    init();
+struct Parameters {
+    double totalMass = 1.;
+    double gravitationalConstant_NOTE_positive = 9.81;
+    double springSpringConstant = 1e2;
+    double pinSpringConstant = 1e3;
+    double timestep = 1. / 60;
+};
 
-    Camera2D camera = { 5.35, 0, -.75 };
-    bool paused = false;
+#define ENABLED_NUM_FLAGS 4
+struct Enabled {
+    // NOTE in practice, i would probably use a bit field here #237x371CrossoverEpisode
+    union {
+        struct {
+            bool gravity;
+            bool springs;
+            bool pins;
+            bool dynamics;
+        };
+        bool flags[ENABLED_NUM_FLAGS];
+    };
+};
+char *enabled_flag_padded_strings[ENABLED_NUM_FLAGS] = {
+    " gravity",
+    " springs",
+    "    pins",
+    "dynamics"
+};
 
-    double theta = RAD(90);
-    double omega = 0;
 
-    const int TRACE_LENGTH = 128;
-    StretchyBuffer<vec2> position_trace = {};
-    vec3 trace_colors[TRACE_LENGTH]; {
-        for_(node_i, TRACE_LENGTH) {
-            trace_colors[node_i] = color_plasma(NUM_DENm1(node_i, TRACE_LENGTH));
+void simulation_draw(mat4 PV, Simulation *sim, State *state, Parameters *, Enabled *enabled) {
+    gl_PV(PV);
+
+    int num_nodes = sim->num_nodes;
+    int num_springs = sim->num_springs;
+    int num_pins = sim->num_pins;
+    vec2 *X = (vec2 *) sim->X;
+    vec2 *x = (vec2 *) state->x;
+    int2 *springs = sim->springs;
+    int *pins = sim->pins;
+
+    { // springs
+        // TODO springs as LINES                             
+        //      dark blue if enabled->springs; otherwise gray
+
+
+    }
+    { // nodes
+        // TODO nodes as blue POINTS
+
+
+    }
+    { // pins
+        // TODO pins as POINTS (at x[pin]) and LINES (from x[pin] to X[pin])
+        //      dark blue if enabled->pins; otherwise gray                  
+
+
+    }
+
+    FORNOW_UNUSED(enabled);
+    FORNOW_UNUSED(num_nodes);
+    FORNOW_UNUSED(num_springs);
+    FORNOW_UNUSED(num_pins);
+    FORNOW_UNUSED(X);
+    FORNOW_UNUSED(x);
+    FORNOW_UNUSED(springs);
+    FORNOW_UNUSED(pins);
+}
+
+
+// compute_and_add_to the energy U, gradient (dUdx) U_x, and Hessian (d2Udx2) U_xx
+// note that U is more of an "energy" because of how we handle dynamics
+void compute_and_add_to(Simulation *sim, State *state, Parameters *params, Enabled *enabled, double *U, double *U_x, StretchyBuffer<HessianEntry> *U_xx) {
+    // // convenience
+    // vec2 pointers to data
+    vec2 *X           = (vec2 *) sim->X;
+    vec2 *x           = (vec2 *) state->x;
+    vec2 *x_prev      = (vec2 *) state->x_prev;
+    vec2 *x_prev_prev = (vec2 *) state->x_prev_prev;
+    vec2 *a = (vec2 *) malloc(sim->num_bytes_x); {
+        for_(i, sim->num_nodes) { a[i] = (x[i] - 2 * x_prev[i] + x_prev_prev[i]) / pow(params->timestep, 2); }
+    }
+    defer { free(a); };
+
+    if (enabled->gravity) {
+        int num_nodes = sim->num_nodes;
+        // vec2 *x;
+        double m = params->totalMass / sim->num_nodes;
+        double g = params->gravitationalConstant_NOTE_positive;
+
+        // TODO implement gravity
+
+
+        FORNOW_UNUSED(num_nodes);
+        FORNOW_UNUSED(m);
+        FORNOW_UNUSED(g);
+    }
+
+    if (enabled->springs) {
+        // FORNOW HACK make diagonal springs less stiff
+        double R_HACK = norm(X[0] - X[1]);
+
+        double k_spring = params->springSpringConstant;
+        for_(spring_i, sim->num_springs) {
+            int i = sim->springs[spring_i].i;
+            int j = sim->springs[spring_i].j;
+            vec2 v = x[i] - x[j];
+            double r = norm(v);
+            vec2 r_v = firstDerivativeOfNorm(v);
+            mat2 r_vv = secondDerivativeOfNorm(v);
+            double R = norm(X[i] - X[j]);
+            double Delta = r - R;
+
+            // FORNOW HACK make diagonal springs less stiff
+            if (R > TINY + R_HACK) { k_spring /= 16; }
+
+            if (U) {
+                (*U) += k_spring * pow(Delta, 2) / 2;
+            }
+            if (U_x) {
+                vec2 seg = k_spring * Delta * r_v;
+                add(U_x, i,  seg);
+                add(U_x, j, -seg);
+            }
+            if (U_xx) {
+                mat2 blk = k_spring * outer(r_v, r_v) + k_spring * Delta * r_vv;
+                add(U_xx, i, i,  blk);
+                add(U_xx, i, j, -blk);
+                add(U_xx, j, j,  blk);
+                add(U_xx, j, i, -blk);
+            }
         }
     }
 
-    enum Mode {
-        MODE_EXPLICIT,
-        MODE_SEMI_IMPLICIT,
-        MODE_IMPLICIT,
-        _NUM_MODES
-    };
-    int mode = 0;
-    char *modes[_NUM_MODES];
-    modes[MODE_EXPLICIT]      = "explicit euler";
-    modes[MODE_SEMI_IMPLICIT] = "semi implicit euler";
-    modes[MODE_IMPLICIT]      = "implicit euler";
+    if (enabled->pins) {
+        int num_pins = sim->num_pins;
+        // vec2 *x;
+        // vec2 *X;
+        int *pins = sim->pins;
+        double k_pin = params->pinSpringConstant;
 
-    struct {
-        bool hide_plots;
-    } tweaks = {};
+        // TODO implement pins
+
+
+        FORNOW_UNUSED(num_pins);
+        FORNOW_UNUSED(pins);
+        FORNOW_UNUSED(k_pin);
+    }
+
+    if (enabled->dynamics) {
+        double h = params->timestep;
+        double m = params->totalMass / sim->num_nodes;
+        mat2 I = M2(1, 0, 0, 1);
+        for_(i, sim->num_nodes) {
+            if (U) { (*U) += pow(h, 2) / 2 * m * squaredNorm(a[i]); }
+            if (U_x) { add(U_x, i,  m * a[i]); }
+            if (U_xx) { add(U_xx, i, i, m / pow(h, 2) * I); }
+        }
+    } else {
+        double b = .0001;
+        mat2 I = M2(1, 0, 0, 1);
+        for_(i, sim->num_nodes) {
+            if (U_x) { add(U_x, i,  b * x[i]); }
+            if (U_xx) { add(U_xx, i, i, b * I); }
+        }
+    }
+}
+
+void finite_difference_and_add_to(Simulation *sim, State *state, Parameters *params, Enabled *enabled, double *U_x, StretchyBuffer<HessianEntry> *U_xx, double fd_stepsize = 0) {
+    if (IS_EQUAL(0., fd_stepsize)) {
+        fd_stepsize = 1e-5;
+    }
+
+    if (U_x) {
+        double left;
+        double right;
+        for_(k, sim->N) {
+            double x_k_o = state->x[k]; {
+                state->x[k] = x_k_o - fd_stepsize;
+                left = 0;
+                compute_and_add_to(sim, state, params, enabled, &left, NULL, NULL);
+
+                state->x[k] = x_k_o + fd_stepsize;
+                right = 0;
+                compute_and_add_to(sim, state, params, enabled, &right, NULL, NULL);
+            } state->x[k] = x_k_o;
+            U_x[k] += (right - left) / (2 * fd_stepsize);
+        }
+    }
+
+    if (U_xx) {
+        double *left = (double *) malloc(sim->N * sizeof(double));
+        double *right = (double *) malloc(sim->N * sizeof(double));
+        defer {
+            free(left);
+            free(right);
+        };
+        for_(col, sim->N) {
+            double x_c_0 = state->x[col]; {
+                state->x[col] = x_c_0 - fd_stepsize;
+                memset(left, 0, sim->N * sizeof(double));
+                compute_and_add_to(sim, state, params, enabled, NULL, left, NULL);
+
+                state->x[col] = x_c_0 + fd_stepsize;
+                memset(right, 0, sim->N * sizeof(double));
+                compute_and_add_to(sim, state, params, enabled, NULL, right, NULL);
+            } state->x[col] = x_c_0;
+            for_(row, sim->N) {
+                double val = (right[row] - left[row]) / (2 * fd_stepsize);
+                if (!IS_EQUAL(0., val)) sbuff_push_back(U_xx, { row, col, val } );
+            }
+        }
+    }
+}
+
+void check_derivatives(Simulation *sim, State *state, Parameters *params, Enabled *enabled, double fd_stepsize = 0) {
+    #define ABSOLUTE_ERROR_THRESHOLD .0001
+    #define RELATIVE_ERROR_THRESHOLD .001
+    #define TRIGGER_INVALID(a) (isnan(a) || isinf(a))
+    #define TRIGGER_ERROR(error) (error > ABSOLUTE_ERROR_THRESHOLD && (2. * error / (ABS(a) + ABS(b))) > RELATIVE_ERROR_THRESHOLD)
+
+    double *U_x    = (double *) calloc(sim->N, sizeof(double));
+    double *U_x_fd = (double *) calloc(sim->N, sizeof(double));
+    double *U_xx;
+    double *U_xx_fd;
+    {
+        StretchyBuffer<HessianEntry> _U_xx = {};
+        StretchyBuffer<HessianEntry> _U_xx_fd = {};
+        {
+            compute_and_add_to(sim, state, params, enabled, NULL, U_x, &_U_xx);
+            finite_difference_and_add_to(sim, state, params, enabled, U_x_fd, &_U_xx_fd, fd_stepsize);
+            U_xx = sparse2dense(sim->N, sim->N, &_U_xx);
+            U_xx_fd = sparse2dense(sim->N, sim->N, &_U_xx_fd);
+        }
+        sbuff_free(&_U_xx);
+        sbuff_free(&_U_xx_fd);
+    }
+
+    { // check
+        { // U_x
+            bool passes = true;
+            for_(k, sim->N) {
+                double a = U_x[k];
+                double b = U_x_fd[k];
+                double error = ABS(a - b);
+                bool invalid = TRIGGER_INVALID(a) || TRIGGER_INVALID(b);
+                bool wrong = TRIGGER_ERROR(error);
+                if (invalid || wrong) {
+                    if (passes) { printf(" -- U_x FAIL"); }
+                    passes = false;
+                    if (invalid) { printf("%3d: nan or inf\n", k); }
+                    else { printf("%2d: | (%lf) - (%lf) | = %lf\n", k, a, b, error); }
+                }
+            }
+            if (passes) { printf(" -- U_x PASS"); }
+        }
+        { // U_xx
+            bool passes = true;
+            for_(r, sim->N) for_(c, sim->N) {
+                #define NXN(M, row, col) ((M)[(sim->N) * (row) + (col)])
+                double a = NXN(U_xx, r, c);
+                double b = NXN(U_xx_fd, r, c);
+                #undef NXN
+                double error = ABS(a - b);
+                bool invalid = TRIGGER_INVALID(a) || TRIGGER_INVALID(b);
+                bool wrong = TRIGGER_ERROR(error);
+                if (invalid || wrong) {
+                    if (passes) { printf(" -- U_xx FAIL"); }
+                    passes = false;
+                    if (invalid) { printf("%3d, %3d: nan or inf\n", r, c); }
+                    else { printf("%2d, %2d: | (%lf) - (%lf) | = %lf\n", r, c, a, b, error); }
+                }
+            }
+            if (passes) { printf(" -- U_xx PASS"); }
+        }
+        printf("\n");
+    }
+
+    free(U_x);
+    free(U_x_fd);
+    free(U_xx);
+    free(U_xx_fd);
+}
+
+// integrate forward one timestep using Newton's method for minimization with line search
+// U_xx searchDir = -U_x
+void step(Simulation *sim, State *state, Parameters *params, Enabled *enabled) {
+    // FORNOW scratch
+    StretchyBuffer<HessianEntry> U_xx = {};
+    double *minus_U_x         = (double *) malloc(sim->num_bytes_x);
+    double *searchDirection   = (double *) malloc(sim->num_bytes_x);
+    double *_next_x           = (double *) malloc(sim->num_bytes_x);
+    double *_next_x_0_line_search = (double *) malloc(sim->num_bytes_x);
+    defer {
+        sbuff_free(&U_xx);
+        free(minus_U_x);
+        free(searchDirection);
+        free(_next_x);
+        free(_next_x_0_line_search);
+    };
+
+    // warm start optimization at current position
+    memcpy(_next_x, state->x, sim->num_bytes_x);
+    State next  = {}; {
+        next.x           = _next_x;
+        next.x_prev      = state->x;
+        next.x_prev_prev = state->x_prev;
+    }
+
+    int iterationOfNewtonWithLineSearch = 0;
+    while (true) {
+        { // compute_and_add_to -U_x, U_xx
+            U_xx.length = 0;
+            memset(minus_U_x, 0, sim->num_bytes_x);
+            compute_and_add_to(sim, &next, params, enabled, NULL, minus_U_x, &U_xx);
+            for_(k, sim->N) { minus_U_x[k] *= -1; }
+        }
+
+        if (Vector_dot(sim->N, minus_U_x, minus_U_x) < .001) { // convergence check
+            break;
+        }
+
+        if (iterationOfNewtonWithLineSearch++ > 50) {
+            if (tweaks.noisy) { printf("phyiscs solve failed\n"); }
+            break;
+        }
+
+        { // get searchDirection (and regularize as needed)
+            // U_x(x + searchDirection) ~ U_x + U_xx searchDirection := 0
+            // => searchDirection = solve { U_xx searchDirection = -U_x }
+            int iterationofDynamicRegularization = 0;
+            do {
+                if (iterationofDynamicRegularization == 1) { if (tweaks.noisy) { printf("not a descent direction\n"); } }
+                solve_sparse_linear_system(sim->N, (double *) searchDirection, &U_xx, minus_U_x);
+                // memcpy(searchDirection, minus_U_x, sim->num_bytes_x);
+
+                { // regularize Hessian (sloppily)
+                    for_(k, sim->N) {
+                        sbuff_push_back(&U_xx, { k, k, pow(10, -4 + int(iterationofDynamicRegularization)) });
+                    }
+                    ++iterationofDynamicRegularization;
+                    if (iterationofDynamicRegularization == 20) {
+                        if (tweaks.noisy) { printf("dynamic regularization failed\n"); }
+                        break;
+                    }
+                }
+            } while (Vector_dot(sim->N, searchDirection, minus_U_x) < 0);
+        }
+
+        { // line search
+            double O_0 = 0;
+            compute_and_add_to(sim, &next, params, enabled, &O_0, NULL, NULL);
+
+            memcpy(_next_x_0_line_search, next.x, sim->num_bytes_x);
+
+            int iterationOfLineSearch = 0;
+            double stepSize = 1;
+            while (1) {
+                // x_next = x_next_0 + stepSize * searchDirection
+                for_(k, sim->N) { next.x[k] = _next_x_0_line_search[k] + stepSize * searchDirection[k]; }
+
+                double O_curr = 0;
+                compute_and_add_to(sim, &next, params, enabled, &O_curr, NULL, NULL);
+
+                if (O_curr < O_0 + TINY) { // line search succeeded
+                    break;
+                }
+
+                if (++iterationOfLineSearch > 30) {
+                    if (tweaks.noisy) { printf("line search failed.\n"); }
+                    break;
+                }
+
+                stepSize /= 2;
+            }
+        }
+    }
+
+    // state <- next
+    memcpy(state->x_prev_prev, state->x_prev, sim->num_bytes_x);
+    memcpy(state->x_prev,      state->x,      sim->num_bytes_x);
+    memcpy(state->x,           next.x,        sim->num_bytes_x);
+}
+
+Simulation build_beam(int num_rows, int num_cols) {
+    Simulation sim = {};
+    #define INDEX(row, col) ((row) * num_cols + (col))
+    { // nodes (README)
+        sim.num_nodes = num_rows * num_cols;
+        sim.X = (double *) calloc(sim.num_nodes, sizeof(vec2));
+        sim.num_bytes_x = sim.num_nodes * sizeof(vec2);
+        sim.N = 2 * sim.num_nodes;
+        {
+            double S = 1. / (num_cols);
+            for_(row, num_rows) {
+                double y = row * S;
+                for_(col, num_cols) {
+                    double x = col * S;
+                    ((vec2 *) sim.X)[INDEX(row, col)] = { x, y };
+                }
+            }
+        }
+    }
+    { // springs
+        StretchyBuffer<int2> _springs = {};
+        { // TODO sbuff_push_back(&_springs, { node_i, node_j });
+            for_(row, num_rows) for_(col, num_cols - 1) sbuff_push_back(&_springs, { INDEX(row, col), INDEX(row, col + 1) });
+            for_(row, num_rows - 1) for_(col, num_cols) sbuff_push_back(&_springs, { INDEX(row, col), INDEX(row + 1, col) });
+            for_(row, num_rows - 1) for_(col, num_cols - 1) {
+                sbuff_push_back(&_springs, { INDEX(row, col), INDEX(row + 1, col + 1) });
+                sbuff_push_back(&_springs, { INDEX(row + 1, col), INDEX(row, col + 1) });
+            }
+        }
+        sim.springs = _springs.data;
+        sim.num_springs = _springs.length;
+    }
+    { // pins
+        StretchyBuffer<int> _pins = {};
+        { // TODO sbuff_push_back(&_pins, pin_i);
+            for_(j, num_rows) {
+                sbuff_push_back(&_pins, INDEX(j, 0));
+                sbuff_push_back(&_pins, INDEX(j, num_cols - 1));
+            }
+        }
+        sim.pins = _pins.data;
+        sim.num_pins = _pins.length;
+    }
+    #undef INDEX
+    return sim;
+}
+
+void hw10() {
+    init();
+
+    Camera2D camera = { 2, 0, -.5 };
+
+    Simulation sim = build_beam(tweaks.num_rows, 3 * tweaks.num_rows);
+    State state = {}; {
+        state.x           = (double *) malloc(sim.num_bytes_x);
+        state.x_prev      = (double *) malloc(sim.num_bytes_x);
+        state.x_prev_prev = (double *) malloc(sim.num_bytes_x);
+        memcpy(state.x,           sim.X, sim.num_bytes_x);
+        memcpy(state.x_prev,      sim.X, sim.num_bytes_x);
+        memcpy(state.x_prev_prev, sim.X, sim.num_bytes_x);
+    }
+    Parameters params = {};
+    Enabled enabled = {}; {
+        for_(k, ENABLED_NUM_FLAGS) {
+            enabled.flags[k] = true;
+        }
+    }
 
     while (begin_frame()) {
         camera_move(&camera);
@@ -76,413 +493,85 @@ void hw9a() {
         gl_PV(PV);
 
         { // gui
-            imgui_slider("h", &h, .001, .1);
-            imgui_slider("L", &L, .1, 5);
-            imgui_slider("m", &m, .1, 10);
-            imgui_slider("g", &g, -24, 24);
-            imgui_readout("theta", &theta);
-            imgui_readout("omega", &omega);
-            { // mode
-                imgui_slider("mode", &mode, 0, _NUM_MODES - 1, 'j', 'k', true);
-                _imgui_printf("mode: %s", modes[mode]);
-            }
-            imgui_checkbox("paused", &paused, 'p');
-            { // reset
-                static double _theta_0 = theta;
-                static double _omega_0 = omega;
-                if (imgui_button("reset", 'r')) {
-                    theta = _theta_0;
-                    omega = _omega_0;
-                    sbuff_free(&position_trace);
+            imgui_readout("num_nodes", &sim.num_nodes);
+            imgui_readout("num_springs", &sim.num_springs);
+            imgui_readout("num_pins", &sim.num_pins);
+            imgui_checkbox("check_derivatives", &tweaks.check_derivatives, 'a');
+            imgui_checkbox("gravity", &enabled.gravity, 'g');
+            imgui_checkbox("pins", &enabled.pins, 'f');
+            imgui_checkbox("dynamics", &enabled.dynamics, 'd');
+            imgui_checkbox("springs", &enabled.springs, 's');
+            imgui_checkbox("playing", &tweaks.playing, 'p');
+            imgui_slider("timestep", &params.timestep, .001, .1);
+            imgui_slider("springSpringConstant", &params.springSpringConstant, 1e0, 1e3); // TODO log
+            imgui_slider("pinSpringConstant", &params.pinSpringConstant, 1e0, 1e3);
+            imgui_slider("theta_gravity", &tweaks.theta_gravity, -RAD(90) -PI, -RAD(90) + PI, true);
+            { // rebuild
+                int _num_rows = tweaks.num_rows;
+                imgui_slider("num_rows", &tweaks.num_rows, 1, 20, 'j', 'k');
+                if (_num_rows != tweaks.num_rows) {
+                    { // fornow
+                        free(sim.X);
+                        free(sim.springs);
+                        free(sim.pins);
+                    }
+                    sim = build_beam(tweaks.num_rows, 3 * tweaks.num_rows);
+                    { // fornow
+                        state.x           = (double *) realloc(state.x,           sim.num_bytes_x);
+                        state.x_prev      = (double *) realloc(state.x_prev,      sim.num_bytes_x);
+                        state.x_prev_prev = (double *) realloc(state.x_prev_prev, sim.num_bytes_x);
+                        memcpy(state.x,           sim.X, sim.num_bytes_x);
+                        memcpy(state.x_prev,      sim.X, sim.num_bytes_x);
+                        memcpy(state.x_prev_prev, sim.X, sim.num_bytes_x);
+                    }
                 }
             }
-            imgui_checkbox("hide_plots", &tweaks.hide_plots, 'b');
-        }
-
-        if (!paused) {
-            // TODO step simulation state forward in time
-            // NOTE please use hw9a_get_alpha(theta) here
-            if (mode == MODE_EXPLICIT) {
-                // TODO explicit euler (be careful!)
-
-                // theta += ...
-                // omega += ...
-
-            } else if (mode == MODE_SEMI_IMPLICIT) {
-                // TODO semi-implicit euler (be careful!)
-
-            } else if (mode == MODE_IMPLICIT) {
-                // TODO implicit euler (harder; we will cover in Thursday's class)
-
+            { // reset
+                if (imgui_button("reset", 'r')) {
+                    memcpy(state.x,           sim.X, sim.num_bytes_x);
+                    memcpy(state.x_prev,      sim.X, sim.num_bytes_x);
+                    memcpy(state.x_prev_prev, sim.X, sim.num_bytes_x);
+                }
             }
         }
 
-        vec2 p = hw9a_get_p(theta);
-
-        { // drag
-            if (widget_drag(PV, 1, &p)) {
-                p = L * normalized(p);
-                omega = 0;
-                theta = RAD(90) + atan2(p.y, p.x);
+        if (tweaks.playing) {
+            if (tweaks.check_derivatives) {
+                for_(k, ENABLED_NUM_FLAGS) {
+                    Enabled tmp = {};
+                    tmp.flags[k] = true;
+                    printf(enabled_flag_padded_strings[k]);
+                    check_derivatives(&sim, &state, &params, &tmp);
+                }
             }
+            step(&sim, &state, &params, &enabled);
         }
+        widget_drag(PV, sim.num_nodes, (vec2 *) state.x, 0, monokai.white);
 
         { // draw
-            { // position_trace
-                if (position_trace.length < TRACE_LENGTH) {
-                    sbuff_push_back(&position_trace, p);
-                } else {
-                    memmove(position_trace.data, position_trace.data + 1, (TRACE_LENGTH - 1) * sizeof(vec2));
-                    position_trace.data[TRACE_LENGTH - 1] = p;
-                }
-                basic_draw(LINE_STRIP, PV, position_trace.length, position_trace.data, trace_colors);
-            }
-            { // pendulum
-                gl_color(monokai.white);
+            simulation_draw(PV, &sim, &state, &params, &enabled);
+
+            { // gravity vector
+                gl_color(monokai.yellow);
                 gl_begin(LINES);
-                gl_vertex(V2(0, 0));
-                gl_vertex(p);
+                vec2 s = { 1.3, 0 };
+                vec2 t = s + .3 * e_theta(tweaks.theta_gravity);
+                gl_vertex(s);
+                gl_vertex(t);
+                double eps = .05;
+                gl_vertex(t);
+                gl_vertex(t + eps * e_theta(tweaks.theta_gravity - RAD(145)));
+                gl_vertex(t);
+                gl_vertex(t + eps * e_theta(tweaks.theta_gravity - RAD(215)));
                 gl_end();
-                gl_begin(POINTS);
-                gl_vertex(p);
-                gl_end();
-            }
-            { // energy plot
-                if (!tweaks.hide_plots) {
-                    mat4 PV_plot = Translation(.3, -.3) * Scaling(.5, .5 * window_get_aspect());
-                    {
-                        vec2 axes[] = { { 1, 0 }, { 0, 0 }, { 0, 1 } };
-                        basic_draw(LINE_STRIP, PV_plot, 3, axes, monokai.gray);
-                        basic_text(PV_plot, "time", axes[0]);
-                        basic_text(PV_plot, "energy", axes[2], V3(1, 1, 1), 0, { 0, -24 });
-                    }
-                    {
-                        static vec2 PE_trace[TRACE_LENGTH];
-                        static vec2 KE_trace[TRACE_LENGTH];
-                        static vec2  E_trace[TRACE_LENGTH];
-                        do_once {
-                            for_(i, TRACE_LENGTH) {
-                                E_trace[i].x = KE_trace[i].x = PE_trace[i].x = NUM_DENm1(i, TRACE_LENGTH);
-                            }
-                        };
-                        if (!paused) {
-                            for_(i, TRACE_LENGTH - 1) {
-                                PE_trace[i].y = PE_trace[i + 1].y;
-                                KE_trace[i].y = KE_trace[i + 1].y;
-                                E_trace[i].y =  E_trace[i + 1].y;
-                            }
-                            PE_trace[TRACE_LENGTH - 1].y = hw9a_get_PE(theta);
-                            KE_trace[TRACE_LENGTH - 1].y = hw9a_get_KE(omega);
-                            E_trace[TRACE_LENGTH - 1].y =  hw9a_get_E(theta, omega);
-                        }
-                        mat4 S = Scaling(1, .05); 
-                        basic_draw(LINE_STRIP, PV_plot * S, TRACE_LENGTH, PE_trace, monokai.blue);
-                        basic_draw(LINE_STRIP, PV_plot * S, TRACE_LENGTH, KE_trace, monokai.red);
-                        basic_draw(LINE_STRIP, PV_plot * S, TRACE_LENGTH,  E_trace, monokai.purple);
-                    }
-                }
             }
         }
     }
 }
-
-
-
-
-void hw9b() {
-    init();
-
-    // // skeleton                                                               
-    // bone_lengths          -- the length of the bones                          
-    // bone_relative_angles  -- the angle between a given bone and the next bone 
-    // bone_rest_positions   -- the origin of each bone in the initial pose      
-    // * NOTE You may assume that the rest positions all lie along the x-axis.   
-    // skeleton_total_length -- the lenth of the entire skeleton in its rest pose
-    const int NUM_BONES = 4;
-    double bone_lengths[NUM_BONES];
-    double bone_relative_angles[NUM_BONES] = {};
-    vec2 bone_rest_positions[NUM_BONES + 1] = {};
-    double skeleton_total_length = 0;
-    {
-        for (int bone_i = 0; bone_i < NUM_BONES; ++bone_i) {
-            bone_lengths[bone_i] = LERP(double(bone_i) / MAX(1, NUM_BONES - 1), 2.5, 1);
-            bone_rest_positions[bone_i + 1] = bone_rest_positions[bone_i] + V2(bone_lengths[bone_i], 0);
-        }
-        skeleton_total_length = bone_rest_positions[NUM_BONES].x;
-    }
-
-    enum Mode {
-        MODE_RIGID,
-        MODE_SMOOTH,
-        _NUM_MODES,
-    };
-    char *modes[_NUM_MODES];
-    modes[MODE_RIGID]  = "rigid";
-    modes[MODE_SMOOTH] = "smooth";
-
-    // // skin                                                                           
-    // node_rest_positions -- the positions of all nodes in the rest pose                
-    // weights             -- for a given skinning mode, the binding weights of each node
-    const int NUM_NODES = 64; STATIC_ASSERT(NUM_NODES % 2 == 0);
-    vec2 node_rest_positions[NUM_NODES] = {};
-    double weights[_NUM_MODES][NUM_NODES][NUM_BONES] = {}; // weights[mode][node_i][bone_i]
-    {
-        {
-            // rest pose as a loop
-            // e.g., for 10 nodes:
-            // 9 8 7 6 5          
-            // 0 1 2 3 4          
-            int k = 0;
-            for (int sign = -1; sign <= 1; sign += 2) {
-                for (int node_i = 0; node_i < NUM_NODES / 2; ++node_i) {
-                    double f = NUM_DENm1(node_i, NUM_NODES / 2);
-                    if (sign > 0) f = 1 - f;
-                    node_rest_positions[k++] = V2(skeleton_total_length * f, .3 * sign);
-                }
-            }
-        }
-
-        // weights
-        for (int node_i = 0; node_i < NUM_NODES / 2; ++node_i) {
-            for_(mode, _NUM_MODES) {
-                // calculate the node_i-th node's weights (not normlized)
-                double w[NUM_BONES] = {};
-                {
-
-                    if (mode == MODE_RIGID) {
-                        // idea: bind the node entirely to the closest bone
-                        // NOTE I did this for you                         
-                        double X_i = node_rest_positions[node_i].x;
-                        for (int bone_i = 0; bone_i < NUM_BONES; ++bone_i) {
-                            if (X_i < bone_rest_positions[bone_i + 1].x + TINY) {
-                                w[bone_i] = 1;
-                                break;
-                            }
-                        }
-                    }
-
-                    else if (mode == MODE_SMOOTH) {
-                        // idea: smoothly blend the weights between nearby bones        
-                        // (many possible ways to implement this)                       
-                        // TODO (harder; we will cover one approach in Thursday's class)
-
-                    }
-                }
-
-                { // normalize
-                    double sum_w = 0; {
-                        for (int bone_i = 0; bone_i < NUM_BONES; ++bone_i) {
-                            sum_w += w[bone_i];
-                        }
-                        for (int bone_i = 0; bone_i < NUM_BONES; ++bone_i) {
-                            w[bone_i] /= sum_w;
-                        }
-                    }
-                }
-
-                { // write w into 3D array
-                    for (int bone_i = 0; bone_i < NUM_BONES; ++bone_i) {
-                        weights[mode][node_i][bone_i] = weights[mode][NUM_NODES - 1 - node_i][bone_i] = w[bone_i];
-                    }
-                }
-            }
-        }
-    }
-
-    struct {
-        bool draw_character;
-        bool hide_rig;
-        bool hide_nodes;
-        bool draw_rest_pose;
-        bool hide_plots;
-    } tweaks = {};
-
-
-    // debug play
-    bool debug_play = false;
-    double debug_time = 0;
-
-    // keyframing system
-    const int MAX_KEYFRAMES = 1024;
-    double keyframes[MAX_KEYFRAMES][NUM_BONES] = {};
-    int num_keyframes = 0;
-    bool tween_keyframes = false;
-    const int FRAMES_PER_KEYFRAME = 32;
-    int frame = 0;
-
-    Camera2D camera = { 10, 0, 2 };
-    int mode = 0;
-
-    while (begin_frame()) {
-        camera_move(&camera);
-        mat4 PV = camera_get_PV(&camera);
-        gl_PV(PV);
-
-        { // gui
-            for_(bone_i, NUM_BONES) {
-                char buffer[24];
-                sprintf(buffer, "theta_%d", bone_i);
-                imgui_slider(buffer, bone_relative_angles + bone_i, -PI, PI, true);
-            }
-            imgui_slider("mode", &mode, 0, _NUM_MODES - 1, 'j', 'k', true);
-            _imgui_printf("mode: %s", modes[mode]);
-            if (!tweaks.hide_plots) {
-                mat4 PV_plot = Translation(0, .25) * Scaling(.59, .5 * .5 * window_get_aspect());
-                static vec2 trace[NUM_NODES / 2];
-                {
-                    vec2 axes[] = { { 1, 0 }, { 0, 0 }, { 0, 1 } };
-                    basic_draw(LINE_STRIP, PV_plot, 3, axes, monokai.gray);
-                    basic_text(PV_plot, "x_rest", axes[0]);
-                    basic_text(PV_plot, "weight", axes[2], V3(1, 1, 1), 0, { 0, -24 });
-                }
-                for_(bone_i, NUM_BONES) {
-                    for_(node_i, NUM_NODES / 2) {
-                        trace[node_i] = { NUM_DENm1(node_i, NUM_NODES / 2), weights[mode][node_i][bone_i] };
-                    }
-                    basic_draw(LINE_STRIP, PV_plot, NUM_NODES / 2, trace, color_get_kelly(bone_i));
-                }
-            }
-            imgui_checkbox("debug_play", &debug_play, 'p');
-            if (imgui_button("save keyframe", 's') && num_keyframes < MAX_KEYFRAMES) {
-                for_(bone_i, NUM_BONES) {
-                    keyframes[num_keyframes][bone_i] = bone_relative_angles[bone_i];
-                }
-                ++num_keyframes;
-            }
-            imgui_checkbox("tween keyframes", &tween_keyframes, 't');
-            imgui_readout("num_keyframes", &num_keyframes);
-            { // reset
-                static double _bone_relative_angles_0[NUM_BONES];
-                do_once { memcpy(_bone_relative_angles_0, bone_relative_angles, sizeof(bone_relative_angles)); };
-                if (imgui_button("reset", 'r')) {
-                    memcpy(bone_relative_angles, _bone_relative_angles_0, sizeof(bone_relative_angles));
-
-                    debug_time = 0;
-
-                    memset(keyframes, 0, sizeof(keyframes));
-                    num_keyframes = 0;
-                    tween_keyframes = false;
-                    frame = 0;
-                }
-            }
-            imgui_checkbox("draw_character", &tweaks.draw_character, 'z');
-            imgui_checkbox("draw_rest_pose", &tweaks.draw_rest_pose, 'v');
-            imgui_checkbox("hide_rig", &tweaks.hide_rig, 'x');
-            imgui_checkbox("hide_nodes", &tweaks.hide_nodes, 'c');
-            imgui_checkbox("hide_plots", &tweaks.hide_plots, 'b');
-        }
-
-        // aniamte the skeleton (i.e., set bone_relative_angles using whatever method you like)
-        // METHOD 1: press 'p' to play a sinusoidal trajectory                                 
-        // METHOD 2: press 's' to save keyframes; press 't' to play them back with lerp        
-        {
-            if (tween_keyframes && num_keyframes > 0) {
-                int A = (frame / FRAMES_PER_KEYFRAME) % num_keyframes;
-                int B = (A + 1) % num_keyframes;
-                double t = double(frame % FRAMES_PER_KEYFRAME) / FRAMES_PER_KEYFRAME;
-                for (int bone_i = 0; bone_i < NUM_BONES; ++bone_i) {
-                    bone_relative_angles[bone_i] = LERP(
-                            t,
-                            keyframes[A][bone_i],
-                            keyframes[B][bone_i]);
-                }
-                ++frame;
-            } else if (debug_play) {
-                for (int bone_i = 1; bone_i < NUM_BONES; ++bone_i) {
-                    bone_relative_angles[bone_i] += .02 * cos((bone_i + 1) * debug_time / 2);
-                }
-                debug_time += .0167;
-            }
-        }
-
-        // bone_absolute_angles -- the angle of each bone in world coordinates
-        // NOTE feel free to use these for forward kinematics and skinning!   
-        double bone_absolute_angles[NUM_BONES] = {};
-        {
-            for (int bone_i = 0; bone_i < NUM_BONES; ++bone_i) {
-                if (bone_i > 0) {
-                    bone_absolute_angles[bone_i] = bone_absolute_angles[bone_i - 1];
-                }
-                bone_absolute_angles[bone_i] += bone_relative_angles[bone_i];
-            }
-        }
-
-        // // forward kinematics                                          
-        // TODO compute bone_current_positions (the skeleton will show up)
-        vec2 bone_current_positions[NUM_BONES + 1] = {};
-        {
-
-        }
-
-
-        // // skinning                                             
-        // TODO compute node_curr_positions (the skin will show up)
-        vec2 node_curr_positions[NUM_NODES] = {};
-        {
-
-        }
-
-        { // draw
-            if (!tweaks.hide_rig) { // draw
-                gl_begin(GL_LINES); {
-                    for_(bone_i, NUM_BONES) {
-                        gl_color(color_get_kelly(bone_i));
-                        gl_vertex(bone_current_positions[bone_i]);
-                        gl_vertex(bone_current_positions[bone_i + 1]);
-                    }
-                } gl_end();
-                basic_draw(POINTS, PV, NUM_BONES + 1, bone_current_positions);
-            }
-
-            if (tweaks.draw_rest_pose) {
-                basic_draw(POINTS, PV, NUM_BONES + 1, bone_rest_positions, monokai.blue);
-                basic_draw(LINE_STRIP, PV, NUM_BONES + 1, bone_rest_positions, monokai.blue);
-                basic_draw(LINE_LOOP, PV, NUM_NODES, node_rest_positions, .5 * monokai.blue);
-                basic_draw(POINTS, PV, NUM_NODES, node_rest_positions, monokai.blue, 4);
-            }
-
-            if (!tweaks.hide_nodes) {
-                basic_draw(LINE_LOOP, PV, NUM_NODES, node_curr_positions, monokai.gray);
-                basic_draw(POINTS, PV, NUM_NODES, node_curr_positions, monokai.white, 4);
-            }
-
-            if (tweaks.draw_character) {
-                const int NUM_QUADS = (NUM_NODES / 2 - 1);
-                static vec2 vertex_positions[4 * NUM_QUADS];
-                static vec3 vertex_colors[4 * NUM_QUADS];
-                for_(node_i, NUM_QUADS) {
-                    vertex_positions[4 * node_i + 0] = node_curr_positions[node_i];
-                    vertex_positions[4 * node_i + 1] = node_curr_positions[node_i + 1];
-                    vertex_positions[4 * node_i + 2] = node_curr_positions[NUM_NODES - 1 - (node_i + 1)];
-                    vertex_positions[4 * node_i + 3] = node_curr_positions[NUM_NODES - 1 - (node_i)];
-                    double f = double(node_i) / (NUM_QUADS - 1);
-                    vec3 color = color_rainbow_swirl(f);
-                    vertex_colors[4 * node_i + 0] = color;
-                    vertex_colors[4 * node_i + 1] = color;
-                    vertex_colors[4 * node_i + 2] = color;
-                    vertex_colors[4 * node_i + 3] = color;
-                }
-                basic_draw(QUADS, PV, 4 * NUM_QUADS, vertex_positions, vertex_colors);
-            }
-        }
-    }
-}
-
-
-
-
-void hw9c() {
-
-}
-
-
 
 
 int main() {
-    hw9a();
-    hw9b();
-    hw9c();
+    hw10();
     return 0;
 }
-
 

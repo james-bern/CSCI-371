@@ -1,10 +1,5 @@
 // types
     #define u64 uint64_t
-    union int2 {
-        struct { int i, j; };
-        int data[2];
-        int &operator [](int index) { return data[index]; }
-    };
     union int3 {
         struct { int i, j, k; };
         int data[3];
