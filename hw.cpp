@@ -496,6 +496,7 @@ void hw10() {
             imgui_readout("num_nodes", &sim.num_nodes);
             imgui_readout("num_springs", &sim.num_springs);
             imgui_readout("num_pins", &sim.num_pins);
+            imgui_checkbox("noisy", &tweaks.noisy);
             imgui_checkbox("check_derivatives", &tweaks.check_derivatives, 'a');
             imgui_checkbox("gravity", &enabled.gravity, 'g');
             imgui_checkbox("pins", &enabled.pins, 'f');
@@ -540,7 +541,7 @@ void hw10() {
                 for_(k, ENABLED_NUM_FLAGS) {
                     Enabled tmp = {};
                     tmp.flags[k] = true;
-                    printf(enabled_flag_padded_strings[k]);
+                    printf("%s", enabled_flag_padded_strings[k]);
                     check_derivatives(&sim, &state, &params, &tmp);
                 }
             }
