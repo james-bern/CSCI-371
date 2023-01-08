@@ -80,28 +80,54 @@ void simulation_draw(mat4 PV, Simulation *sim, State *state, Parameters *, Enabl
         // TODO springs as LINES                             
         //      dark blue if enabled->springs; otherwise gray
 
-
+        gl_begin(LINES, 2.0);
+        if(enabled->springs) {
+            gl_color(monokai.blue * .5);
+        }
+        else {
+            gl_color(monokai.gray);
+        }
+        for( int spring = 0; spring < num_springs; ++spring) {
+            int i = springs[spring][0];
+            int j = springs[spring][1];
+            gl_vertex( x[i] );
+            gl_vertex( x[j] );
+        }
+        gl_end();
     }
     { // nodes
         // TODO nodes as blue POINTS
-
-
+        gl_begin(POINTS, 5.0);
+        gl_color(monokai.blue);
+        for ( int node = 0; node < num_nodes; ++node) {
+            gl_vertex(x[node]);
+        }
+        gl_end();
     }
     { // pins
         // TODO pins as POINTS (at x[pin]) and LINES (from x[pin] to X[pin])
         //      yellow if enabled->pins; otherwise gray                     
+        gl_begin(POINTS, 5.0);
+        if(enabled->pins) {
+            gl_color(monokai.yellow);
+        }
+        else {
+            gl_color(monokai.gray);
+        }
+        for( int pin = 0; pin < num_pins; ++pin) {
+            int k = pins[pin];
+            gl_vertex(x[k]);
+        }
+        gl_end();
+        gl_begin(LINES, 2.0);
+        for( int pin = 0; pin < num_pins; ++pin) {
+            int k = pins[pin];
+            gl_vertex(x[k]);
+            gl_vertex(X[k]);
+        }
 
-
+        gl_end();
     }
-
-    FORNOW_UNUSED(enabled);
-    FORNOW_UNUSED(num_nodes);
-    FORNOW_UNUSED(num_springs);
-    FORNOW_UNUSED(num_pins);
-    FORNOW_UNUSED(X);
-    FORNOW_UNUSED(x);
-    FORNOW_UNUSED(springs);
-    FORNOW_UNUSED(pins);
 }
 
 
@@ -126,7 +152,15 @@ void compute_and_add_to(Simulation *sim, State *state, Parameters *params, Enabl
         double g = params->gravitationalConstant_NOTE_positive;
 
         // TODO implement gravity
-
+        for (int i = 0; i < num_nodes; ++i) {
+            if (U) {
+                (*U) += m * g * x[i][1];
+            }
+            if (U_x) {
+                add(U_x, i, V2(0, m * g));
+            }
+        }
+        
 
         FORNOW_UNUSED(num_nodes);
         FORNOW_UNUSED(m);
@@ -177,8 +211,24 @@ void compute_and_add_to(Simulation *sim, State *state, Parameters *params, Enabl
         double k_pin = params->pinSpringConstant;
 
         // TODO implement pins
-
-
+        for( int pin = 0; pin < num_pins; ++pin) {
+            int k = pins[pin];
+            vec2 delta = x[k]- X[k];
+            double e_cont = k_pin * squaredNorm(delta) / 2;
+            vec2 grad_cont = k_pin * delta;
+            mat2 h_cont = k_pin * M2(1, 0, 0, 1);
+            if (U) {
+                (*U) += e_cont;
+            }
+            if (U_x) {
+                add(U_x, k, grad_cont);
+            }
+            if (U_xx) {
+                add(U_xx, k, k, h_cont);
+        
+             }
+        }
+        
         FORNOW_UNUSED(num_pins);
         FORNOW_UNUSED(pins);
         FORNOW_UNUSED(k_pin);
@@ -575,4 +625,5 @@ int main() {
     hw10();
     return 0;
 }
+
 
