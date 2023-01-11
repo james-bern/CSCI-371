@@ -7,7 +7,6 @@
 *.swp
 .vs/*
 ignore/*
-vcvars.bat
 work.bat
 scrap.cpp
 run.bat
