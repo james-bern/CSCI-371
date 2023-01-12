@@ -13,7 +13,7 @@ void app_treasure() {
         FILE *fp = fopen("TreasureChest.obj", "r");
         ASSERT(fp);
         char line[4096];
-        while (fgets(line, NELEMS(line), fp) != NULL) {
+        while (fgets(line, _COUNT_OF(line), fp) != NULL) {
             char prefix[64] = {};
             sscanf(line, "%s", prefix);
             if (strcmp(prefix, "v") == 0) {

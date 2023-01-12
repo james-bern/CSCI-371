@@ -1371,9 +1371,9 @@ void _soup_init() {
     COW0._soup_shader_program_POINTS = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag_POINTS, COWX._soup_geom_POINTS);
     COW0._soup_shader_program_LINES = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag, COWX._soup_geom_LINES);
     COW0._soup_shader_program_TRIANGLES = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag);
-    glGenVertexArrays(_LENGTH_FIXED_SIZE_ARRAY(COW0._soup_VAO), COW0._soup_VAO);
-    glGenBuffers(_LENGTH_FIXED_SIZE_ARRAY(COW0._soup_VBO), COW0._soup_VBO);
-    glGenBuffers(_LENGTH_FIXED_SIZE_ARRAY(COW0._soup_EBO), COW0._soup_EBO);
+    glGenVertexArrays(_COUNT_OF(COW0._soup_VAO), COW0._soup_VAO);
+    glGenBuffers(_COUNT_OF(COW0._soup_VBO), COW0._soup_VBO);
+    glGenBuffers(_COUNT_OF(COW0._soup_EBO), COW0._soup_EBO);
 }
 
 void _soup_draw(
@@ -2087,7 +2087,7 @@ void gui_slider(char *name, real *t, real a, real b, bool readout_in_degrees) {
 void _itri_init() {
     COW0._itri_shader_program = shader_compile_and_build_program(COWX._itri_vert, COWX._itri_frag);
     glGenVertexArrays(1, &COW0._itri_VAO);
-    glGenBuffers(_LENGTH_FIXED_SIZE_ARRAY(COW0._itri_VBO), COW0._itri_VBO);
+    glGenBuffers(_COUNT_OF(COW0._itri_VBO), COW0._itri_VBO);
     glGenBuffers(1, &COW0._itri_EBO);
     stbi_set_flip_vertically_on_load(true);
 }
@@ -2582,7 +2582,7 @@ struct {
 
 vec3 color_kelly(int i) {
     static vec3 _kelly_colors[]={{255./255,179./255,0./255},{128./255,62./255,117./255},{255./255,104./255,0./255},{166./255,189./255,215./255},{193./255,0./255,32./255},{206./255,162./255,98./255},{129./255,112./255,102./255},{0./255,125./255,52./255},{246./255,118./255,142./255},{0./255,83./255,138./255},{255./255,122./255,92./255},{83./255,55./255,122./255},{255./255,142./255,0./255},{179./255,40./255,81./255},{244./255,200./255,0./255},{127./255,24./255,13./255},{147./255,170./255,0./255},{89./255,51./255,21./255},{241./255,58./255,19./255},{35./255,44./255,22./255}};
-    return _kelly_colors[MODULO(i, _LENGTH_FIXED_SIZE_ARRAY(_kelly_colors))];
+    return _kelly_colors[MODULO(i, _COUNT_OF(_kelly_colors))];
 }
 
 vec3 color_plasma(real t) {
@@ -2859,7 +2859,7 @@ IndexedTriangleMesh3D _mesh_utils_indexed_triangle_mesh_load(char *filename, boo
             FILE *fp = fopen(filename, "r");
             ASSERT(fp);
             char buffer[4096];
-            while (fgets(buffer, _LENGTH_FIXED_SIZE_ARRAY(buffer), fp) != NULL) {
+            while (fgets(buffer, _COUNT_OF(buffer), fp) != NULL) {
                 char prefix[16] = {};
                 sscanf(buffer, "%s", prefix);
                 if (strcmp(prefix, "f") == 0) {
@@ -2904,7 +2904,7 @@ Soup3D _mesh_utils_soup_TRIANGLES_load(char *filename, bool transform_vertex_pos
             FILE *fp = fopen(filename, "r");
             ASSERT(fp);
             char buffer[4096];
-            while (fgets(buffer, _LENGTH_FIXED_SIZE_ARRAY(buffer), fp) != NULL) {
+            while (fgets(buffer, _COUNT_OF(buffer), fp) != NULL) {
                 real x, y, z;
                 ASSERT(sscanf(buffer, "%lf %lf %lf", &x, &y, &z) == 3);
                 sbuff_push_back(&vertex_positions, { x, y, z });
