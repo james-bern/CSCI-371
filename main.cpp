@@ -1,6 +1,13 @@
 #include "include.cpp"
 
 void app_treasure() {
+    StretchyBuffer<int> numbers = {};
+    sbuff_push_back(&numbers, 4);
+    sbuff_push_back(&numbers, 2);
+    ASSERT(numbers.length == 2);
+    printf("%d", numbers[0]);
+    printf("%d", numbers[1]);
+    sbuff_free(&numbers);
 
     StretchyBuffer<vec3> vertex_positions = {}; {
         FILE *fp = fopen("TreasureChest.obj", "r");
@@ -22,15 +29,8 @@ void app_treasure() {
     while (cow_begin_frame()) {
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
-
         // TODO add this line to wiki
-        soup_draw(
-                PV,
-                SOUP_POINTS,
-                vertex_positions.length,
-                vertex_positions.data,
-                NULL,
-                monokai.red);
+        soup_draw(PV, SOUP_POINTS, vertex_positions.length, vertex_positions.data, NULL, monokai.red);
 
     }
 }

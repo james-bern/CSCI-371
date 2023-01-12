@@ -2626,12 +2626,10 @@ template <typename T> void sbuff_push_back(StretchyBuffer<T> *buffer, T element)
 }
 
 template <typename T> void sbuff_free(StretchyBuffer<T> *buffer) {
-    buffer->length = 0;
-    buffer->capacity = 0;
     if (buffer->data) {
         free(buffer->data);
     }
-    buffer->data = NULL;
+    buffer = {};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3016,14 +3014,6 @@ void _sound_reset() {
     cs_music_stop(0);
 }
 
-void sound_attach_to_gui() {
-    real tmp = COW1._sound_music_gui_1_minus_volume;
-    gui_slider("music volume                                                                                                                                ", &COW1._sound_music_gui_1_minus_volume, 1.0, 0.0, false);
-    if (COW1._sound_music_gui_1_minus_volume != tmp) {
-        cs_music_set_volume(1.0f - float(COW1._sound_music_gui_1_minus_volume));
-    }
-}
-
 int _sound_load(char *filename) {
     ASSERT(COW1._sound_num_loaded < SOUND_MAX_DIFFERENT_FILES);
     ASSERT(strlen(filename) < SOUND_MAX_FILENAME_LENGTH - 1); // ?
@@ -3059,6 +3049,14 @@ int _sound_find_load(char *filename) { // fornow O(n)
     return audio_source_i;
 }
 
+void sound_attach_to_gui() {
+    real tmp = COW1._sound_music_gui_1_minus_volume;
+    gui_slider("music volume                                                                                                                                ", &COW1._sound_music_gui_1_minus_volume, 1.0, 0.0, false);
+    if (COW1._sound_music_gui_1_minus_volume != tmp) {
+        cs_music_set_volume(1.0f - float(COW1._sound_music_gui_1_minus_volume));
+    }
+}
+
 void sound_play_sound(char *filename) {
     _sound_play_sound(_sound_find_load(filename));
 }
@@ -3066,6 +3064,8 @@ void sound_play_sound(char *filename) {
 void sound_loop_music(char *filename) {
     _sound_loop_music(_sound_find_load(filename));
 }
+
+#define sound_stop_all do {cs_stop_all_playing_sounds sound_stop_all(); } while (0)
 
 ////////////////////////////////////////////////////////////////////////////////
 // #include "recorder.cpp" /////////////////////////////////////////////////////
