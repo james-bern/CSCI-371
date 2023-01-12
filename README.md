@@ -1,3 +1,5 @@
+## [docs (click me)](https://github.com/james-bern/CSCI-371/wiki)
+
 ## quick start guide
 i highly recommended you get the code running on your own computer, however, the only machines that we will officially support are those in the Ward Lab (TBL 301) or Unix Lab* (TCL 312). _***note:** in the Unix Lab, only the computers with blue dots on them have GPU's_
 <details>
@@ -84,8 +86,6 @@ i highly recommended you get the code running on your own computer, however, the
 - **open file explorer:** start .
 - **show hidden files:** press `⊞ Win`; type Show hidden files; File Explorer Options -> Show hidden files... (also a good time to make sure Hide extensions for known file types is unchecked)
 </details>
-
-
 
 ## more details
 <details>
