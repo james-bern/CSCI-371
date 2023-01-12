@@ -1,14 +1,5 @@
-⚠ <b>now serving hw2</b> ⚠
-
-<b>if you are ready to start this week's hw...</b>
-- rename the CSCI-371 folder on your Desktop to something else
-- repeat the cloning instructions below to get a new CSCI-371 folder with the files and docs for this week's hw 🙂🤙
-
-<b>(rare) if you haven't started last week's hw...</b>
-- replace CSCI-371/hw.cpp with the file from CSCI-371/old_hw/hwX/hw.cpp
-
 ## quick start guide
-i highly recommended you get the code running on your own computer, however, the only machines that we will officially support are those in the Ward Lab (TBL 301) or Unix Lab* (TCL 312). _*in the Unix Lab, only the computers with blue dots on them have GPU's_
+i highly recommended you get the code running on your own computer, however, the only machines that we will officially support are those in the Ward Lab (TBL 301) or Unix Lab* (TCL 312). _***note:** in the Unix Lab, only the computers with blue dots on them have GPU's_
 <details>
   <summary>🐧 on a linux machine in the Ward Lab or Unix Lab</summary>
  
