@@ -42,8 +42,8 @@
 #define COW_KEY_ESCAPE GLFW_KEY_ESCAPE
 #define COW_KEY_ARROW_LEFT GLFW_KEY_LEFT
 #define COW_KEY_ARROW_RIGHT GLFW_KEY_RIGHT
-#undef GLFW_KEY_LEFT_SHIFT  // use cow.key_shift_held instead
-#undef GLFW_KEY_RIGHT_SHIFT // use cow.key_shift_held instead
+#undef GLFW_KEY_LEFT_SHIFT  // use globals.key_shift_held instead
+#undef GLFW_KEY_RIGHT_SHIFT // use globals.key_shift_held instead
 #define SOUND_MAX_DIFFERENT_FILES 32
 #define SOUND_MAX_FILENAME_LENGTH 64
 #define ITRI_MAX_NUM_TEXTURES 32
@@ -52,7 +52,7 @@
 typedef unsigned char u8;
 typedef unsigned int u32;
 
-// use these ONLY in cow.cpp in structs where you would really like to store a snail type
+// use these ONLY in globals.cpp in structs where you would really like to store a snail type
 #ifdef SNAIL_CPP
 typedef vec2 _vec2;
 typedef vec3 _vec3;
@@ -412,7 +412,7 @@ struct C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset 
 
 
 CW_USER_FACING_CONFIG config;
-C2_READONLY_USER_FACING_DATA cow; // COW2
+C2_READONLY_USER_FACING_DATA globals; // COW2
 CX_INTERNAL_CONSTANTS COWX;
 C0_PersistsAcrossApps_NeverAutomaticallyClearedToZero__ManageItYourself COW0;
 C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
@@ -469,7 +469,9 @@ C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
 
 // // working with int's
 #define MODULO(x, N) (((x) % (N) + (N)) % (N)) // works on negative numbers
-#define NELEMS(fixed_size_array) int(sizeof(fixed_size_array) / sizeof((fixed_size_array)[0]))
+// #define int(sizeof(fixed_size_array) / sizeof((fixed_size_array)[0]))
+#define _COUNT_OF(fixed_size_array) ((sizeof(fixed_size_array)/sizeof(0[fixed_size_array])) / ((size_t)(!(sizeof(fixed_size_array) % sizeof(0[fixed_size_array])))))
+
 #define IS_ODD(a) ((a) % 2 != 0)
 #define IS_EVEN(a) ((a) % 2 == 0)
 
@@ -480,7 +482,7 @@ C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
 #define CONCAT(a, b) CONCAT_(a, b)
 #define _NOOP(foo) foo
 
-#define SUPPRESS_UNUSED_VARIABLE_COMPILER_WARNING(expr) do { (void)(expr); } while (0)
+#define _SUPPRESS_UNUSED_VARIABLE_COMPILER_WARNING(expr) do { (void)(expr); } while (0)
 
 // // horrifying
 #define do_once \
@@ -1021,23 +1023,23 @@ mat4 _window_get_NDC_from_Screen() {
 
 void _input_begin_frame() {
     ASSERT(COW0._cow_initialized);
-    memset(cow.key_pressed, 0, sizeof(cow.key_pressed));
-    memset(cow.key_released, 0, sizeof(cow.key_released));
-    cow.mouse_left_pressed = false;
-    cow.mouse_left_released = false;
-    cow.mouse_right_pressed = false;
-    cow.mouse_right_released = false;
-    cow.mouse_change_in_position_Screen[0] = 0;
-    cow.mouse_change_in_position_Screen[1] = 0;
-    cow.mouse_change_in_position_NDC[0] = 0;
-    cow.mouse_change_in_position_NDC[1] = 0;
-    cow.mouse_wheel_offset = 0;
+    memset(globals.key_pressed, 0, sizeof(globals.key_pressed));
+    memset(globals.key_released, 0, sizeof(globals.key_released));
+    globals.mouse_left_pressed = false;
+    globals.mouse_left_released = false;
+    globals.mouse_right_pressed = false;
+    globals.mouse_right_released = false;
+    globals.mouse_change_in_position_Screen[0] = 0;
+    globals.mouse_change_in_position_Screen[1] = 0;
+    globals.mouse_change_in_position_NDC[0] = 0;
+    globals.mouse_change_in_position_NDC[1] = 0;
+    globals.mouse_wheel_offset = 0;
     glfwPollEvents();
     // NOTE e.g. key_*['j'] the same as key_*['J']
     for (int i = 0; i < 26; ++i) {
-        cow.key_pressed ['a' + i] = cow.key_pressed ['A' + i];
-        cow.key_held    ['a' + i] = cow.key_held    ['A' + i];
-        cow.key_released['a' + i] = cow.key_released['A' + i];
+        globals.key_pressed ['a' + i] = globals.key_pressed ['A' + i];
+        globals.key_held    ['a' + i] = globals.key_held    ['A' + i];
+        globals.key_released['a' + i] = globals.key_released['A' + i];
     }
 }
 
@@ -1050,8 +1052,8 @@ void _input_get_mouse_position_and_change_in_position_in_world_coordinates(
     ASSERT(PV);
     real World_from_NDC[16] = {};
     _linalg_mat4_inverse(World_from_NDC, PV);
-    real   xy[4] = { cow.mouse_position_NDC[0],  cow.mouse_position_NDC[1],  0.0, 1.0 }; // point
-    real dxdy[4] = { cow.mouse_change_in_position_NDC[0], cow.mouse_change_in_position_NDC[1], 0.0, 0.0 }; // vector
+    real   xy[4] = { globals.mouse_position_NDC[0],  globals.mouse_position_NDC[1],  0.0, 1.0 }; // point
+    real dxdy[4] = { globals.mouse_change_in_position_NDC[0], globals.mouse_change_in_position_NDC[1], 0.0, 0.0 }; // vector
     _linalg_mat4_times_vec4_persp_divide(xy, World_from_NDC, xy);
     _linalg_mat4_times_vec4_persp_divide(dxdy, World_from_NDC, dxdy);
     if (mouse_x_world) *mouse_x_world = xy[0];
@@ -1077,63 +1079,63 @@ void _callback_key(GLFWwindow *, int key, int, int action, int mods) {
     if (key < 0) { return; }
     if (key >= 512) { return; }
     if (action == GLFW_PRESS) {
-        cow.key_pressed[key] = true;
-        cow.key_held[key] = true;
-        // cow.key_toggle[key] = !cow.key_toggle[key];
+        globals.key_pressed[key] = true;
+        globals.key_held[key] = true;
+        // globals.key_toggle[key] = !globals.key_toggle[key];
     } else if (action == GLFW_RELEASE) {
-        cow.key_released[key] = true;
-        cow.key_held[key] = false;
+        globals.key_released[key] = true;
+        globals.key_held[key] = false;
     }
-    cow.key_shift_held = (mods & GLFW_MOD_SHIFT);
+    globals.key_shift_held = (mods & GLFW_MOD_SHIFT);
 }
 
 void _callback_cursor_position(GLFWwindow *, real xpos, real ypos) {
-    real tmp_mouse_s_NDC_0 = cow.mouse_position_NDC[0];
-    real tmp_mouse_s_NDC_1 = cow.mouse_position_NDC[1];
-    real tmp_mouse_s_Screen_0 = cow.mouse_position_Screen[0];
-    real tmp_mouse_s_Screen_1 = cow.mouse_position_Screen[1];
+    real tmp_mouse_s_NDC_0 = globals.mouse_position_NDC[0];
+    real tmp_mouse_s_NDC_1 = globals.mouse_position_NDC[1];
+    real tmp_mouse_s_Screen_0 = globals.mouse_position_Screen[0];
+    real tmp_mouse_s_Screen_1 = globals.mouse_position_Screen[1];
 
     { // macbook retina nonsense
         xpos *= COW0._window_macbook_retina_scale;
         ypos *= COW0._window_macbook_retina_scale;
     }
 
-    cow.mouse_position_Screen[0] = xpos;
-    cow.mouse_position_Screen[1] = ypos;
+    globals.mouse_position_Screen[0] = xpos;
+    globals.mouse_position_Screen[1] = ypos;
     real s_NDC[4] = {}; {
         real s_Screen[4] = { xpos, ypos, 0, 1 };
-        _linalg_mat4_times_vec4_persp_divide(s_NDC, (real *) &cow.NDC_from_Screen, s_Screen);
+        _linalg_mat4_times_vec4_persp_divide(s_NDC, (real *) &globals.NDC_from_Screen, s_Screen);
     }
-    cow.mouse_position_NDC[0] = s_NDC[0];
-    cow.mouse_position_NDC[1] = s_NDC[1];
+    globals.mouse_position_NDC[0] = s_NDC[0];
+    globals.mouse_position_NDC[1] = s_NDC[1];
     // callback may be called multiple times per frame
-    cow.mouse_change_in_position_Screen[0] += (cow.mouse_position_Screen[0] - tmp_mouse_s_Screen_0);
-    cow.mouse_change_in_position_Screen[1] += (cow.mouse_position_Screen[1] - tmp_mouse_s_Screen_1);
-    cow.mouse_change_in_position_NDC[0] += (cow.mouse_position_NDC[0] - tmp_mouse_s_NDC_0);
-    cow.mouse_change_in_position_NDC[1] += (cow.mouse_position_NDC[1] - tmp_mouse_s_NDC_1);
+    globals.mouse_change_in_position_Screen[0] += (globals.mouse_position_Screen[0] - tmp_mouse_s_Screen_0);
+    globals.mouse_change_in_position_Screen[1] += (globals.mouse_position_Screen[1] - tmp_mouse_s_Screen_1);
+    globals.mouse_change_in_position_NDC[0] += (globals.mouse_position_NDC[0] - tmp_mouse_s_NDC_0);
+    globals.mouse_change_in_position_NDC[1] += (globals.mouse_position_NDC[1] - tmp_mouse_s_NDC_1);
 }
 
 void _callback_mouse_button(GLFWwindow *, int button, int action, int) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         if (action == GLFW_PRESS) { 
-            cow.mouse_left_pressed = true;
-            cow.mouse_left_held = true;
+            globals.mouse_left_pressed = true;
+            globals.mouse_left_held = true;
         } else if (action == GLFW_RELEASE) { 
-            cow.mouse_left_released = true;
-            cow.mouse_left_held = false;
+            globals.mouse_left_released = true;
+            globals.mouse_left_held = false;
         }
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
         if (action == GLFW_PRESS) { 
-            cow.mouse_right_pressed = true;
-            cow.mouse_right_held = true;
+            globals.mouse_right_pressed = true;
+            globals.mouse_right_held = true;
         } else if (action == GLFW_RELEASE) { 
-            cow.mouse_right_held = false;
+            globals.mouse_right_held = false;
         }
     }
 }
 
 void _callback_scroll(GLFWwindow *, real, real yoffset) {
-    cow.mouse_wheel_offset += yoffset;
+    globals.mouse_wheel_offset += yoffset;
 }
 
 void _callback_framebuffer_size(GLFWwindow *, int width, int height) {
@@ -1178,7 +1180,7 @@ bool _app_while_loop_condition() {
         ++COW0._app_numApps; \
     } else { \
         if (COW0._app_menu) { \
-            if (cow.key_pressed['q']) { break; } \
+            if (globals.key_pressed['q']) { break; } \
             if (gui_button(STR(_app_name)"()", 'a' + COW0._app_check)) { \
                 COW0._app_index = COW0._app_check; \
                 COW0._app_menu = false; \
@@ -1189,11 +1191,11 @@ bool _app_while_loop_condition() {
                 _cow_reset(); \
                 window_set_title(COW0._app_buffer); \
                 _app_name(); \
-                if (cow.key_pressed['q'] && cow.key_shift_held) {                                                          break;                                 } \
-                if (cow.key_pressed['q'                 ]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { break;                               } } \
-                if (cow.key_pressed[config.hotkeys_app_next]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { COW0._app_index = 0;                   } } \
-                if (cow.key_pressed[config.hotkeys_app_prev]) { COW0._app_index--; if (COW0._app_index == -1             ) { COW0._app_index = COW0._app_numApps - 1; } } \
-                if (cow.key_pressed[config.hotkeys_app_menu]) { \
+                if (globals.key_pressed['q'] && globals.key_shift_held) {                                                          break;                                 } \
+                if (globals.key_pressed['q'                 ]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { break;                               } } \
+                if (globals.key_pressed[config.hotkeys_app_next]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { COW0._app_index = 0;                   } } \
+                if (globals.key_pressed[config.hotkeys_app_prev]) { COW0._app_index--; if (COW0._app_index == -1             ) { COW0._app_index = COW0._app_numApps - 1; } } \
+                if (globals.key_pressed[config.hotkeys_app_menu]) { \
                     COW0._app_index = 0; \
                     COW0._app_menu = true; \
                     _cow_reset(); \
@@ -1369,9 +1371,9 @@ void _soup_init() {
     COW0._soup_shader_program_POINTS = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag_POINTS, COWX._soup_geom_POINTS);
     COW0._soup_shader_program_LINES = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag, COWX._soup_geom_LINES);
     COW0._soup_shader_program_TRIANGLES = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag);
-    glGenVertexArrays(NELEMS(COW0._soup_VAO), COW0._soup_VAO);
-    glGenBuffers(NELEMS(COW0._soup_VBO), COW0._soup_VBO);
-    glGenBuffers(NELEMS(COW0._soup_EBO), COW0._soup_EBO);
+    glGenVertexArrays(_LENGTH_FIXED_SIZE_ARRAY(COW0._soup_VAO), COW0._soup_VAO);
+    glGenBuffers(_LENGTH_FIXED_SIZE_ARRAY(COW0._soup_VBO), COW0._soup_VBO);
+    glGenBuffers(_LENGTH_FIXED_SIZE_ARRAY(COW0._soup_EBO), COW0._soup_EBO);
 }
 
 void _soup_draw(
@@ -1782,7 +1784,7 @@ void _text_draw(
                 0, 0, 0, 1,
             };
 
-            _linalg_mat4_times_mat4(transform, (real *) &cow.NDC_from_Screen, TS);
+            _linalg_mat4_times_mat4(transform, (real *) &globals.NDC_from_Screen, TS);
             for (int d = 0; d < 3; ++d) transform[4 * d + 3] += s_NDC[d];
         }
 
@@ -1842,7 +1844,7 @@ template<int D_pos = 3, int D_color = 3> void text_draw(
 void _gui_begin_frame() {
     COW1._gui_x_curr = 32;
     COW1._gui_y_curr = 48;
-    if (cow.key_pressed[config.hotkeys_gui_hide]) {
+    if (globals.key_pressed[config.hotkeys_gui_hide]) {
         COW1._gui_hide_and_disable = !COW1._gui_hide_and_disable;
     }
 }
@@ -1860,14 +1862,14 @@ void gui_printf(const char *format, ...) {
     char *text = _text;
     char *sep = strchr(text, '`'); // fornow hacking in two color text
     if (!sep) {
-        _text_draw((real *) &cow.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 1.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
+        _text_draw((real *) &globals.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 1.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
     } else {
         real tmp = COW1._gui_x_curr; {
             *sep = 0;
-            _text_draw((real *) &cow.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 1.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
+            _text_draw((real *) &globals.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 1.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
             COW1._gui_x_curr += 2 * stb_easy_font_width(text);
             text = sep + 1;
-            _text_draw((real *) &cow.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 0.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
+            _text_draw((real *) &globals.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 0.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
         } COW1._gui_x_curr = tmp;
     }
 
@@ -1899,7 +1901,7 @@ char *_gui_hotkey2string(int hotkey) {
 bool gui_button(char *t, int hotkey = 0) {
     if (COW1._gui_hide_and_disable) { return false; }
     real s_mouse[2];
-    _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &cow.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
+    _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &globals.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
 
     // fornow
     static char text[256];
@@ -1921,11 +1923,11 @@ bool gui_button(char *t, int hotkey = 0) {
 
     bool hot = IS_BETWEEN(s_mouse[0], box[0], box[2]) && IS_BETWEEN(s_mouse[1], box[1], box[5]);
 
-    if (!COW1._gui_selected && ((hot && cow.mouse_left_pressed) || cow.key_pressed[hotkey])) {
+    if (!COW1._gui_selected && ((hot && globals.mouse_left_pressed) || globals.key_pressed[hotkey])) {
         COW1._gui_selected = t;
     }
     if (COW1._gui_selected == t) {
-        if (cow.mouse_left_released || cow.key_released[hotkey]) {
+        if (globals.mouse_left_released || globals.key_released[hotkey]) {
             COW1._gui_selected = NULL;
         }
     }
@@ -1934,11 +1936,11 @@ bool gui_button(char *t, int hotkey = 0) {
     if (COW1._gui_selected != t) {
         real nudge = SGN(.5 - r) * .1;
         r += nudge; 
-        if (hot || cow.key_held[hotkey]) r += nudge; 
+        if (hot || globals.key_held[hotkey]) r += nudge; 
     }
     {
-        _soup_draw((real *) &cow.NDC_from_Screen, SOUP_QUADS, _SOUP_XY, _SOUP_RGB, 4, box, NULL, r, r, r, 1, 0, false, true);
-        _soup_draw((real *) &cow.NDC_from_Screen, SOUP_LINE_LOOP, _SOUP_XY, _SOUP_RGB, 4, box, NULL, 1, 1, 1, 1, 4, false, true);
+        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_QUADS, _SOUP_XY, _SOUP_RGB, 4, box, NULL, r, r, r, 1, 0, false, true);
+        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_LINE_LOOP, _SOUP_XY, _SOUP_RGB, 4, box, NULL, 1, 1, 1, 1, 4, false, true);
     }
     COW1._gui_x_curr += 8;
     COW1._gui_y_curr += 4;
@@ -1946,13 +1948,13 @@ bool gui_button(char *t, int hotkey = 0) {
     COW1._gui_y_curr += 8;
     COW1._gui_x_curr -= 8;
 
-    return (COW1._gui_selected == t) && (cow.mouse_left_pressed || cow.key_pressed[hotkey]);
+    return (COW1._gui_selected == t) && (globals.mouse_left_pressed || globals.key_pressed[hotkey]);
 }
 
 void gui_checkbox(char *name, bool *t, int hotkey = 0) {
     if (COW1._gui_hide_and_disable) { return; }
     real s_mouse[2];
-    _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &cow.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
+    _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &globals.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
     real L = 16;
     real box[8] = {
         COW1._gui_x_curr    , COW1._gui_y_curr    ,
@@ -1962,12 +1964,12 @@ void gui_checkbox(char *name, bool *t, int hotkey = 0) {
     };
     bool hot = IS_BETWEEN(s_mouse[0], box[0], box[2]) && IS_BETWEEN(s_mouse[1], box[1], box[5]);
 
-    if ((hot && cow.mouse_left_pressed) || cow.key_pressed[hotkey]) {
+    if ((hot && globals.mouse_left_pressed) || globals.key_pressed[hotkey]) {
         *t = !(*t);
         if (!COW1._gui_selected) COW1._gui_selected = t;
     }
     if (COW1._gui_selected == t) {
-        if (cow.mouse_left_released || cow.key_released[hotkey]) {
+        if (globals.mouse_left_released || globals.key_released[hotkey]) {
             COW1._gui_selected = NULL;
         }
     }
@@ -1976,11 +1978,11 @@ void gui_checkbox(char *name, bool *t, int hotkey = 0) {
     if (COW1._gui_selected != t) {
         real nudge = SGN(.5 - r) * .1;
         r += nudge; 
-        if (hot || cow.key_held[hotkey]) r += nudge; 
+        if (hot || globals.key_held[hotkey]) r += nudge; 
     }
     {
-        _soup_draw((real *) &cow.NDC_from_Screen, SOUP_QUADS, _SOUP_XY, _SOUP_RGB, 4, box, NULL, r, r, r, 1, 0, false, true);
-        _soup_draw((real *) &cow.NDC_from_Screen, SOUP_LINE_LOOP, _SOUP_XY, _SOUP_RGB, 4, box, NULL, 1, 1, 1, 1, 4, false, true);
+        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_QUADS, _SOUP_XY, _SOUP_RGB, 4, box, NULL, r, r, r, 1, 0, false, true);
+        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_LINE_LOOP, _SOUP_XY, _SOUP_RGB, 4, box, NULL, 1, 1, 1, 1, 4, false, true);
     }
     COW1._gui_x_curr += 2 * L;
     if (hotkey) {
@@ -2006,39 +2008,39 @@ void gui_readout(char *name, real *t) {
 void _gui_slider(char *text, void *t, real *t_copy, real a, real b) {
     COW1._gui_y_curr += 8;
     real s_mouse[2];
-    _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &cow.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
+    _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &globals.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
     real w = 166;
     real band[4] = { COW1._gui_x_curr, COW1._gui_y_curr, COW1._gui_x_curr + w, COW1._gui_y_curr };
     real s_dot[2] = { LERP(INVERSE_LERP(*t_copy, a, b), band[0], band[2]), band[1] };
 
-    if (cow._mouse_owner == COW_MOUSE_OWNER_NONE || cow._mouse_owner == COW_MOUSE_OWNER_GUI) {
+    if (globals._mouse_owner == COW_MOUSE_OWNER_NONE || globals._mouse_owner == COW_MOUSE_OWNER_GUI) {
         bool is_near = _linalg_vecX_squared_distance(2, s_dot, s_mouse) < COW0._window_macbook_retina_scale * 16;
         if (is_near) {
             COW1._gui_hot = t;
-            cow._mouse_owner = COW_MOUSE_OWNER_GUI;
+            globals._mouse_owner = COW_MOUSE_OWNER_GUI;
         }
         if (COW1._gui_hot == t && !is_near) {
             COW1._gui_hot = 0;
-            if (COW1._gui_selected != t) cow._mouse_owner = COW_MOUSE_OWNER_NONE;
+            if (COW1._gui_selected != t) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
         }
     }
-    if (!COW1._gui_selected && (COW1._gui_hot == t) && cow.mouse_left_pressed) {
-        cow._mouse_owner = COW_MOUSE_OWNER_GUI;
+    if (!COW1._gui_selected && (COW1._gui_hot == t) && globals.mouse_left_pressed) {
+        globals._mouse_owner = COW_MOUSE_OWNER_GUI;
         COW1._gui_selected = t;
     }
     if (COW1._gui_selected == t) {
-        if (cow.mouse_left_held) {
+        if (globals.mouse_left_held) {
             *t_copy = LERP(CLAMP(INVERSE_LERP(s_mouse[0], band[0], band[2]), 0, 1), a, b);
         }
-        if (cow.mouse_left_released) {
-            if (COW1._gui_hot != t) cow._mouse_owner = COW_MOUSE_OWNER_NONE;
+        if (globals.mouse_left_released) {
+            if (COW1._gui_hot != t) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
             COW1._gui_selected = 0;
         }
     }
     {
-        _soup_draw((real *) &cow.NDC_from_Screen, SOUP_LINES, _SOUP_XY, _SOUP_RGB, 2, band, NULL, .6, .6, .6, 1, 6, false, true);
+        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_LINES, _SOUP_XY, _SOUP_RGB, 2, band, NULL, .6, .6, .6, 1, 6, false, true);
         real r = (COW1._gui_selected == t) ? 1 : (COW1._gui_hot == t) ? .9 : .8;
-        _soup_draw((real *) &cow.NDC_from_Screen, SOUP_POINTS, _SOUP_XY, _SOUP_RGB, 1, s_dot, NULL, r, r, r, 1, (COW1._gui_hot == t && COW1._gui_selected != t) ? 17 : 14, false, true);
+        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_POINTS, _SOUP_XY, _SOUP_RGB, 1, s_dot, NULL, r, r, r, 1, (COW1._gui_hot == t && COW1._gui_selected != t) ? 17 : 14, false, true);
     }
     COW1._gui_y_curr -= 8;
     COW1._gui_x_curr += w + 16;
@@ -2058,9 +2060,9 @@ void gui_slider(char *name, int *t, int a, int b, int j, int k, bool loop) {
     }
     _gui_slider(text, t, &tmp, a, b);
     *t = int(.5 + tmp);
-    if (cow.key_pressed[k]) ++(*t);
-    if (cow.key_pressed[j]) --(*t);
-    if (cow.key_pressed[k] || cow.key_pressed[j]) {
+    if (globals.key_pressed[k]) ++(*t);
+    if (globals.key_pressed[j]) --(*t);
+    if (globals.key_pressed[k] || globals.key_pressed[j]) {
         *t = (!loop) ? CLAMP(*t, a, b) : a + MODULO(*t - a, (b + 1) - a);
     }
 }
@@ -2085,7 +2087,7 @@ void gui_slider(char *name, real *t, real a, real b, bool readout_in_degrees) {
 void _itri_init() {
     COW0._itri_shader_program = shader_compile_and_build_program(COWX._itri_vert, COWX._itri_frag);
     glGenVertexArrays(1, &COW0._itri_VAO);
-    glGenBuffers(NELEMS(COW0._itri_VBO), COW0._itri_VBO);
+    glGenBuffers(_LENGTH_FIXED_SIZE_ARRAY(COW0._itri_VBO), COW0._itri_VBO);
     glGenBuffers(1, &COW0._itri_EBO);
     stbi_set_flip_vertically_on_load(true);
 }
@@ -2425,12 +2427,12 @@ void camera_move(Camera2D *camera, bool disable_pan = false, bool disable_zoom =
     _camera_get_PV(camera, NDC_from_World);
     real x, y, dx, dy;
     _input_get_mouse_position_and_change_in_position_in_world_coordinates(NDC_from_World, &x, &y, &dx, &dy);
-    if (!disable_pan && cow.mouse_right_held) {
+    if (!disable_pan && globals.mouse_right_held) {
         camera->o_x -= dx;
         camera->o_y -= dy;
     }
-    else if (!disable_zoom && !IS_ZERO(cow.mouse_wheel_offset)) {
-        camera->screen_height_World *= (1 - .1 * cow.mouse_wheel_offset);
+    else if (!disable_zoom && !IS_ZERO(globals.mouse_wheel_offset)) {
+        camera->screen_height_World *= (1 - .1 * globals.mouse_wheel_offset);
 
         // zoom while preserving mouse position                
         //                                                     
@@ -2461,7 +2463,7 @@ void camera_move(Camera2D *camera, bool disable_pan = false, bool disable_zoom =
 }
 
 void camera_move(Camera3D *camera, bool disable_pan = false, bool disable_zoom = false, bool disable_rotate = false) {
-    disable_rotate |= (cow._mouse_owner != COW_MOUSE_OWNER_NONE);
+    disable_rotate |= (globals._mouse_owner != COW_MOUSE_OWNER_NONE);
     { // 2D transforms
         Camera2D tmp2D = { camera_get_screen_height_World(camera), camera->o_x, camera->o_y };
         camera_move(&tmp2D, disable_pan, disable_zoom);
@@ -2484,10 +2486,10 @@ void camera_move(Camera3D *camera, bool disable_pan = false, bool disable_zoom =
         camera->o_x = tmp2D.o_x;
         camera->o_y = tmp2D.o_y;
     }
-    if (!disable_rotate && cow.mouse_left_held) {
+    if (!disable_rotate && globals.mouse_left_held) {
         real fac = 2;
-        camera->theta -= fac * cow.mouse_change_in_position_NDC[0];
-        camera->phi += fac * cow.mouse_change_in_position_NDC[1];
+        camera->theta -= fac * globals.mouse_change_in_position_NDC[0];
+        camera->phi += fac * globals.mouse_change_in_position_NDC[1];
         camera->phi = CLAMP(camera->phi, -RAD(90), RAD(90));
     }
 }
@@ -2580,7 +2582,7 @@ struct {
 
 vec3 color_kelly(int i) {
     static vec3 _kelly_colors[]={{255./255,179./255,0./255},{128./255,62./255,117./255},{255./255,104./255,0./255},{166./255,189./255,215./255},{193./255,0./255,32./255},{206./255,162./255,98./255},{129./255,112./255,102./255},{0./255,125./255,52./255},{246./255,118./255,142./255},{0./255,83./255,138./255},{255./255,122./255,92./255},{83./255,55./255,122./255},{255./255,142./255,0./255},{179./255,40./255,81./255},{244./255,200./255,0./255},{127./255,24./255,13./255},{147./255,170./255,0./255},{89./255,51./255,21./255},{241./255,58./255,19./255},{35./255,44./255,22./255}};
-    return _kelly_colors[MODULO(i, NELEMS(_kelly_colors))];
+    return _kelly_colors[MODULO(i, _LENGTH_FIXED_SIZE_ARRAY(_kelly_colors))];
 }
 
 vec3 color_plasma(real t) {
@@ -2608,19 +2610,19 @@ vec3 color_rainbow_swirl(real t) {
 
 template <typename T> struct StretchyBuffer {
     int length;
-    int capacity;
+    int _capacity;
     T *data;
     T &operator [](int index) { return data[index]; }
 };
 
 template <typename T> void sbuff_push_back(StretchyBuffer<T> *buffer, T element) {
-    if (buffer->capacity == 0) {
-        buffer->capacity = 16;
-        buffer->data = (T *) malloc(buffer->capacity * sizeof(T));
+    if (buffer->_capacity == 0) {
+        buffer->_capacity = 16;
+        buffer->data = (T *) malloc(buffer->_capacity * sizeof(T));
     }
-    if (buffer->length == buffer->capacity) {
-        buffer->capacity *= 2;
-        buffer->data = (T *) realloc(buffer->data, buffer->capacity * sizeof(T));
+    if (buffer->length == buffer->_capacity) {
+        buffer->_capacity *= 2;
+        buffer->data = (T *) realloc(buffer->data, buffer->_capacity * sizeof(T));
     }
     buffer->data[buffer->length++] = element;
 }
@@ -2857,7 +2859,7 @@ IndexedTriangleMesh3D _mesh_utils_indexed_triangle_mesh_load(char *filename, boo
             FILE *fp = fopen(filename, "r");
             ASSERT(fp);
             char buffer[4096];
-            while (fgets(buffer, NELEMS(buffer), fp) != NULL) {
+            while (fgets(buffer, _LENGTH_FIXED_SIZE_ARRAY(buffer), fp) != NULL) {
                 char prefix[16] = {};
                 sscanf(buffer, "%s", prefix);
                 if (strcmp(prefix, "f") == 0) {
@@ -2902,7 +2904,7 @@ Soup3D _mesh_utils_soup_TRIANGLES_load(char *filename, bool transform_vertex_pos
             FILE *fp = fopen(filename, "r");
             ASSERT(fp);
             char buffer[4096];
-            while (fgets(buffer, NELEMS(buffer), fp) != NULL) {
+            while (fgets(buffer, _LENGTH_FIXED_SIZE_ARRAY(buffer), fp) != NULL) {
                 real x, y, z;
                 ASSERT(sscanf(buffer, "%lf %lf %lf", &x, &y, &z) == 3);
                 sbuff_push_back(&vertex_positions, { x, y, z });
@@ -2944,7 +2946,7 @@ long utils_timestamp_in_milliseconds() { // no promises this is even a little bi
 ////////////////////////////////////////////////////////////////////////////////
 
 bool _widget_drag(real *PV, int num_vertices, real *vertex_positions, real size_in_pixels, real r, real g, real b, real a) {
-    if (cow._mouse_owner != COW_MOUSE_OWNER_NONE && cow._mouse_owner != COW_MOUSE_OWNER_WIDGET) return false;
+    if (globals._mouse_owner != COW_MOUSE_OWNER_NONE && globals._mouse_owner != COW_MOUSE_OWNER_WIDGET) return false;
     static real *selected;
     if (selected) { // fornow: allows multiple calls to this function between begin_frame
         bool found = false;
@@ -2963,14 +2965,14 @@ bool _widget_drag(real *PV, int num_vertices, real *vertex_positions, real size_
                 real *ptr = vertex_positions + 2 * i;
                 real tmp[4] = { ptr[0], ptr[1], 0, 1 };
                 _linalg_mat4_times_vec4_persp_divide(tmp, PV, tmp);
-                for (int d = 0; d < 2; ++d) tmp[d] -= cow.mouse_position_NDC[d];
+                for (int d = 0; d < 2; ++d) tmp[d] -= globals.mouse_position_NDC[d];
                 if (_linalg_vecX_squared_length(2, tmp) < pow(.02, 2)) { // todo comparison in pixels
                     hot = ptr;
                 }
             }
         }
         if (hot) {
-            if (cow.mouse_left_pressed) {
+            if (globals.mouse_left_pressed) {
                 selected = hot;
             }
         }
@@ -2978,9 +2980,9 @@ bool _widget_drag(real *PV, int num_vertices, real *vertex_positions, real size_
 
     real mouse_xy_World[2];
     _input_get_mouse_position_and_change_in_position_in_world_coordinates(PV, mouse_xy_World, mouse_xy_World + 1, NULL, NULL);
-    if (cow.mouse_left_held && selected) {
+    if (globals.mouse_left_held && selected) {
         for (int d = 0; d < 2; ++d) *(selected + d) = mouse_xy_World[d];
-    } else if (cow.mouse_left_released) {
+    } else if (globals.mouse_left_released) {
         selected = NULL;
     }
 
@@ -2988,7 +2990,7 @@ bool _widget_drag(real *PV, int num_vertices, real *vertex_positions, real size_
         _soup_draw(PV, SOUP_POINTS, _SOUP_XY, _SOUP_RGB, 1, hot, NULL, r, g, b, a, size_in_pixels, false, true);
     }
 
-    cow._mouse_owner = (hot || selected) ? COW_MOUSE_OWNER_WIDGET : COW_MOUSE_OWNER_NONE;
+    globals._mouse_owner = (hot || selected) ? COW_MOUSE_OWNER_WIDGET : COW_MOUSE_OWNER_NONE;
     return selected;
 }
 
@@ -3076,7 +3078,7 @@ void sound_loop_music(char *filename) {
 
 void _recorder_draw_pacman(real r, real g, real b, real a, real f) {
     real aspect = window_get_aspect();
-    _eso_begin((real *) &cow.I, SOUP_TRIANGLE_FAN, 0.0, false, true);
+    _eso_begin((real *) &globals.I, SOUP_TRIANGLE_FAN, 0.0, false, true);
     real o[2] = { (aspect - .25) / aspect, .75 };
     real radius = .125;
     int N = 32;
@@ -3090,7 +3092,7 @@ void _recorder_draw_pacman(real r, real g, real b, real a, real f) {
 }
 
 void _recorder_begin_frame() { // record
-    if ((cow.key_shift_held && cow.key_pressed['`']) || COW0._recorder_out_of_space) {
+    if ((globals.key_shift_held && globals.key_pressed['`']) || COW0._recorder_out_of_space) {
         COW0._recorder_recording = !COW0._recorder_recording;
         if (COW0._recorder_recording) { // start
             real _width, _height;
@@ -3147,18 +3149,18 @@ void _recorder_begin_frame() { // record
     if (COW0._recorder_recording) { // save frame
         { // draw mouse
             eso_color(1.0, 1.0, 1.0, 1.0);
-            _eso_begin((real *) &cow.NDC_from_Screen, SOUP_TRIANGLE_FAN, 10.0, false, true);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  0, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale *  0);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  0, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 14);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  4, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  6, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale * 12, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
+            _eso_begin((real *) &globals.NDC_from_Screen, SOUP_TRIANGLE_FAN, 10.0, false, true);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  0, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale *  0);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  0, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 14);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  4, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  6, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale * 12, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
             eso_end();
-            _eso_begin((real *) &cow.NDC_from_Screen, SOUP_QUADS, 10.0, false, true);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  4, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  6, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  9, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 17);
-            eso_vertex(cow.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  7, cow.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 17);
+            _eso_begin((real *) &globals.NDC_from_Screen, SOUP_QUADS, 10.0, false, true);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  4, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  6, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 11);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  9, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 17);
+            eso_vertex(globals.mouse_position_Screen[0] + COW0._window_macbook_retina_scale *  7, globals.mouse_position_Screen[1] + COW0._window_macbook_retina_scale * 17);
             eso_end();
         }
 
@@ -3369,7 +3371,7 @@ void _cow_reset() {
     ASSERT(COW0._cow_initialized);
 
     COW1 = {};
-    cow._mouse_owner = COW_MOUSE_OWNER_NONE; // fornow
+    globals._mouse_owner = COW_MOUSE_OWNER_NONE; // fornow
 
     _sound_reset();
     _window_reset();
@@ -3378,12 +3380,12 @@ void _cow_reset() {
 bool cow_begin_frame() {
     ASSERT(COW0._cow_initialized);
 
-    _window_get_NDC_from_Screen((real *) &cow.NDC_from_Screen);
+    _window_get_NDC_from_Screen((real *) &globals.NDC_from_Screen);
 
     { // help force_draw_on_top
         static bool help;
         static bool push_gui_hide_and_disable;
-        if (cow.key_shift_held && cow.key_pressed['/']) {
+        if (globals.key_shift_held && globals.key_pressed['/']) {
             help = !help;
             if (help) {
                 push_gui_hide_and_disable = COW1._gui_hide_and_disable;
@@ -3395,7 +3397,7 @@ bool cow_begin_frame() {
         // TODO better hiding
         if (help) {
             real box[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
-            _soup_draw((real *) &cow.I, SOUP_QUADS, 2, 4, 4, box, NULL, 0.0, 0.0, 0.0, 0.8, 0, false, true);
+            _soup_draw((real *) &globals.I, SOUP_QUADS, 2, 4, 4, box, NULL, 0.0, 0.0, 0.0, 0.8, 0, false, true);
             COW1._gui_hide_and_disable = false; {
                 _gui_begin_frame();
                 gui_printf("config.hotkeys_*");
@@ -3427,14 +3429,14 @@ bool cow_begin_frame() {
     { // framerate overlay
         static int measured_fps;
         // request uncapped framerate 
-        if (cow.key_pressed['/'] && !cow.key_shift_held) {
+        if (globals.key_pressed['/'] && !globals.key_shift_held) {
             static bool uncapped;
             uncapped = !uncapped;
             glfwSwapInterval(!uncapped);
         }
         { // display fps
             static bool display_fps;
-            if (cow.key_pressed['\\']) {
+            if (globals.key_pressed['\\']) {
                 display_fps = !display_fps;
             }
             if (display_fps) {
@@ -3447,7 +3449,7 @@ bool cow_begin_frame() {
                 }
                 char text[16] = {};
                 snprintf(text, sizeof(text), "fps: %d", fps);
-                _text_draw((real *) &cow.NDC_from_Screen, text, 0.0, 0.0, 0.0, (fps < 45) ? 1.0 : 0.0, (fps > 30) ? 1.0 : 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, true);
+                _text_draw((real *) &globals.NDC_from_Screen, text, 0.0, 0.0, 0.0, (fps < 45) ? 1.0 : 0.0, (fps > 30) ? 1.0 : 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, true);
             }
         }
         real dt;
@@ -3469,10 +3471,10 @@ bool cow_begin_frame() {
     }
 
     return !(
-            cow.key_pressed[config.hotkeys_app_next]
-            || cow.key_pressed[config.hotkeys_app_prev]
-            || cow.key_pressed['q']
-            || cow.key_pressed[config.hotkeys_app_menu]
+            globals.key_pressed[config.hotkeys_app_next]
+            || globals.key_pressed[config.hotkeys_app_prev]
+            || globals.key_pressed['q']
+            || globals.key_pressed[config.hotkeys_app_menu]
             );
 }
 
@@ -3514,7 +3516,7 @@ void eg_meshlib() {
 
         meshlib.soup_bunny.draw(PV * M_wire, monokai.purple);
         meshlib.itri_bunny.draw(P, V, M_smooth, monokai.purple);
-        meshlib.itri_bunny.draw(P, cow.I, V * M_matcap, {}, "codebase/matcap.png");
+        meshlib.itri_bunny.draw(P, globals.I, V * M_matcap, {}, "codebase/matcap.png");
 
         gui_checkbox("draw_axes", &draw_axes);
         if (draw_axes) {
@@ -3536,7 +3538,7 @@ void eg_text() {
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
 
-        text_draw(cow.NDC_from_Screen, "<- mouse", cow.mouse_position_Screen); 
+        text_draw(globals.NDC_from_Screen, "<- mouse", globals.mouse_position_Screen); 
 
         {
             char *text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
@@ -3640,26 +3642,26 @@ void eg_kitchen_sink() {
         mat4 M_smooth = Translation(0.0, 0.0, 0.0) * R;
         mat4 M_matcap = Translation( 2.2, 0.0, 0.0) * R;
 
-        vec3 color = !(cow.mouse_left_held && !cow._mouse_owner) ? monokai.purple : monokai.blue;
+        vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? monokai.purple : monokai.blue;
         meshlib.soup_bunny.draw(PV * M_wire, color);
         meshlib.itri_bunny.draw(P, V, M_smooth, color);
-        meshlib.itri_bunny.draw(P, cow.I, V * M_matcap, {}, "codebase/matcap.png");
+        meshlib.itri_bunny.draw(P, globals.I, V * M_matcap, {}, "codebase/matcap.png");
 
         gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
         if (draw_axes) {
             meshlib.soup_axes.draw(PV);
         }
 
-        vec2 s_mouse = cow.mouse_position_NDC;
+        vec2 s_mouse = globals.mouse_position_NDC;
         if (trace.length == 0 || squaredNorm(trace[trace.length - 1] - s_mouse) > .0001) {
             sbuff_push_back(&trace, s_mouse);
         }
-        soup_draw(cow.I, SOUP_LINE_STRIP, trace.length, trace.data, NULL, color_rainbow_swirl(time), 0, false, true);
+        soup_draw(globals.I, SOUP_LINE_STRIP, trace.length, trace.data, NULL, color_rainbow_swirl(time), 0, false, true);
         if (gui_button("clear trace", 'r')) {
             sbuff_free(&trace);
         }
 
-        text_draw(cow.NDC_from_Screen, "  :3", cow.mouse_position_Screen); 
+        text_draw(globals.NDC_from_Screen, "  :3", globals.mouse_position_Screen); 
 
         {
             char *text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
