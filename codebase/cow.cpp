@@ -1767,8 +1767,8 @@ void _text_draw(
     }
 
     real s_NDC[4] = {}; {
-        real s_world[4] = { x_world, y_world, z_world, 1 };
-        _linalg_mat4_times_vec4_persp_divide(s_NDC, PV, s_world);
+        real position_World[4] = { x_world, y_world, z_world, 1 };
+        _linalg_mat4_times_vec4_persp_divide(s_NDC, PV, position_World);
     }
 
     if (IS_BETWEEN(s_NDC[2], -1, 1)) {
@@ -1809,10 +1809,10 @@ void _text_draw(
 template<int D_pos = 3, int D_color = 3> void text_draw(
         mat4 PV,
         char *text,
-        Vec<D_pos> s_world,
+        Vec<D_pos> position_World,
         Vec<D_color> color = { 1.0, 1.0, 1.0 },
         real font_size_in_pixels = 0,
-        vec2 ds_in_pixels = { 0.0, 0.0 },
+        vec2 nudge_in_pixels = { 0.0, 0.0 },
         bool force_draw_on_top = false
         ) {
     STATIC_ASSERT(D_pos == 2 || D_pos == 3 || D_pos == 4);
@@ -1820,16 +1820,16 @@ template<int D_pos = 3, int D_color = 3> void text_draw(
     _text_draw(
             PV.data,
             text,
-            s_world[0],
-            s_world[1],
-            D_pos == 3 ? s_world[2] : 0.0,
+            position_World[0],
+            position_World[1],
+            D_pos == 3 ? position_World[2] : 0.0,
             color[0],
             color[1],
             color[2],
             D_color == 4 ? color[3] : 1.0,
             font_size_in_pixels,
-            ds_in_pixels[0],
-            ds_in_pixels[1],
+            nudge_in_pixels[0],
+            nudge_in_pixels[1],
             force_draw_on_top
             );
 }
