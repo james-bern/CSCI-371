@@ -15,7 +15,7 @@ typedef double real;
 #include <cstring>
 #include <cmath>
 
-#if 1
+#if 0
 // // optional style guide (consider disabling after hw0 if you already enjoy modern C++)
 #define new        error__cow_style__prefer__malloc_free__over__new_delete
 #define delete     error__cow_style__prefer__malloc_free__over__new_delete

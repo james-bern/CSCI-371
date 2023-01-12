@@ -1,36 +1,39 @@
-// TODO sol.cpp solution to all the homeworks from last semester (will tell you exactly what functions to document)
-// doughnut 
-
-// TODO user just calls functions (no need to interact with state)
-// TODO make it one file
-// TODO make it FLAT (prefixes for everything) -- no anonymous structs
-
 #include "include.cpp"
 
+void app_treasure() {
 
-// #include "10sol.cpp"
+    StretchyBuffer<vec3> vertex_positions = {}; {
+        FILE *fp = fopen("TreasureChest.obj", "r");
+        ASSERT(fp);
+        char line[4096];
+        while (fgets(line, NELEMS(line), fp) != NULL) {
+            char prefix[64] = {};
+            sscanf(line, "%s", prefix);
+            if (strcmp(prefix, "v") == 0) {
+                real x, y, z;
+                ASSERT(sscanf(line, "%s %lf %lf %lf", prefix, &x, &y, &z) == 4);
+                sbuff_push_back(&vertex_positions, { x, y, z });
+            }
+        }
+        fclose(fp);
+    }
 
-// new features
-// ------------
-// ? TRIANGLE_MESH and QUAD_MESH done in one pass with custom shaders
-// text entry box for int, real, char * (then have bool to optionally add to slider)
-// drop down menu for enums?
-// fix transparent window stuff (blend mode?--background shouldn't show through)
+    Camera3D camera = { 10.0, RAD(0) };
+    while (cow_begin_frame()) {
+        camera_move(&camera);
+        mat4 PV = camera_get_PV(&camera);
 
-// old features to modernize / port
-// ------------
-// fancy_draw  
+        // TODO add this line to wiki
+        soup_draw(
+                PV,
+                SOUP_POINTS,
+                vertex_positions.length,
+                vertex_positions.data,
+                NULL,
+                monokai.red);
 
-// starter code
-// ------------
-// custom_shader
-
-// homework
-// ------------
-// matcap
-// raymarching -- vec4 (alpha)
-
-
+    }
+}
 
 
 int main() {
@@ -38,10 +41,8 @@ int main() {
     config.tweaks_soup_draw_with_rounded_corners_for_all_line_primitives = true;
 
     APPS {
-        // APP(exam10);
-        APP(eg_soup);
-        APP(eg_kitchen_sink);
-        // _APP_EXAMPLES_ALL();
+        APP(app_treasure);
+        // APP(eg_kitchen_sink);
     }
 
     return 0;
