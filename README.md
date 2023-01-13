@@ -1,35 +1,6 @@
-⚠ <b>now serving hw2</b> ⚠
-
-<b>if you are ready to start this week's hw...</b>
-- rename the CSCI-371 folder on your Desktop to something else
-- repeat the cloning instructions below to get a new CSCI-371 folder with the files and docs for this week's hw 🙂🤙
-
-<b>(rare) if you haven't started last week's hw...</b>
-- replace CSCI-371/hw.cpp with the file from CSCI-371/old_hw/hwX/hw.cpp
+## [🐄 docs (click me) 🐌](https://github.com/james-bern/CSCI-371/wiki)
 
 ## quick start guide
-i highly recommended you get the code running on your own computer, however, the only machines that we will officially support are those in the Ward Lab (TBL 301) or Unix Lab* (TCL 312). _*in the Unix Lab, only the computers with blue dots on them have GPU's_
-<details>
-  <summary>🐧 on a linux machine in the Ward Lab or Unix Lab</summary>
- 
-#### build and run
-- **open a terminal:** `CTRL + Alt + T`
-- **(optional; breaks `Ctrl + V` binding for Vim) change Terminal's paste shortcut from `Ctrl + Shift + V` to `Ctrl + V`:** Terminal -> Preferences -> Shortcuts -> Edit -> Paste -> `CTRL + V`
-- **navigate to Desktop:** `cd Desktop`
-- **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
-- **navigate into repo:** `cd CSCI-371`
-- **build and run / debug:** `source ubuntu_build_and_run.sh --help`
-#### debug
-- **_install CodeLLDB when prompted_**
-- **(optional but recommended) install C/C++ extension:** https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
-#### misc
-- **make a file executable (runnable as `./foo.bar`):** `chmod +x foo.bar`
-- **open file explorer:** `nautilus .`
-- **show hidden folders in file explorer:** `Ctrl + H`
-- **panic in terminal:** `Ctrl + C`
-- **unfreeze the terminal (frozen by Ctrl + S):** `Ctrl + Q`
-</details>
-
 <details>
   <summary>🍏 on your macbook</summary>
 
@@ -93,8 +64,26 @@ i highly recommended you get the code running on your own computer, however, the
 - **open file explorer:** start .
 - **show hidden files:** press `⊞ Win`; type Show hidden files; File Explorer Options -> Show hidden files... (also a good time to make sure Hide extensions for known file types is unchecked)
 </details>
-
-
+<details>
+  <summary>🐧 on a linux machine in the Ward Lab (TBL 301; has NUC's) or Unix Lab (TCL 312; computers with blue dots have GPU's)</summary>
+ 
+#### build and run
+- **open a terminal:** `CTRL + Alt + T`
+- **(optional; breaks `Ctrl + V` binding for Vim) change Terminal's paste shortcut from `Ctrl + Shift + V` to `Ctrl + V`:** Terminal -> Preferences -> Shortcuts -> Edit -> Paste -> `CTRL + V`
+- **navigate to Desktop:** `cd Desktop`
+- **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
+- **navigate into repo:** `cd CSCI-371`
+- **build and run / debug:** `source ubuntu_build_and_run.sh --help`
+#### debug
+- **_install CodeLLDB when prompted_**
+- **(optional but recommended) install C/C++ extension:** https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
+#### misc
+- **make a file executable (runnable as `./foo.bar`):** `chmod +x foo.bar`
+- **open file explorer:** `nautilus .`
+- **show hidden folders in file explorer:** `Ctrl + H`
+- **panic in terminal:** `Ctrl + C`
+- **unfreeze the terminal (frozen by Ctrl + S):** `Ctrl + Q`
+</details>
 
 ## more details
 <details>
