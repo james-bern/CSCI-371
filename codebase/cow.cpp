@@ -1231,75 +1231,75 @@ int _shader_compile(char *source, GLenum type) {
 };
 
 int _shader_build_program(int vertex_shader, int fragment_shader, int geometry_shader = 0) {
-    int shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertex_shader);
-    glAttachShader(shader_program, fragment_shader);
-    if (geometry_shader) glAttachShader(shader_program, geometry_shader);
-    glLinkProgram(shader_program);
+    int shader_program_ID = glCreateProgram();
+    glAttachShader(shader_program_ID, vertex_shader);
+    glAttachShader(shader_program_ID, fragment_shader);
+    if (geometry_shader) glAttachShader(shader_program_ID, geometry_shader);
+    glLinkProgram(shader_program_ID);
     {
         int success = 0;
-        glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+        glGetProgramiv(shader_program_ID, GL_LINK_STATUS, &success);
         if (!success) {
             { // log
                 char infoLog[512];
-                glGetProgramInfoLog(shader_program, 512, NULL, infoLog);
+                glGetProgramInfoLog(shader_program_ID, 512, NULL, infoLog);
                 printf("%s", infoLog);
             }
             ASSERT(0);
         }
     }
-    return shader_program;
+    return shader_program_ID;
 };
 
-int shader_compile_and_build_program(char *vertex_shader_source, char *fragment_shader_source, char *geometry_shader_source = 0) {
+int _shader_compile_and_build_program(char *vertex_shader_source, char *fragment_shader_source, char *geometry_shader_source = NULL) {
     int vert = _shader_compile(vertex_shader_source, GL_VERTEX_SHADER);
     int frag = _shader_compile(fragment_shader_source, GL_FRAGMENT_SHADER);
     int geom = geometry_shader_source ? _shader_compile(geometry_shader_source, GL_GEOMETRY_SHADER) : 0;
     return _shader_build_program(vert, frag, geom);
 }
 
-int _shader_get_uniform_location(int ID, char *name) {
-    ASSERT(ID);
-    int location = glGetUniformLocation(ID, name);
+int _shader_get_uniform_location(int shader_program_ID, char *name) {
+    ASSERT(shader_program_ID);
+    int location = glGetUniformLocation(shader_program_ID, name);
     return location;
 }
 
-void _shader_set_uniform_real(int ID, char *name, real value) {
-    glUniform1f(_shader_get_uniform_location(ID, name), float(value));
+void _shader_set_uniform_bool(int shader_program_ID, char *name, bool value) {
+    glUniform1ui(_shader_get_uniform_location(shader_program_ID, name), value);
 }
 
-void _shader_set_uniform_int(int ID, char *name, int value) {
-    glUniform1i(_shader_get_uniform_location(ID, name), value);
+void _shader_set_uniform_int(int shader_program_ID, char *name, int value) {
+    glUniform1i(_shader_get_uniform_location(shader_program_ID, name), value);
 }
 
-void _shader_set_uniform_bool(int ID, char *name, bool value) {
-    glUniform1ui(_shader_get_uniform_location(ID, name), value);
+void _shader_set_uniform_real(int shader_program_ID, char *name, real value) {
+    glUniform1f(_shader_get_uniform_location(shader_program_ID, name), float(value));
 }
 
-void _shader_set_uniform_vec2(int ID, char *name, real *value) {
+void _shader_set_uniform_vec2(int shader_program_ID, char *name, real *value) {
     ASSERT(value);
-    glUniform2f(_shader_get_uniform_location(ID, name), float(value[0]), float(value[1]));
+    glUniform2f(_shader_get_uniform_location(shader_program_ID, name), float(value[0]), float(value[1]));
 }
 
-void _shader_set_uniform_vec3(int ID, char *name, real *value) {
+void _shader_set_uniform_vec3(int shader_program_ID, char *name, real *value) {
     ASSERT(value);
-    glUniform3f(_shader_get_uniform_location(ID, name), float(value[0]), float(value[1]), float(value[2]));
+    glUniform3f(_shader_get_uniform_location(shader_program_ID, name), float(value[0]), float(value[1]), float(value[2]));
 }
 
-void _shader_set_uniform_vec4(int ID, char *name, real *value) {
+void _shader_set_uniform_vec4(int shader_program_ID, char *name, real *value) {
     ASSERT(value);
-    glUniform4f(_shader_get_uniform_location(ID, name), float(value[0]), float(value[1]), float(value[2]), float(value[3]));
+    glUniform4f(_shader_get_uniform_location(shader_program_ID, name), float(value[0]), float(value[1]), float(value[2]), float(value[3]));
 }
 
-void _shader_set_uniform_mat4(int ID, char *name, real *value) {
+void _shader_set_uniform_mat4(int shader_program_ID, char *name, real *value) {
     ASSERT(value);
     float as_floats[16] = {}; {
         for (int k = 0; k < 16; ++k) as_floats[k] = float(value[k]);
     }
-    glUniformMatrix4fv(_shader_get_uniform_location(ID, name), 1, GL_TRUE, as_floats);
+    glUniformMatrix4fv(_shader_get_uniform_location(shader_program_ID, name), 1, GL_TRUE, as_floats);
 }
 
-void _shader_set_uniform_array_vec3(int ID, char *name, int count, real *value) {
+void _shader_set_uniform_array_vec3(int shader_program_ID, char *name, int count, real *value) {
     ASSERT(value);
     float *tmp = (float *) malloc(count * 3 * sizeof(float)); 
     for (int i = 0; i < count; ++i) {
@@ -1307,41 +1307,98 @@ void _shader_set_uniform_array_vec3(int ID, char *name, int count, real *value) 
             tmp[3 * i + d] = float(value[3 * i + d]);
         }
     }
-    glUniform3fv(_shader_get_uniform_location(ID, name), count, tmp);
+    glUniform3fv(_shader_get_uniform_location(shader_program_ID, name), count, tmp);
     free(tmp);
 }
 
 #ifdef SNAIL_CPP
-void shader_set_uniform(int ID, char *name, real value) {
-    _shader_set_uniform_real(ID, name, value);
+void _shader_set_uniform(int shader_program_ID, char *name, real value) {
+    _shader_set_uniform_real(shader_program_ID, name, value);
 }
 
-void shader_set_uniform(int ID, char *name, int value)  {
-    _shader_set_uniform_int(ID, name, value);
+void _shader_set_uniform(int shader_program_ID, char *name, int value)  {
+    _shader_set_uniform_int(shader_program_ID, name, value);
 }
 
-void shader_set_uniform(int ID, char *name, bool value) {
-    _shader_set_uniform_bool(ID, name, value);
+void _shader_set_uniform(int shader_program_ID, char *name, bool value) {
+    _shader_set_uniform_bool(shader_program_ID, name, value);
 }
 
-void shader_set_uniform(int ID, char *name, vec2 value) {
-    _shader_set_uniform_vec2(ID, name, (real *) &value);
+void _shader_set_uniform(int shader_program_ID, char *name, vec2 value) {
+    _shader_set_uniform_vec2(shader_program_ID, name, (real *) &value);
 }
 
-void shader_set_uniform(int ID, char *name, vec3 value) {
-    _shader_set_uniform_vec3(ID, name, (real *) &value);
+void _shader_set_uniform(int shader_program_ID, char *name, vec3 value) {
+    _shader_set_uniform_vec3(shader_program_ID, name, (real *) &value);
 }
 
-void shader_set_uniform(int ID, char *name, vec4 value) {
-    _shader_set_uniform_vec4(ID, name, (real *) &value);
+void _shader_set_uniform(int shader_program_ID, char *name, vec4 value) {
+    _shader_set_uniform_vec4(shader_program_ID, name, (real *) &value);
 }
 
-void shader_set_uniform(int ID, char *name, mat4 value) {
-    _shader_set_uniform_mat4(ID, name, value.data);
+void _shader_set_uniform(int shader_program_ID, char *name, mat4 value) {
+    _shader_set_uniform_mat4(shader_program_ID, name, value.data);
 }
 
-void shader_set_uniform(int ID, char *name, int count, vec3 *value) {
-    _shader_set_uniform_array_vec3(ID, name, count, (real *) value);
+void _shader_set_uniform(int shader_program_ID, char *name, int count, vec3 *value) {
+    _shader_set_uniform_array_vec3(shader_program_ID, name, count, (real *) value);
+}
+
+struct Shader {
+    int _program_ID;
+    int _num_vertex_attributes;
+    int _attribute_counter;
+    GLuint _VAO;
+    GLuint _VBO[16];
+    GLuint _EBO;
+};
+
+Shader shader_create(
+        char *vertex_shader_source,
+        int num_vertex_attributes,
+        char *fragment_shader_source,
+        char *geometry_shader_source = NULL) {
+    ASSERT(vertex_shader_source);
+    ASSERT(fragment_shader_source);
+    ASSERT(num_vertex_attributes);
+
+    Shader shader = {};
+    shader._num_vertex_attributes = num_vertex_attributes;
+    shader._program_ID = _shader_compile_and_build_program(vertex_shader_source, fragment_shader_source, geometry_shader_source);
+    glGenVertexArrays(1, &shader._VAO);
+    glGenBuffers(num_vertex_attributes, shader._VBO);
+    glGenBuffers(1, &shader._EBO);
+    return shader;
+};
+
+template <typename T> void shader_set_uniform(Shader *shader, char *name, T value) {
+    ASSERT(shader);
+    ASSERT(name);
+    _shader_set_uniform(shader->_program_ID, name, value);
+}
+template <int D> void shader_pass_vertex_attribute(Shader *shader, int num_vertices, Vec<D> *vertex_attribute) {
+    ASSERT(shader);
+    ASSERT(vertex_attribute);
+    ASSERT(shader->_attribute_counter + 1 <= shader->_num_vertex_attributes); // you just set more attributes than you said you would
+    glUseProgram(shader->_program_ID);
+    glBindVertexArray(shader->_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, shader->_VBO[shader->_attribute_counter]);
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * D * sizeof(double), vertex_attribute, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(shader->_attribute_counter, D, GL_DOUBLE, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(shader->_attribute_counter);
+    ++shader->_attribute_counter;
+}
+void shader_draw(Shader *shader, int num_triangles, int3 *triangle_indices) {
+    ASSERT(shader);
+    ASSERT(triangle_indices);
+    ASSERT(shader->_attribute_counter == shader->_num_vertex_attributes); // you haven't set all the attributes you said you would
+    shader->_attribute_counter = 0;
+
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shader->_EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * num_triangles * sizeof(int), triangle_indices, GL_DYNAMIC_DRAW);
+    glUseProgram(shader->_program_ID);
+    glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
 }
 #endif
 
@@ -1368,9 +1425,9 @@ void shader_set_uniform(int ID, char *name, int count, vec3 *value) {
 #define _SOUP_RGBA 4
 
 void _soup_init() {
-    COW0._soup_shader_program_POINTS = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag_POINTS, COWX._soup_geom_POINTS);
-    COW0._soup_shader_program_LINES = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag, COWX._soup_geom_LINES);
-    COW0._soup_shader_program_TRIANGLES = shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag);
+    COW0._soup_shader_program_POINTS = _shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag_POINTS, COWX._soup_geom_POINTS);
+    COW0._soup_shader_program_LINES = _shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag, COWX._soup_geom_LINES);
+    COW0._soup_shader_program_TRIANGLES = _shader_compile_and_build_program(COWX._soup_vert, COWX._soup_frag);
     glGenVertexArrays(_COUNT_OF(COW0._soup_VAO), COW0._soup_VAO);
     glGenBuffers(_COUNT_OF(COW0._soup_VBO), COW0._soup_VBO);
     glGenBuffers(_COUNT_OF(COW0._soup_EBO), COW0._soup_EBO);
@@ -1474,32 +1531,32 @@ void _soup_draw(
     guarded_push(vvv_size, vertex_positions, dimension_of_positions);
     guarded_push(ccc_size, vertex_colors, dimension_of_colors);
 
-    int shader_program = 0; {
+    int shader_program_ID = 0; {
         if (primitive == SOUP_POINTS) {
-            shader_program = COW0._soup_shader_program_POINTS;
+            shader_program_ID = COW0._soup_shader_program_POINTS;
         } else if (primitive == SOUP_LINES || primitive == SOUP_LINE_STRIP || primitive == SOUP_LINE_LOOP) {
-            shader_program = COW0._soup_shader_program_LINES;
+            shader_program_ID = COW0._soup_shader_program_LINES;
         } else { // including SOUP_QUADS
-            shader_program = COW0._soup_shader_program_TRIANGLES;
+            shader_program_ID = COW0._soup_shader_program_TRIANGLES;
         }
     }
-    ASSERT(shader_program);
-    glUseProgram(shader_program);
+    ASSERT(shader_program_ID);
+    glUseProgram(shader_program_ID);
 
-    _shader_set_uniform_real(shader_program, "aspect", _window_get_aspect());
+    _shader_set_uniform_real(shader_program_ID, "aspect", _window_get_aspect());
     if (use_world_units_instead_of_pixels) {
         real tmp[4] = {  0.0, 0.5 * size_in_pixels, 0.0 , 0.0 };
         _linalg_mat4_times_vec4_persp_divide(tmp, PVM, tmp);
-        _shader_set_uniform_real(shader_program, "primitive_radius_NDC",
+        _shader_set_uniform_real(shader_program_ID, "primitive_radius_NDC",
                 sqrt(_linalg_vecX_squared_length(4, tmp)));
     } else {
-        _shader_set_uniform_real(shader_program, "primitive_radius_NDC",
+        _shader_set_uniform_real(shader_program_ID, "primitive_radius_NDC",
                 0.5 * size_in_pixels / _window_get_height());
     } 
-    _shader_set_uniform_bool(shader_program, "has_vertex_colors", vertex_colors != NULL);
-    _shader_set_uniform_bool(shader_program, "force_draw_on_top", force_draw_on_top);
-    _shader_set_uniform_mat4(shader_program, "PVM", PVM);
-    _shader_set_uniform_vec4(shader_program, "color_if_vertex_colors_is_NULL", color_if_vertex_colors_is_NULL);
+    _shader_set_uniform_bool(shader_program_ID, "has_vertex_colors", vertex_colors != NULL);
+    _shader_set_uniform_bool(shader_program_ID, "force_draw_on_top", force_draw_on_top);
+    _shader_set_uniform_mat4(shader_program_ID, "PVM", PVM);
+    _shader_set_uniform_vec4(shader_program_ID, "color_if_vertex_colors_is_NULL", color_if_vertex_colors_is_NULL);
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -2097,7 +2154,7 @@ void gui_slider(
 ////////////////////////////////////////////////////////////////////////////////
 
 void _itri_init() {
-    COW0._itri_shader_program = shader_compile_and_build_program(COWX._itri_vert, COWX._itri_frag);
+    COW0._itri_shader_program = _shader_compile_and_build_program(COWX._itri_vert, COWX._itri_frag);
     glGenVertexArrays(1, &COW0._itri_VAO);
     glGenBuffers(_COUNT_OF(COW0._itri_VBO), COW0._itri_VBO);
     glGenBuffers(1, &COW0._itri_EBO);
@@ -2221,6 +2278,10 @@ void _itri_draw(
         }
     }
 
+    // NOTE moved this up before the pushes; is that okay?
+    ASSERT(COW0._itri_shader_program);
+    glUseProgram(COW0._itri_shader_program);
+
     glBindVertexArray(COW0._itri_VAO);
     int i_attrib = 0;
     auto guarded_push = [&](void *array, int dim) {
@@ -2238,9 +2299,6 @@ void _itri_draw(
     guarded_push(vertex_normals, 3);
     guarded_push(vertex_colors, 3);
     guarded_push(vertex_texCoords, 2);
-
-    ASSERT(COW0._itri_shader_program);
-    glUseProgram(COW0._itri_shader_program);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, COW0._itri_EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * num_triangles * sizeof(u32), triangle_indices, GL_DYNAMIC_DRAW);
@@ -3718,6 +3776,51 @@ void eg_kitchen_sink() {
         }
     }
 }
+
+
+// TODO improve
+
+void eg_shader() {
+    char *vertex_shader_source = R""(
+        #version 330 core
+        uniform mat4 transform;
+        layout (location = 0) in vec3 vertex_position;
+        layout (location = 1) in vec3 vertex_normal;
+        out vec3 color;
+        void main() {
+            color = vertex_normal;
+            gl_Position = transform * vec4(vertex_position, 1.0);
+        }
+    )"";
+
+    char *fragment_shader_source = R""(
+        #version 330 core
+        in vec3 color;
+        out vec4 fragColor;
+        void main() {
+            fragColor = vec4(color, 1.0);
+        }
+    )"";
+
+    Shader shader = shader_create(vertex_shader_source, 2, fragment_shader_source);
+
+    IndexedTriangleMesh3D mesh = meshlib.itri_bunny;
+    int num_vertices       = mesh.num_vertices;
+    vec3 *vertex_positions = mesh.vertex_positions;
+    vec3 *vertex_normals   = mesh.vertex_normals;
+    int num_triangles      = mesh.num_triangles;
+    int3 *triangle_indices = mesh.triangle_indices;
+
+    Camera3D camera = { 5.0 };
+    while (cow_begin_frame()) {
+        camera_move(&camera);
+        shader_set_uniform(&shader, "transform", camera_get_PV(&camera));
+        shader_pass_vertex_attribute(&shader, num_vertices, vertex_positions);
+        shader_pass_vertex_attribute(&shader, num_vertices, vertex_normals);
+        shader_draw(&shader, num_triangles, triangle_indices);
+    }
+}
+
 #endif
 
 void _eg_no_snail() {

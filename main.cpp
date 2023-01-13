@@ -34,7 +34,8 @@ int main() {
     config.tweaks_soup_draw_with_rounded_corners_for_all_line_primitives = true;
 
     APPS {
-        APP(app_treasure);
+        APP(eg_shader);
+        // APP(app_treasure);
         APP(eg_kitchen_sink);
     }
 
