@@ -104,7 +104,7 @@ struct C2_READONLY_USER_FACING_DATA {
 
     int _mouse_owner;
 
-    _mat4 I = { 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+    _mat4 Identity = { 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
     _mat4 NDC_from_Screen;
 };
 
@@ -1063,12 +1063,12 @@ void _input_get_mouse_position_and_change_in_position_in_world_coordinates(
 }
 
 #ifdef SNAIL_CPP
-vec2 input_get_mouse_position_in_world_coordinates(mat4 PV) {
+vec2 mouse_get_position(mat4 PV) {
     vec2 ret;
     _input_get_mouse_position_and_change_in_position_in_world_coordinates(PV.data, &ret[0], &ret[1], NULL, NULL);
     return ret;
 }
-vec2 input_get_mouse_change_in_position_in_world_coordinates(mat4 PV) {
+vec2 mouse_get_change_in_position(mat4 PV) {
     vec2 ret;
     _input_get_mouse_position_and_change_in_position_in_world_coordinates(PV.data, NULL, NULL, &ret[0], &ret[1]);
     return ret;
@@ -1876,6 +1876,18 @@ void gui_printf(const char *format, ...) {
     COW1._gui_y_curr += 28;
 }
 
+void gui_readout(char *name, int *variable) {
+    if (!name) name = "";
+    char *join = (char *)((name) ? " " : "");
+    gui_printf("%s%s%d", name, join, *variable);
+}
+
+void gui_readout(char *name, real *variable) {
+    if (!name) name = "";
+    char *join = (char *)((name) ? " " : "");
+    gui_printf("%s%s%.2lf", name, join, *variable);
+}
+
 char *_gui_hotkey2string(int hotkey) {
     if (hotkey == COW_KEY_TAB) {
         return "TAB";
@@ -1898,7 +1910,7 @@ char *_gui_hotkey2string(int hotkey) {
     return dummy + 2 * hotkey;
 }
 
-bool gui_button(char *t, int hotkey = 0) {
+bool gui_button(char *name, int hotkey = '\0') {
     if (COW1._gui_hide_and_disable) { return false; }
     real s_mouse[2];
     _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &globals.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
@@ -1906,9 +1918,9 @@ bool gui_button(char *t, int hotkey = 0) {
     // fornow
     static char text[256];
     if (hotkey) {
-        snprintf(text, sizeof(text), "%s `%s", t, _gui_hotkey2string(hotkey));
+        snprintf(text, sizeof(text), "%s `%s", name, _gui_hotkey2string(hotkey));
     } else {
-        strcpy(text, t);
+        strcpy(text, name);
     }
     real L = (2 * stb_easy_font_width(text) + 16); // fornow
     if (hotkey) L -= 12;
@@ -1924,16 +1936,16 @@ bool gui_button(char *t, int hotkey = 0) {
     bool hot = IS_BETWEEN(s_mouse[0], box[0], box[2]) && IS_BETWEEN(s_mouse[1], box[1], box[5]);
 
     if (!COW1._gui_selected && ((hot && globals.mouse_left_pressed) || globals.key_pressed[hotkey])) {
-        COW1._gui_selected = t;
+        COW1._gui_selected = name;
     }
-    if (COW1._gui_selected == t) {
+    if (COW1._gui_selected == name) {
         if (globals.mouse_left_released || globals.key_released[hotkey]) {
             COW1._gui_selected = NULL;
         }
     }
 
-    real r = (COW1._gui_selected != t) ? 0 : .8;
-    if (COW1._gui_selected != t) {
+    real r = (COW1._gui_selected != name) ? 0 : .8;
+    if (COW1._gui_selected != name) {
         real nudge = SGN(.5 - r) * .1;
         r += nudge; 
         if (hot || globals.key_held[hotkey]) r += nudge; 
@@ -1948,10 +1960,10 @@ bool gui_button(char *t, int hotkey = 0) {
     COW1._gui_y_curr += 8;
     COW1._gui_x_curr -= 8;
 
-    return (COW1._gui_selected == t) && (globals.mouse_left_pressed || globals.key_pressed[hotkey]);
+    return (COW1._gui_selected == name) && (globals.mouse_left_pressed || globals.key_pressed[hotkey]);
 }
 
-void gui_checkbox(char *name, bool *t, int hotkey = 0) {
+void gui_checkbox(char *name, bool *variable, int hotkey = '\0') {
     if (COW1._gui_hide_and_disable) { return; }
     real s_mouse[2];
     _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &globals.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
@@ -1965,17 +1977,17 @@ void gui_checkbox(char *name, bool *t, int hotkey = 0) {
     bool hot = IS_BETWEEN(s_mouse[0], box[0], box[2]) && IS_BETWEEN(s_mouse[1], box[1], box[5]);
 
     if ((hot && globals.mouse_left_pressed) || globals.key_pressed[hotkey]) {
-        *t = !(*t);
-        if (!COW1._gui_selected) COW1._gui_selected = t;
+        *variable = !(*variable);
+        if (!COW1._gui_selected) COW1._gui_selected = variable;
     }
-    if (COW1._gui_selected == t) {
+    if (COW1._gui_selected == variable) {
         if (globals.mouse_left_released || globals.key_released[hotkey]) {
             COW1._gui_selected = NULL;
         }
     }
 
-    real r = (!*t) ? 0 : 1;
-    if (COW1._gui_selected != t) {
+    real r = (!*variable) ? 0 : 1;
+    if (COW1._gui_selected != variable) {
         real nudge = SGN(.5 - r) * .1;
         r += nudge; 
         if (hot || globals.key_held[hotkey]) r += nudge; 
@@ -1993,54 +2005,42 @@ void gui_checkbox(char *name, bool *t, int hotkey = 0) {
     COW1._gui_x_curr -= 2 * L;
 }
 
-void gui_readout(char *name, int *t) {
-    if (!name) name = "";
-    char *join = (char *)((name) ? " " : "");
-    gui_printf("%s%s%d", name, join, *t);
-}
-
-void gui_readout(char *name, real *t) {
-    if (!name) name = "";
-    char *join = (char *)((name) ? " " : "");
-    gui_printf("%s%s%.2lf", name, join, *t);
-}
-
-void _gui_slider(char *text, void *t, real *t_copy, real a, real b) {
+void _gui_slider(char *text, void *variable, real *t_copy, real lower_bound, real upper_bound) {
     COW1._gui_y_curr += 8;
     real s_mouse[2];
     _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &globals.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
     real w = 166;
     real band[4] = { COW1._gui_x_curr, COW1._gui_y_curr, COW1._gui_x_curr + w, COW1._gui_y_curr };
-    real s_dot[2] = { LERP(INVERSE_LERP(*t_copy, a, b), band[0], band[2]), band[1] };
+    real s_dot[2] = { LERP(INVERSE_LERP(*t_copy, lower_bound, upper_bound), band[0], band[2]), band[1] };
 
     if (globals._mouse_owner == COW_MOUSE_OWNER_NONE || globals._mouse_owner == COW_MOUSE_OWNER_GUI) {
         bool is_near = _linalg_vecX_squared_distance(2, s_dot, s_mouse) < COW0._window_macbook_retina_scale * 16;
         if (is_near) {
-            COW1._gui_hot = t;
+            COW1._gui_hot = variable;
             globals._mouse_owner = COW_MOUSE_OWNER_GUI;
         }
-        if (COW1._gui_hot == t && !is_near) {
+        if (COW1._gui_hot == variable && !is_near) {
             COW1._gui_hot = 0;
-            if (COW1._gui_selected != t) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
+            if (COW1._gui_selected != variable) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
         }
     }
-    if (!COW1._gui_selected && (COW1._gui_hot == t) && globals.mouse_left_pressed) {
+    if (!COW1._gui_selected && (COW1._gui_hot == variable) && globals.mouse_left_pressed) {
         globals._mouse_owner = COW_MOUSE_OWNER_GUI;
-        COW1._gui_selected = t;
+        COW1._gui_selected = variable;
     }
-    if (COW1._gui_selected == t) {
+    if (COW1._gui_selected == variable) {
         if (globals.mouse_left_held) {
-            *t_copy = LERP(CLAMP(INVERSE_LERP(s_mouse[0], band[0], band[2]), 0, 1), a, b);
+            *t_copy = LERP(CLAMP(INVERSE_LERP(s_mouse[0], band[0], band[2]), 0, 1), lower_bound, upper_bound);
         }
         if (globals.mouse_left_released) {
-            if (COW1._gui_hot != t) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
+            if (COW1._gui_hot != variable) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
             COW1._gui_selected = 0;
         }
     }
     {
         _soup_draw((real *) &globals.NDC_from_Screen, SOUP_LINES, _SOUP_XY, _SOUP_RGB, 2, band, NULL, .6, .6, .6, 1, 6, false, true);
-        real r = (COW1._gui_selected == t) ? 1 : (COW1._gui_hot == t) ? .9 : .8;
-        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_POINTS, _SOUP_XY, _SOUP_RGB, 1, s_dot, NULL, r, r, r, 1, (COW1._gui_hot == t && COW1._gui_selected != t) ? 17 : 14, false, true);
+        real r = (COW1._gui_selected == variable) ? 1 : (COW1._gui_hot == variable) ? .9 : .8;
+        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_POINTS, _SOUP_XY, _SOUP_RGB, 1, s_dot, NULL, r, r, r, 1, (COW1._gui_hot == variable && COW1._gui_selected != variable) ? 17 : 14, false, true);
     }
     COW1._gui_y_curr -= 8;
     COW1._gui_x_curr += w + 16;
@@ -2048,36 +2048,48 @@ void _gui_slider(char *text, void *t, real *t_copy, real a, real b) {
     COW1._gui_x_curr -= w + 16;
 }
 
-void gui_slider(char *name, int *t, int a, int b, int j = '\0', int k = '\0', bool loop = false) {
+void gui_slider(
+        char *name,
+        int *variable,
+        int lower_bound,
+        int upper_bound,
+        int decrement_hotkey = '\0',
+        int increment_hotkey = '\0',
+        bool loop = false) {
     if (COW1._gui_hide_and_disable) { return; }
-    real tmp = real(*t);
+    real tmp = real(*variable);
     static char text[256]; {
-        if (!j && !k) {
+        if (!decrement_hotkey && !increment_hotkey) {
             snprintf(text, sizeof(text), "%s", name);
         } else {
-            snprintf(text, sizeof(text), "%s %d `%s %s", name, *t, j ? _gui_hotkey2string(j) : "~", k ? _gui_hotkey2string(k) : "~");
+            snprintf(text, sizeof(text), "%s %d `%s %s", name, *variable, decrement_hotkey ? _gui_hotkey2string(decrement_hotkey) : "~", increment_hotkey ? _gui_hotkey2string(increment_hotkey) : "~");
         }
     }
-    _gui_slider(text, t, &tmp, a, b);
-    *t = int(.5 + tmp);
-    if (globals.key_pressed[k]) ++(*t);
-    if (globals.key_pressed[j]) --(*t);
-    if (globals.key_pressed[k] || globals.key_pressed[j]) {
-        *t = (!loop) ? CLAMP(*t, a, b) : a + MODULO(*t - a, (b + 1) - a);
+    _gui_slider(text, variable, &tmp, lower_bound, upper_bound);
+    *variable = int(.5 + tmp);
+    if (globals.key_pressed[increment_hotkey]) ++(*variable);
+    if (globals.key_pressed[decrement_hotkey]) --(*variable);
+    if (globals.key_pressed[increment_hotkey] || globals.key_pressed[decrement_hotkey]) {
+        *variable = (!loop) ? CLAMP(*variable, lower_bound, upper_bound) : lower_bound + MODULO(*variable - lower_bound, (upper_bound + 1) - lower_bound);
     }
 }
 
-void gui_slider(char *name, real *t, real a, real b, bool readout_in_degrees = false) {
+void gui_slider(
+        char *name,
+        real *variable,
+        real lower_bound,
+        real upper_bound,
+        bool readout_in_degrees = false) {
     if (COW1._gui_hide_and_disable) { return; }
     static char text[256];
     if (!readout_in_degrees) {
-        snprintf(text, sizeof(text), "%s %.1lf", name, *t);
+        snprintf(text, sizeof(text), "%s %.1lf", name, *variable);
     } else {
-        int tmp = (int) round(DEG(*((real *) t)));
+        int tmp = (int) round(DEG(*((real *) variable)));
         snprintf(text, sizeof(text), "%s %d deg", name, tmp);
     }
 
-    _gui_slider(text, t, t, a, b);
+    _gui_slider(text, variable, variable, lower_bound, upper_bound);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3078,7 +3090,7 @@ void sound_loop_music(char *filename) {
 
 void _recorder_draw_pacman(real r, real g, real b, real a, real f) {
     real aspect = window_get_aspect();
-    _eso_begin((real *) &globals.I, SOUP_TRIANGLE_FAN, 0.0, false, true);
+    _eso_begin((real *) &globals.Identity, SOUP_TRIANGLE_FAN, 0.0, false, true);
     real o[2] = { (aspect - .25) / aspect, .75 };
     real radius = .125;
     int N = 32;
@@ -3398,7 +3410,7 @@ bool cow_begin_frame() {
         // TODO better hiding
         if (help) {
             real box[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
-            _soup_draw((real *) &globals.I, SOUP_QUADS, 2, 4, 4, box, NULL, 0.0, 0.0, 0.0, 0.8, 0, false, true);
+            _soup_draw((real *) &globals.Identity, SOUP_QUADS, 2, 4, 4, box, NULL, 0.0, 0.0, 0.0, 0.8, 0, false, true);
             COW1._gui_hide_and_disable = false; {
                 _gui_begin_frame();
                 gui_printf("config.hotkeys_*");
@@ -3517,7 +3529,7 @@ void eg_meshlib() {
 
         meshlib.soup_bunny.draw(PV * M_wire, monokai.purple);
         meshlib.itri_bunny.draw(P, V, M_smooth, monokai.purple);
-        meshlib.itri_bunny.draw(P, globals.I, V * M_matcap, {}, "codebase/matcap.png");
+        meshlib.itri_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
 
         gui_checkbox("draw_axes", &draw_axes);
         if (draw_axes) {
@@ -3603,7 +3615,7 @@ void eg_soup() {
         widget_drag(PV, 4, foo, size_in_pixels, monokai.yellow);
         soup_draw(PV, SOUP_QUADS, 4, foo, NULL, V4(monokai.red, .5), 0, use_world_units_instead_of_pixels, force_draw_on_top);
 
-        vec2 s_mouse = input_get_mouse_position_in_world_coordinates(PV);
+        vec2 s_mouse = mouse_get_position(PV);
         eso_begin(PV, SOUP_POINTS, size_in_pixels, use_world_units_instead_of_pixels, force_draw_on_top);
         eso_color(monokai.blue);
         eso_vertex(s_mouse);
@@ -3646,7 +3658,7 @@ void eg_kitchen_sink() {
         vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? monokai.purple : monokai.blue;
         meshlib.soup_bunny.draw(PV * M_wire, color);
         meshlib.itri_bunny.draw(P, V, M_smooth, color);
-        meshlib.itri_bunny.draw(P, globals.I, V * M_matcap, {}, "codebase/matcap.png");
+        meshlib.itri_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
 
         gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
         if (draw_axes) {
@@ -3657,7 +3669,7 @@ void eg_kitchen_sink() {
         if (trace.length == 0 || squaredNorm(trace[trace.length - 1] - s_mouse) > .0001) {
             sbuff_push_back(&trace, s_mouse);
         }
-        soup_draw(globals.I, SOUP_LINE_STRIP, trace.length, trace.data, NULL, color_rainbow_swirl(time), 0, false, true);
+        soup_draw(globals.Identity, SOUP_LINE_STRIP, trace.length, trace.data, NULL, color_rainbow_swirl(time), 0, false, true);
         if (gui_button("clear trace", 'r')) {
             sbuff_free(&trace);
         }
