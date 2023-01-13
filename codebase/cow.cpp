@@ -647,24 +647,24 @@ void _window_clear_draw_buffer() {
            );
 }
 
-void window_set_title(char *title) {
+void _window_set_title(char *title) {
     ASSERT(COW0._window_glfw_window);
     ASSERT(title);
     glfwSetWindowTitle(COW0._window_glfw_window, title);
 }
 
-void window_set_position(real x, real y) {
+void _window_set_position(real x, real y) {
     ASSERT(COW0._window_glfw_window);
     glfwSetWindowPos(COW0._window_glfw_window, int(x), int(y));
 }
 
-void window_set_size(real width, real height) {
+void _window_set_size(real width, real height) {
     ASSERT(COW0._window_glfw_window);
     glfwSetWindowSize(COW0._window_glfw_window, int(width), int(height));
 }
 
-void window_set_height__16_by_9_aspect(real height) {
-    window_set_size(height * 16 / 9, height);
+void _window_set_height__16_by_9_aspect(real height) {
+    _window_set_size(height * 16 / 9, height);
 }
 
 void window_set_clear_color(real r, real g, real b, real a = 1.0) {
@@ -751,11 +751,11 @@ void _window_reset() {
     COW1._window_clear_color[1] = config._default_window_color_rgb[1];
     COW1._window_clear_color[2] = config._default_window_color_rgb[2];
     COW1._window_clear_color[3] = config.default_window_color_a;
-    window_set_position(
+    _window_set_position(
             config.default_window_position[0],
             config.default_window_position[1]
             );
-    window_set_size(
+    _window_set_size(
             config.default_window_size[0],
             config.default_window_size[1]
             );
@@ -777,13 +777,13 @@ void _window_get_size(real *width, real *height) {
     *width = real(_width);
     *height = real(_height);
 }
-real window_get_height_in_pixels() {
+real _window_get_height() {
     ASSERT(COW0._window_glfw_window);
     real _, height;
     _window_get_size(&_, &height);
     return height;
 }
-real window_get_aspect() {
+real _window_get_aspect() {
     real width, height;
     _window_get_size(&width, &height);
     return width / height;
@@ -797,11 +797,11 @@ vec2 window_get_size() {
 }
 
 void window_set_size(vec2 size) {
-    window_set_size(size[0], size[1]);
+    _window_set_size(size[0], size[1]);
 }
 
 void window_set_position(vec2 position) {
-    window_set_position(position[0], position[1]);
+    _window_set_position(position[0], position[1]);
 }
 
 void window_set_clear_color(vec3 rgb, real a = 1.0) {
@@ -820,7 +820,7 @@ void window_set_clear_color(vec3 rgb, real a = 1.0) {
 void _window_get_P_perspective(real *P, real angle_of_view, real n = 0, real f = 0, real aspect = 0) {
     if (IS_ZERO(n)) { n = -.1; }
     if (IS_ZERO(f)) { f = -10000; }
-    if (IS_ZERO(aspect)) { aspect = window_get_aspect(); }
+    if (IS_ZERO(aspect)) { aspect = _window_get_aspect(); }
     ASSERT(P);
     ASSERT(n < 0);
     ASSERT(f < 0);
@@ -916,7 +916,7 @@ void _window_get_P_ortho(real *P, real screen_height_World, real n = 0, real f =
         n = 1000.0;
         f =  -1000.0; 
     }
-    if (IS_ZERO(aspect)) { aspect = window_get_aspect(); }
+    if (IS_ZERO(aspect)) { aspect = _window_get_aspect(); }
 
     // consider a point with coordinates (x, y, z) in the camera's coordinate system
 
@@ -943,7 +943,7 @@ void _window_get_P_ortho(real *P, real screen_height_World, real n = 0, real f =
     // => y' = y / r_y
 
     real r_y = screen_height_World / 2;
-    real r_x = window_get_aspect() * r_y;
+    real r_x = _window_get_aspect() * r_y;
 
     // [x'] = [1/r_x      0   0  0] [x] = [ x/r_x]
     // [y'] = [    0  1/r_y   0  0] [y] = [ y/r_y]
@@ -974,7 +974,7 @@ void _window_get_P_ortho(real *P, real screen_height_World, real n = 0, real f =
 }
 
 void _window_get_NDC_from_Screen(real *NDC_from_Screen) {
-    _window_get_P_ortho(NDC_from_Screen, window_get_height_in_pixels());
+    _window_get_P_ortho(NDC_from_Screen, _window_get_height());
     _LINALG_4X4(NDC_from_Screen, 1, 1) *= -1;
     _LINALG_4X4(NDC_from_Screen, 0, 3) -= 1;
     _LINALG_4X4(NDC_from_Screen, 1, 3) += 1;
@@ -1189,17 +1189,17 @@ bool _app_while_loop_condition() {
             if (COW0._app_index == COW0._app_check) { \
                 sprintf(COW0._app_buffer, "%d/%d - %s", COW0._app_index + 1, COW0._app_numApps, STR(_app_name)); \
                 _cow_reset(); \
-                window_set_title(COW0._app_buffer); \
+                _window_set_title(COW0._app_buffer); \
                 _app_name(); \
-                if (globals.key_pressed['q'] && globals.key_shift_held) {                                                          break;                                 } \
-                if (globals.key_pressed['q'                 ]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { break;                               } } \
-                if (globals.key_pressed[config.hotkeys_app_next]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { COW0._app_index = 0;                   } } \
-                if (globals.key_pressed[config.hotkeys_app_prev]) { COW0._app_index--; if (COW0._app_index == -1             ) { COW0._app_index = COW0._app_numApps - 1; } } \
+                if (globals.key_pressed['q'] && globals.key_shift_held || glfwWindowShouldClose(COW0._window_glfw_window)) { break; } \
+                if (globals.key_pressed['q']) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { break; } } \
+                if (globals.key_pressed[config.hotkeys_app_next]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { COW0._app_index = 0; } } \
+                if (globals.key_pressed[config.hotkeys_app_prev]) { COW0._app_index--; if (COW0._app_index == -1 ) { COW0._app_index = COW0._app_numApps - 1; } } \
                 if (globals.key_pressed[config.hotkeys_app_menu]) { \
                     COW0._app_index = 0; \
                     COW0._app_menu = true; \
                     _cow_reset(); \
-                    window_set_title("menu"); \
+                    _window_set_title("menu"); \
                     continue; \
                 } \
             } \
@@ -1486,7 +1486,7 @@ void _soup_draw(
     ASSERT(shader_program);
     glUseProgram(shader_program);
 
-    _shader_set_uniform_real(shader_program, "aspect", window_get_aspect());
+    _shader_set_uniform_real(shader_program, "aspect", _window_get_aspect());
     if (use_world_units_instead_of_pixels) {
         real tmp[4] = {  0.0, 0.5 * size_in_pixels, 0.0 , 0.0 };
         _linalg_mat4_times_vec4_persp_divide(tmp, PVM, tmp);
@@ -1494,7 +1494,7 @@ void _soup_draw(
                 sqrt(_linalg_vecX_squared_length(4, tmp)));
     } else {
         _shader_set_uniform_real(shader_program, "primitive_radius_NDC",
-                0.5 * size_in_pixels / window_get_height_in_pixels());
+                0.5 * size_in_pixels / _window_get_height());
     } 
     _shader_set_uniform_bool(shader_program, "has_vertex_colors", vertex_colors != NULL);
     _shader_set_uniform_bool(shader_program, "force_draw_on_top", force_draw_on_top);
@@ -3089,7 +3089,7 @@ void sound_loop_music(char *filename) {
 #define MAX_SCRATCH_FILESIZE Gigabytes(25)
 
 void _recorder_draw_pacman(real r, real g, real b, real a, real f) {
-    real aspect = window_get_aspect();
+    real aspect = _window_get_aspect();
     _eso_begin((real *) &globals.Identity, SOUP_TRIANGLE_FAN, 0.0, false, true);
     real o[2] = { (aspect - .25) / aspect, .75 };
     real radius = .125;
@@ -3484,7 +3484,8 @@ bool cow_begin_frame() {
     }
 
     return !(
-            globals.key_pressed[config.hotkeys_app_next]
+            glfwWindowShouldClose(COW0._window_glfw_window)
+            || globals.key_pressed[config.hotkeys_app_next]
             || globals.key_pressed[config.hotkeys_app_prev]
             || globals.key_pressed['q']
             || globals.key_pressed[config.hotkeys_app_menu]
