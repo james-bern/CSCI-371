@@ -1,15 +1,43 @@
+// jim's horrifying helpers
+// (i will, e.g., include this file if i'm debugging code on your computer so i can work more quickly)
+
 #ifndef JIM_CPP
 #define JIM_CPP
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
+#define STB_DS_IMPLEMENTATION
+#include "ext/stb_ds.h"
+
+#define u64 uint64_t
+
+// glsl analogs
+double fract(double x) {
+    double intpart;
+    return modf(x, &intpart);
+}
+
+void xplat_debugbreak() {
+    printf("[cow] debugbreak() tripped; run debugger to break (and continue from) here\n");
+    #if defined(WIN32) || defined(_WIN32) || defined(_WIN64)
+    __debugbreak();
+    #else
+    raise(SIGTRAP);
+    #endif
+}
+void xplat_run_to_line() { // debugger entry point
+    do_once { xplat_debugbreak(); }
+}
 
 // msvc details switches /Bt /d2cgsummary 
 
-#define real double
+typedef double real;
 #define for_(i, N) for (int i = 0; i < N; ++i)
 #define for_polygon_(i, j, N) for (int i = N - 1, j = 0; j < N; i = j++)
 #define for_sign(sign) for (int sign = -1; sign <= 1; sign += 2)
+
+#define MAG_CLAMP(t, a) CLAMP(t, -a, a);
+#define COS_LERP(t, a, b) LERP(.5 - .5 * cos((t)*PI), a, b)
 
 #define NUM_DENm1(f, F) (double(f) / ((F) - 1))
 #define NUM_DEN(f, F) (double(f) / (F))
@@ -118,5 +146,12 @@ FILE *jim_hot_fopen(char *filename, bool DONT_ACTUALLY_OPEN = 0) {
 
     return 0;
 }
+#endif
+
+#ifndef NELEMS
+#define NELEMS(fixed_size_array) int(sizeof(fixed_size_array) / sizeof((fixed_size_array)[0]))
+#endif
+#ifndef ASSERT
+#define ASSERT(b) do { if (!(b)) { printf("ASSERT Line %d in %s\n", __LINE__, __FILE__); printf("press Enter to crash"); getchar(); *((volatile int *) 0) = 0; } } while (0)
 #endif
 #endif

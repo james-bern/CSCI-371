@@ -1584,7 +1584,7 @@ template <int D_pos, int D_color = 3> void soup_draw(
         int num_vertices,
         Vec<D_pos> *vertex_positions,
         Vec<D_color> *vertex_colors,
-        Vec<D_color> color_if_vertex_colors_is_NULL,
+        Vec<D_color> color_if_vertex_colors_is_NULL = V3(1, 1, 1),
         real size_in_pixels = 0,
         bool use_world_units_instead_of_pixels = false,
         bool force_draw_on_top = false) {
@@ -2048,7 +2048,7 @@ void _gui_slider(char *text, void *t, real *t_copy, real a, real b) {
     COW1._gui_x_curr -= w + 16;
 }
 
-void gui_slider(char *name, int *t, int a, int b, int j, int k, bool loop) {
+void gui_slider(char *name, int *t, int a, int b, int j = '\0', int k = '\0', bool loop = false) {
     if (COW1._gui_hide_and_disable) { return; }
     real tmp = real(*t);
     static char text[256]; {
@@ -2067,7 +2067,7 @@ void gui_slider(char *name, int *t, int a, int b, int j, int k, bool loop) {
     }
 }
 
-void gui_slider(char *name, real *t, real a, real b, bool readout_in_degrees) {
+void gui_slider(char *name, real *t, real a, real b, bool readout_in_degrees = false) {
     if (COW1._gui_hide_and_disable) { return; }
     static char text[256];
     if (!readout_in_degrees) {
@@ -3272,6 +3272,7 @@ void opt_solve_sparse_linear_system(int N, double *x, int _A_num_entries, Sparse
                         }
                     }
                 }
+                ASSERT(max_i != -1);
                 if (ARE_EQUAL(0., NXNP1(A, max_i, k))) {
                     ++k;
                 } else {

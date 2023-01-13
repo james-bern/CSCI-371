@@ -5,6 +5,9 @@ typedef double real;
 #include "codebase/snail.cpp"
 #endif
 #include "codebase/cow.cpp"
+#ifdef JIM_IS_JIM
+#include "codebase/jim.cpp"
+#endif
 
 #include <iostream>
 #include <fenv.h>
