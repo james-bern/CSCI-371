@@ -318,7 +318,7 @@ struct CX_INTERNAL_CONSTANTS {
                 float fresnel = F0 + (1 - F0) * pow(1 - max(0, dot(N, H)), 5);
                 rgb += .6 * (-1.0 + 2.0 * diffuse);
                 rgb += .6 * specular;
-                rgb += .8 * (-.3 + 1.3 * fresnel);
+                rgb += .9 * (-.3 + 1.3 * fresnel);
             }
             frag_color = vec4(rgb, a);
         }
@@ -1366,6 +1366,7 @@ Shader shader_create(
 template <typename T> void shader_set_uniform(Shader *shader, char *name, T value) {
     ASSERT(shader);
     ASSERT(name);
+    glUseProgram(shader->_program_ID);
     _shader_set_uniform(shader->_program_ID, name, value);
 }
 template <int D> void shader_pass_vertex_attribute(Shader *shader, int num_vertices, Vec<D> *vertex_attribute) {
@@ -1386,10 +1387,11 @@ void shader_draw(Shader *shader, int num_triangles, int3 *triangle_indices) {
     ASSERT(shader->_attribute_counter == shader->_num_vertex_attributes); // you haven't set all the attributes you said you would
     shader->_attribute_counter = 0;
 
+    glUseProgram(shader->_program_ID);
+
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shader->_EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * num_triangles * sizeof(int), triangle_indices, GL_DYNAMIC_DRAW);
-    glUseProgram(shader->_program_ID);
     glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
 }
 #endif
@@ -2308,7 +2310,7 @@ void _mesh_draw(
     glBindVertexArray(COW0._mesh_VAO);
     int i_attrib = 0;
     auto guarded_push = [&](void *array, int dim) {
-        glDisableVertexAttribArray(i_attrib); // fornow
+        // glDisableVertexAttribArray(i_attrib); // fornow
         if (array) {
             glBindBuffer(GL_ARRAY_BUFFER, COW0._mesh_VBO[i_attrib]);
             glBufferData(GL_ARRAY_BUFFER, num_vertices * dim * sizeof(real), array, GL_DYNAMIC_DRAW);
@@ -2747,7 +2749,7 @@ template <typename T> void sbuff_free(StretchyBuffer<T> *buffer) {
     if (buffer->data) {
         free(buffer->data);
     }
-    buffer = {};
+    *buffer = {};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3722,12 +3724,37 @@ void eg_soup() {
 }
 
 void eg_kitchen_sink() {
-    Camera3D camera = { 5.0, RAD(0.0) };
+    Camera3D camera = { 8.0, RAD(0.0) };
     real time = 0.0;
     bool paused = false;
-    bool draw_axes = false;
+    bool draw_axes = true;
 
     StretchyBuffer<vec2> trace = {};
+
+    Texture texture = texture_create("shader toy tribute act", 16, 16, 3);
+
+    char *vertex_shader_source = R""(
+        #version 330 core
+        uniform mat4 transform;
+        layout (location = 0) in vec3 vertex_position;
+        layout (location = 1) in vec3 vertex_normal;
+        out vec3 color;
+        void main() {
+            color = vertex_normal;
+            gl_Position = transform * vec4(vertex_position, 1.0);
+        }
+    )"";
+
+    char *fragment_shader_source = R""(
+        #version 330 core
+        in vec3 color;
+        out vec4 fragColor;
+        void main() {
+            fragColor = vec4(color, 1.0);
+        }
+    )"";
+
+    Shader shader = shader_create(vertex_shader_source, 2, fragment_shader_source);
 
     sound_loop_music("codebase/music.wav");
     while (cow_begin_frame()) {
@@ -3739,42 +3766,42 @@ void eg_kitchen_sink() {
         }
         sound_attach_to_gui();
 
-        // todo paint trails coming off of mouse
-
         gui_checkbox("paused", &paused, 'p');
 
         mat4 P = camera_get_P(&camera);
         mat4 V = camera_get_V(&camera);
         mat4 PV = P * V;
 
-        mat4 R = M4_RotationAboutYAxis(time);
+        {
+            mat4 R = M4_RotationAboutYAxis(time);
 
-        mat4 M_wire = M4_Translation(-2.2, 0.0, 0.0) * R;
-        mat4 M_smooth = M4_Translation(0.0, 0.0, 0.0) * R;
-        mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
+            mat4 M_wire = M4_Translation(-2.2, 0.0, 0.0) * R;
+            mat4 M_smooth = M4_Translation(0.0, 0.0, 0.0) * R;
+            mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
-        vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? monokai.purple : monokai.blue;
-        meshlib.soup_bunny.draw(PV * M_wire, color);
-        meshlib.mesh_bunny.draw(P, V, M_smooth, color);
-        meshlib.mesh_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
+            vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? monokai.purple : monokai.blue;
+            meshlib.soup_bunny.draw(PV * M_wire, color);
+            meshlib.mesh_bunny.draw(P, V, M_smooth, color);
+            meshlib.mesh_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
 
-        gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
-        if (draw_axes) {
-            meshlib.soup_axes.draw(PV);
+            gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
+            if (draw_axes) {
+                meshlib.soup_axes.draw(PV);
+            }
         }
-
-        vec2 s_mouse = globals.mouse_position_NDC;
-        if (trace.length == 0 || squaredNorm(trace[trace.length - 1] - s_mouse) > .0001) {
-            sbuff_push_back(&trace, s_mouse);
-        }
-        soup_draw(globals.Identity, SOUP_LINE_STRIP, trace.length, trace.data, NULL, color_rainbow_swirl(time), 0, false, true);
-        if (gui_button("clear trace", 'r')) {
-            sbuff_free(&trace);
-        }
-
-        text_draw(globals.NDC_from_Screen, "  :3", globals.mouse_position_Screen); 
 
         {
+            vec2 s_mouse = globals.mouse_position_NDC;
+            if (trace.length == 0 || squaredNorm(trace[trace.length - 1] - s_mouse) > .0001) {
+                sbuff_push_back(&trace, s_mouse);
+            }
+            if (gui_button("clear trace", 'r')) {
+                sbuff_free(&trace);
+            }
+            soup_draw(globals.Identity, SOUP_LINE_STRIP, trace.length, trace.data, NULL, color_plasma(LINEAR_REMAP(globals.mouse_position_NDC.x, -1.0, 1.0, 0.0, 1.0)), 0, false, true);
+
+            text_draw(globals.NDC_from_Screen, "  :3", globals.mouse_position_Screen); 
+
             char *text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
             int N = int(strlen(text));
             for (int i = 0; i < strlen(text); ++i) {
@@ -3784,13 +3811,8 @@ void eg_kitchen_sink() {
                         PV,
                         buffer,
                         { cos(theta), LINEAR_REMAP(i, 0, N - 1, 2.5, -2.5), sin(theta) },
-                        color_plasma(.5 + .5 * sin(theta))
-                        ); 
+                        color_rainbow_swirl(double(i) / 24.0)); 
             }
-        }
-
-        if (!paused) {
-            time += 0.0167;
         }
 
         {
@@ -3813,7 +3835,44 @@ void eg_kitchen_sink() {
             eso_vertex(o + z);
             eso_end();
         }
+        {
+            {
+                for (int i = 0; i < texture.height; ++i) {
+                    real v = real(i) / (texture.height - 1);
+                    for (int j = 0; j < texture.width; ++j) {
+                        real u = real(j) / (texture.width - 1);
+                        texture_set_pixel(&texture, i, j, V3(0.5) + 0.5 * V3(cos(time + u), cos(time + v + 2.0), cos(time + u + 4.0)));
+                    }
+                }
+                texture_sync_to_GPU(&texture);
+            }
+            meshlib.mesh_square.draw(P, V, M4_Translation(0.0, 0.0, -2.0) * M4_Scaling(2.0), {}, texture.name);
+        }
+        {
+            IndexedTriangleMesh3D mesh = meshlib.mesh_teapot;
+            int num_vertices       = mesh.num_vertices;
+            vec3 *vertex_positions = mesh.vertex_positions;
+            vec3 *vertex_normals   = mesh.vertex_normals;
+            int num_triangles      = mesh.num_triangles;
+            int3 *triangle_indices = mesh.triangle_indices;
+
+            Camera3D persp = { 4.0, RAD(45.0) };
+            shader_set_uniform(&shader, "transform", camera_get_PV(&persp) * M4_Translation(0.0, 1.5, 0.0));
+            shader_pass_vertex_attribute(&shader, num_vertices, vertex_positions);
+            shader_pass_vertex_attribute(&shader, num_vertices, vertex_normals);
+            shader_draw(&shader, num_triangles, triangle_indices);
+            shader_set_uniform(&shader, "transform", camera_get_PV(&persp) * M4_Translation(0.0, -1.5, 0.0));
+            shader_pass_vertex_attribute(&shader, num_vertices, vertex_positions);
+            shader_pass_vertex_attribute(&shader, num_vertices, vertex_normals);
+            shader_draw(&shader, num_triangles, triangle_indices);
+        }
+
+        if (!paused) {
+            time += 0.0167;
+        }
+
     }
+
 }
 
 
@@ -3843,7 +3902,7 @@ void eg_shader() {
 
     Shader shader = shader_create(vertex_shader_source, 2, fragment_shader_source);
 
-    IndexedTriangleMesh3D mesh = meshlib.mesh_bunny;
+    IndexedTriangleMesh3D mesh = meshlib.mesh_teapot;
     int num_vertices       = mesh.num_vertices;
     vec3 *vertex_positions = mesh.vertex_positions;
     vec3 *vertex_normals   = mesh.vertex_normals;
