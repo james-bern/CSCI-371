@@ -970,6 +970,25 @@ void _window_get_P_ortho(real *P, real screen_height_World, real n = 0, real f =
     _LINALG_4X4(P, 3, 3) = 1;
 }
 
+void _window_get_V_ortho_2D(real *V, real eye_x, real eye_y) {
+    memset(V, 0, 16 * sizeof(real));
+    _LINALG_4X4(V, 0, 0) = 1.0;
+    _LINALG_4X4(V, 1, 1) = 1.0;
+    _LINALG_4X4(V, 2, 2) = 1.0;
+    _LINALG_4X4(V, 3, 3) = 1.0;
+    _LINALG_4X4(V, 0, 3) = -eye_x;
+    _LINALG_4X4(V, 1, 3) = -eye_y;
+}
+
+void _window_get_PV_ortho_2D(real *PV, real screen_height_World, real eye_x, real eye_y) {
+    ASSERT(PV);
+    // fornow slow
+    real P[16], V[16];
+    _window_get_P_ortho(P, screen_height_World);
+    _window_get_V_ortho_2D(V, eye_x, eye_y);
+    _linalg_mat4_times_mat4(PV, P, V);
+}
+
 void _window_get_NDC_from_Screen(real *NDC_from_Screen) {
     _window_get_P_ortho(NDC_from_Screen, _window_get_height());
     _LINALG_4X4(NDC_from_Screen, 1, 1) *= -1;
@@ -978,20 +997,6 @@ void _window_get_NDC_from_Screen(real *NDC_from_Screen) {
 
     _LINALG_4X4(NDC_from_Screen, 0, 0) *= COW0._window_macbook_retina_scale;
     _LINALG_4X4(NDC_from_Screen, 1, 1) *= COW0._window_macbook_retina_scale;
-}
-
-void _window_get_PV_ortho(real *PV, real screen_height_World, real eye_x, real eye_y) {
-    ASSERT(PV);
-    // fornow slow
-    real P[16];
-    _window_get_P_ortho(P, screen_height_World);
-    real V[16] = { 
-        1, 0, 0, -eye_x,
-        0, 1, 0, -eye_y,
-        0, 0, 1, 0     ,
-        0, 0, 0, 1     ,
-    };
-    _linalg_mat4_times_mat4(PV, P, V);
 }
 
 #ifdef SNAIL_CPP
@@ -1380,7 +1385,7 @@ template <int D> void shader_pass_vertex_attribute(Shader *shader, int num_verti
     glUseProgram(shader->_program_ID);
     glBindVertexArray(shader->_VAO);
     glBindBuffer(GL_ARRAY_BUFFER, shader->_VBO[shader->_attribute_counter]);
-    glBufferData(GL_ARRAY_BUFFER, num_vertices * D * sizeof(double), vertex_attribute, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * D * sizeof(real), vertex_attribute, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(shader->_attribute_counter, D, GL_DOUBLE, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(shader->_attribute_counter);
     ++shader->_attribute_counter;
@@ -2169,20 +2174,21 @@ bool _itri_texture_find(int *i_texture, char *texture_filename) { // fornow O(n)
     return already_loaded;
 }
 
-int _itri_texture_get_format(int nrChannels) {
-    ASSERT(nrChannels == 1 || nrChannels == 3 || nrChannels == 4);
-    return (nrChannels == 1) ? GL_RED : (nrChannels == 3) ? GL_RGB : GL_RGBA;
+int _itri_texture_get_format(int number_of_channels) {
+    ASSERT(number_of_channels == 1 || number_of_channels == 3 || number_of_channels == 4);
+    return (number_of_channels == 1) ? GL_RED : (number_of_channels == 3) ? GL_RGB : GL_RGBA;
 }
 
-int _itri_texture_create(char *texture_filename, int width, int height, int nrChannels, u8 *data) {
+void _itri_texture_create(char *texture_filename, int width, int height, int number_of_channels, u8 *data) {
     ASSERT(texture_filename);
     ASSERT(COW1._itri_num_textures < ITRI_MAX_NUM_TEXTURES);
     ASSERT(strlen(texture_filename) < ITRI_MAX_FILENAME_LENGTH);
     ASSERT(width > 0);
     ASSERT(height > 0);
+    ASSERT(number_of_channels == 1 || number_of_channels == 3 || number_of_channels == 4);
     ASSERT(data);
 
-    int format = _itri_texture_get_format(nrChannels);
+    int format = _itri_texture_get_format(number_of_channels);
 
     int i_texture = COW1._itri_num_textures++;
     strcpy(COW1._itri_texture_filenames[i_texture], texture_filename);
@@ -2196,17 +2202,16 @@ int _itri_texture_create(char *texture_filename, int width, int height, int nrCh
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
-
-    return i_texture;
 }
 
-void _itri_texture_update(char *texture_filename, int width, int height, int nrChannels, u8 *data) {
+void _itri_texture_sync_to_GPU(char *texture_filename, int width, int height, int number_of_channels, u8 *data) {
     ASSERT(texture_filename);
     ASSERT(width > 0);
     ASSERT(height > 0);
+    ASSERT(number_of_channels == 1 || number_of_channels == 3 || number_of_channels == 4);
     ASSERT(data);
 
-    int format = _itri_texture_get_format(nrChannels);
+    int format = _itri_texture_get_format(number_of_channels);
 
     int i_texture;
     ASSERT(_itri_texture_find(&i_texture, texture_filename));
@@ -2216,33 +2221,63 @@ void _itri_texture_update(char *texture_filename, int width, int height, int nrC
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, GL_UNSIGNED_BYTE, data);
 }
 
-int _itri_texture_load(char *texture_filename) {
+void _itri_texture_load(char *texture_filename) {
     ASSERT(texture_filename);
-    int width, height, nrChannels;
-    u8 *data = stbi_load(texture_filename, &width, &height, &nrChannels, 0);
+    int width, height, number_of_channels;
+    u8 *data = stbi_load(texture_filename, &width, &height, &number_of_channels, 0);
     ASSERT(data);
     ASSERT(width > 0);
     ASSERT(height > 0);
-    ASSERT(nrChannels == 3 || nrChannels == 4);
-    int i_texture = _itri_texture_create(texture_filename, width, height, nrChannels, data);
+    ASSERT(number_of_channels == 3 || number_of_channels == 4);
+    _itri_texture_create(texture_filename, width, height, number_of_channels, data);
     stbi_image_free(data);
-    return i_texture;
 }
 
 struct Texture {
-    char *filename;
+    char *name;
     int width;
     int height;
-    int nrChannels;
+    int number_of_channels;
     u8 *data;
 };
 
-int itri_texture_create(Texture *texture) {
-    return _itri_texture_create(texture->filename, texture->width, texture->height, texture->nrChannels, texture->data);
+Texture texture_create(char *texture_name, int width, int height, int number_of_channels = 3) {
+    ASSERT(texture_name);
+    ASSERT(width > 0);
+    ASSERT(height > 0);
+    ASSERT(number_of_channels == 1 || number_of_channels == 3 || number_of_channels == 4);
+    Texture texture = {};
+    texture.name = texture_name;
+    texture.width = width;
+    texture.height = height;
+    texture.number_of_channels = number_of_channels;
+    texture.data = (u8 *) calloc(width * height * number_of_channels, sizeof(u8));
+    _itri_texture_create(texture.name, texture.width, texture.height, texture.number_of_channels, texture.data);
+    return texture;
 }
 
-void itri_texture_update(Texture *texture) {
-    _itri_texture_update(texture->filename, texture->width, texture->height, texture->nrChannels, texture->data);
+void texture_set_pixel(Texture *texture, int i, int j, real r, real g, real b, real a = 1.0) {
+    #define REAL2U8(r) (u8(CLAMP(r, 0.0, 1.0) * 255.0))
+    int pixel = i * texture->width + j;
+    texture->data[pixel * texture->number_of_channels + 0]  = REAL2U8(r);
+    if (texture->number_of_channels > 1) {
+        texture->data[pixel * texture->number_of_channels + 1]  = REAL2U8(g);
+        texture->data[pixel * texture->number_of_channels + 2]  = REAL2U8(b);
+    }
+    if (texture->number_of_channels > 3) {
+        texture->data[pixel * texture->number_of_channels + 3]  = REAL2U8(a);
+    }
+    #undef REAL2U8
+}
+
+#ifdef SNAIL_CPP
+void texture_set_pixel(Texture *texture, int i, int j, vec3 rgb, real a = 1.0) {
+    texture_set_pixel(texture, i, j, rgb.x, rgb.y, rgb.z, a);
+}
+#endif
+
+void texture_sync_to_GPU(Texture *texture) {
+    _itri_texture_sync_to_GPU(texture->name, texture->width, texture->height, texture->number_of_channels, texture->data);
 }
 
 void _itri_draw(
@@ -2271,7 +2306,8 @@ void _itri_draw(
     int i_texture = -1;
     if (texture_filename) {
         if (!_itri_texture_find(&i_texture, texture_filename)) {
-            i_texture = _itri_texture_load(texture_filename);
+            _itri_texture_load(texture_filename);
+            _itri_texture_find(&i_texture, texture_filename);
         }
     }
 
@@ -2403,8 +2439,16 @@ void camera_attach_to_gui(Camera3D *camera) {
     gui_slider("o_y", &camera->o_y, -camera->persp_distance_to_origin, camera->persp_distance_to_origin, false);
 }
 
+void _camera_get_P(Camera2D *camera, real *P) {
+    _window_get_P_ortho(P, camera->screen_height_World);
+}
+
+void _camera_get_V(Camera2D *camera, real *V) {
+    _window_get_V_ortho_2D(V, camera->o_x, camera->o_y);
+}
+
 void _camera_get_PV(Camera2D *camera, real *PV) {
-    _window_get_PV_ortho(PV, camera->screen_height_World, camera->o_x, camera->o_y);
+    _window_get_PV_ortho_2D(PV, camera->screen_height_World, camera->o_x, camera->o_y);
 }
 
 real camera_get_screen_height_World(Camera3D *camera) {
@@ -2583,6 +2627,19 @@ mat4 camera_get_PV(Camera2D *camera) {
     return ret;
 }
 
+mat4 camera_get_P(Camera2D *camera) {
+    mat4 ret;
+    _camera_get_P(camera, ret.data);
+    return ret;
+}
+
+mat4 camera_get_V(Camera2D *camera) {
+    mat4 ret;
+    _camera_get_V(camera, ret.data);
+    return ret;
+}
+
+
 OrthogonalCoordinateSystem3D camera_get_coordinate_system(Camera3D *camera) {
     mat4 C;
     vec3 x, y, z, o;
@@ -2758,11 +2815,11 @@ void Soup3D::draw(
 }
 
 void IndexedTriangleMesh3D::draw(
-    mat4 P,
-    mat4 V,
-    mat4 M,
-    vec3 color_if_vertex_colors_is_NULL = { 1.0, 0.0, 1.0 },
-    char *texture_filename_if_texture_filename_is_NULL = NULL) {
+        mat4 P,
+        mat4 V,
+        mat4 M,
+        vec3 color_if_vertex_colors_is_NULL = { 1.0, 0.0, 1.0 },
+        char *texture_filename_if_texture_filename_is_NULL = NULL) {
     itri_draw(
             P,
             V,
@@ -3271,11 +3328,11 @@ void _recorder_begin_frame() { // record
 struct SparseMatrixEntry {
     int row;
     int col;
-    double val;
+    real val;
 };
 
-double *_opt_sparse2dense(int R, int C, int num_entries, SparseMatrixEntry *sparse) {
-    double *dense = (double *) calloc(R * C, sizeof(double));
+real *_opt_sparse2dense(int R, int C, int num_entries, SparseMatrixEntry *sparse) {
+    real *dense = (real *) calloc(R * C, sizeof(real));
     #define RXC(M, row, col) ((M)[C * (row) + (col)])
     for (int k = 0; k < num_entries; ++k) { RXC(dense, sparse[k].row, sparse[k].col) += sparse[k].val; }
     #undef RXC
@@ -3284,9 +3341,9 @@ double *_opt_sparse2dense(int R, int C, int num_entries, SparseMatrixEntry *spar
 
 #ifdef USE_EIGEN
 struct EigenTriplet { int row, col; real val; };
-void eigenSimplicialCholesky(int N, double *x, int A_length, EigenTriplet *A_data, double *b);
+void eigenSimplicialCholesky(int N, real *x, int A_length, EigenTriplet *A_data, real *b);
 #endif
-void opt_solve_sparse_linear_system(int N, double *x, int _A_num_entries, SparseMatrixEntry *_A, double *b) {
+void opt_solve_sparse_linear_system(int N, real *x, int _A_num_entries, SparseMatrixEntry *_A, real *b) {
     { // checks
         ASSERT(x);
         ASSERT(N);
@@ -3296,7 +3353,7 @@ void opt_solve_sparse_linear_system(int N, double *x, int _A_num_entries, Sparse
 
     if (_A_num_entries == 0) {
         printf("A empty\n");
-        memset(x, 0, N * sizeof(double));
+        memset(x, 0, N * sizeof(real));
         return;
     }
 
@@ -3309,7 +3366,7 @@ void opt_solve_sparse_linear_system(int N, double *x, int _A_num_entries, Sparse
         do_once { printf("[warn] USE_EIGEN not #define'd; falling back to dense gauss-jordan\n"); };
 
         // build the augmented matrix
-        double *A = _opt_sparse2dense(N, N + 1, _A_num_entries, _A);
+        real *A = _opt_sparse2dense(N, N + 1, _A_num_entries, _A);
         #define NXNP1(M, row, col) ((M)[(N + 1) * (row) + (col)])
         for (int k = 0; k < N; ++k) { NXNP1(A, k, N) = b[k]; }
 
@@ -3320,13 +3377,13 @@ void opt_solve_sparse_linear_system(int N, double *x, int _A_num_entries, Sparse
             int h = 0;
             int k = 0;
 
-            double *scratch = (double *) malloc(n * sizeof(double));
+            real *scratch = (real *) malloc(n * sizeof(real));
             while (h < m && k < n) {
                 int max_i = -1;
-                double max_abs = -INFINITY;
+                real max_abs = -INFINITY;
                 {
                     for (int i = h; i < m; ++i) {
-                        double tmp = ABS(NXNP1(A, i, k));
+                        real tmp = ABS(NXNP1(A, i, k));
                         if (tmp > max_abs) {
                             max_abs = tmp;
                             max_i = i;
@@ -3338,15 +3395,15 @@ void opt_solve_sparse_linear_system(int N, double *x, int _A_num_entries, Sparse
                     ++k;
                 } else {
                     { // for_(c, n) { SWAP(NXNP1(A, h, c), NXNP1(A, max_i, c)); }
-                        double *row_a = A + n * h;
-                        double *row_b = A + n * max_i;
-                        int size = n * sizeof(double);
+                        real *row_a = A + n * h;
+                        real *row_b = A + n * max_i;
+                        int size = n * sizeof(real);
                         memcpy(scratch, row_a, size);
                         memcpy(row_a, row_b, size);
                         memcpy(row_b, scratch, size);
                     }
                     for (int i = h + 1; i < m; ++i) {
-                        double f = NXNP1(A, i, k) / NXNP1(A, h, k);
+                        real f = NXNP1(A, i, k) / NXNP1(A, h, k);
                         NXNP1(A, i, k) = 0;
                         for (int j = k + 1; j < n; ++j) {
                             NXNP1(A, i, j) = NXNP1(A, i, j) - NXNP1(A, h, j) * f;
@@ -3361,7 +3418,7 @@ void opt_solve_sparse_linear_system(int N, double *x, int _A_num_entries, Sparse
 
         // back substitue and store result in x
         {
-            memset(x, 0, N * sizeof(double));
+            memset(x, 0, N * sizeof(real));
             for (int row = N - 1; row >= 0; --row) {
                 for (int col = N - 1; col >= row; --col) {
                     x[row] += NXNP1(A, row, col) * NXNP1(A, col, N);
@@ -3374,13 +3431,13 @@ void opt_solve_sparse_linear_system(int N, double *x, int _A_num_entries, Sparse
     #endif
 }
 
-void opt_add(double *U, double a) {
+void opt_add(real *U, real a) {
     if (U != NULL) {
         *U += a;
     }
 };
 
-void opt_add(double *a, int i, vec2 a_i) {
+void opt_add(real *a, int i, vec2 a_i) {
     if (a != NULL) {
         a[2 * i + 0] += a_i[0];
         a[2 * i + 1] += a_i[1];
@@ -3396,8 +3453,8 @@ void opt_add(StretchyBuffer<SparseMatrixEntry> *A, int i, int j, mat2 A_ij) {
     }
 };
 
-double opt_Vector_dot(int N, double *u, double *v) {
-    double ret = 0;
+real opt_Vector_dot(int N, real *u, real *v) {
+    real ret = 0;
     for (int i = 0; i < N; ++i) {
         ret += u[i] * v[i];
     }
@@ -3587,7 +3644,7 @@ void eg_meshlib() {
         }
 
         if (!paused) {
-            time += .0167;
+            time += 0.0167;
         }
     }
 }
@@ -3619,14 +3676,12 @@ void eg_text() {
         }
 
         if (!paused) {
-            time += .0167;
+            time += 0.0167;
         }
     }
 }
 
 void eg_sound() {
-    window_set_clear_color(.5 * monokai.blue);
-
     sound_loop_music("codebase/music.wav");
     while (cow_begin_frame()) {
         if (gui_button("play sound.wav", ' ')) {
@@ -3742,7 +3797,7 @@ void eg_kitchen_sink() {
         }
 
         if (!paused) {
-            time += .0167;
+            time += 0.0167;
         }
 
         {
@@ -3811,6 +3866,35 @@ void eg_shader() {
         shader_draw(&shader, num_triangles, triangle_indices);
     }
 }
+
+void eg_texture() {
+    Camera2D camera = { 3.0 };
+    Texture texture = texture_create("shader toy tribute act", 16, 16, 3);
+    bool paused = false;
+    real time = 0.0;
+    while (cow_begin_frame()) {
+        camera_move(&camera);
+        mat4 P = camera_get_P(&camera);
+        mat4 V = camera_get_V(&camera);
+
+        gui_checkbox("paused", &paused, 'p');
+
+        if (!paused) {
+            for (int i = 0; i < texture.height; ++i) {
+                real v = real(i) / (texture.height - 1);
+                for (int j = 0; j < texture.width; ++j) {
+                    real u = real(j) / (texture.width - 1);
+                    texture_set_pixel(&texture, i, j, V3(0.5) + 0.5 * V3(cos(time + u), cos(time + v + 2.0), cos(time + u + 4.0)));
+                }
+            }
+            texture_sync_to_GPU(&texture);
+
+            time += 0.0167;
+        }
+        meshlib.itri_square.draw(P, V, globals.Identity, {}, texture.name);
+    }
+}
+
 
 #endif
 

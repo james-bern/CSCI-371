@@ -21,6 +21,7 @@ void app_treasure() {
     while (cow_begin_frame()) {
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
+        meshlib.soup_axes.draw(PV);
         vec2 s_mouse = mouse_get_position(PV);
         soup_draw(PV, SOUP_POINTS, 1, &s_mouse, NULL, monokai.red);
         // TODO add this line to wiki
@@ -39,6 +40,7 @@ int main() {
 
     APPS {
         APP(eg_shader);
+        APP(eg_texture);
         APP(app_treasure);
         APP(eg_kitchen_sink);
     }
