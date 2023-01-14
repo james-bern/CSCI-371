@@ -395,6 +395,8 @@ struct C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset 
     real               _sound_music_gui_1_minus_volume;
 
     real _window_clear_color[4];
+
+    bool _cow_help_toggle;
 };
 
 
@@ -3496,20 +3498,19 @@ bool cow_begin_frame() {
 
     _window_get_NDC_from_Screen((real *) &globals.NDC_from_Screen);
 
-    { // help force_draw_on_top
-        static bool help;
+    { // _cow_help_toggle force_draw_on_top
         static bool push_gui_hide_and_disable;
         if (globals.key_shift_held && globals.key_pressed['/']) {
-            help = !help;
-            if (help) {
+            COW1._cow_help_toggle = !COW1._cow_help_toggle;
+            if (COW1._cow_help_toggle) {
                 push_gui_hide_and_disable = COW1._gui_hide_and_disable;
             }
-            if (!help) {
+            if (!COW1._cow_help_toggle) {
                 COW1._gui_hide_and_disable = push_gui_hide_and_disable;
             }
         }
         // TODO better hiding
-        if (help) {
+        if (COW1._cow_help_toggle) {
             real box[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
             _soup_draw((real *) &globals.Identity, SOUP_QUADS, 2, 4, 4, box, NULL, 0.0, 0.0, 0.0, 0.8, 0, false, true);
             COW1._gui_hide_and_disable = false; {
@@ -3771,8 +3772,14 @@ void eg_kitchen_sink() {
         mat4 P = camera_get_P(&camera);
         mat4 V = camera_get_V(&camera);
         mat4 PV = P * V;
-
         mat4 M = M4_Translation(0.0, 0.0, -2.0) * M4_Scaling(2.0);
+
+        {
+            static int i;
+            gui_slider("i", &i, 0, 20 - 1, 'j', 'k', true);
+            vec2 s = { 1.0, 1.0 };
+            soup_draw(PV, SOUP_POINTS, 1, &s, NULL, color_kelly(i));
+        }
 
         {
             mat4 R = M4_RotationAboutYAxis(time);
