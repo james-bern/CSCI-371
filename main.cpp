@@ -5,7 +5,7 @@ void app_sketch() {
     while (cow_begin_frame()) {
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
-        meshlib.soup_teapot.draw(PV, monokai.green);
+        library.soups.teapot.draw(PV, monokai.green);
     }
 }
 

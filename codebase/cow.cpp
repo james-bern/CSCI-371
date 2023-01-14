@@ -2769,7 +2769,7 @@ struct Soup3D {
             real size_in_pixels,
             bool force_draw_on_top);
 
-    void _dump_for_meshlib(char *filename, char *name);
+    void _dump_for_library(char *filename, char *name);
 };
 
 struct IndexedTriangleMesh3D {
@@ -2790,7 +2790,7 @@ struct IndexedTriangleMesh3D {
             char *texture_filename_if_texture_filename_is_NULL
             );
 
-    void _dump_for_meshlib(char *filename, char *name);
+    void _dump_for_library(char *filename, char *name);
 };
 
 void Soup3D::draw(
@@ -2831,21 +2831,21 @@ void IndexedTriangleMesh3D::draw(
             );
 }
 
-void Soup3D::_dump_for_meshlib(char *filename, char *name) {
+void Soup3D::_dump_for_library(char *filename, char *name) {
     ASSERT(primitive == SOUP_OUTLINED_TRIANGLES);
     FILE *fp = fopen(filename, "w");
-    fprintf(fp, "const int _meshlib_soup_%s_num_vertices = %d;\n", name, num_vertices); 
-    fprintf(fp, "const vec3 _meshlib_soup_%s_vertex_positions[_meshlib_soup_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_positions[i][0],vertex_positions[i][1],vertex_positions[i][2]); fprintf(fp, "};\n");
+    fprintf(fp, "const int _library_soup_%s_num_vertices = %d;\n", name, num_vertices); 
+    fprintf(fp, "const vec3 _library_soup_%s_vertex_positions[_library_soup_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_positions[i][0],vertex_positions[i][1],vertex_positions[i][2]); fprintf(fp, "};\n");
     fclose(fp);
 }
 
-void IndexedTriangleMesh3D::_dump_for_meshlib(char *filename, char *name) {
+void IndexedTriangleMesh3D::_dump_for_library(char *filename, char *name) {
     FILE *fp = fopen(filename, "w");
-    fprintf(fp, "const int _meshlib_mesh_%s_num_triangles = %d;\n", name, num_triangles); 
-    fprintf(fp, "const int _meshlib_mesh_%s_num_vertices = %d;\n", name, num_vertices); 
-    fprintf(fp, "const int3 _meshlib_mesh_%s_triangle_indices[_meshlib_mesh_%s_num_triangles] = {\n    ", name, name); for (int i = 0; i < num_triangles; ++i) fprintf(fp, "{%d,%d,%d},",triangle_indices[i].i,triangle_indices[i].j,triangle_indices[i].k); fprintf(fp, "};\n");
-    fprintf(fp, "const vec3 _meshlib_mesh_%s_vertex_positions[_meshlib_mesh_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_positions[i][0],vertex_positions[i][1],vertex_positions[i][2]); fprintf(fp, "};\n");
-    fprintf(fp, "const vec3 _meshlib_mesh_%s_vertex_normals  [_meshlib_mesh_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_normals[i][0],vertex_normals[i][1],vertex_normals[i][2]); fprintf(fp, "};\n");
+    fprintf(fp, "const int _library_mesh_%s_num_triangles = %d;\n", name, num_triangles); 
+    fprintf(fp, "const int _library_mesh_%s_num_vertices = %d;\n", name, num_vertices); 
+    fprintf(fp, "const int3 _library_mesh_%s_triangle_indices[_library_mesh_%s_num_triangles] = {\n    ", name, name); for (int i = 0; i < num_triangles; ++i) fprintf(fp, "{%d,%d,%d},",triangle_indices[i].i,triangle_indices[i].j,triangle_indices[i].k); fprintf(fp, "};\n");
+    fprintf(fp, "const vec3 _library_mesh_%s_vertex_positions[_library_mesh_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_positions[i][0],vertex_positions[i][1],vertex_positions[i][2]); fprintf(fp, "};\n");
+    fprintf(fp, "const vec3 _library_mesh_%s_vertex_normals  [_library_mesh_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_normals[i][0],vertex_normals[i][1],vertex_normals[i][2]); fprintf(fp, "};\n");
     fclose(fp);
 }
 
@@ -2855,12 +2855,12 @@ void IndexedTriangleMesh3D::_dump_for_meshlib(char *filename, char *name) {
 
 #if 0
 IndexedTriangleMesh3D bunny = _meshutil_indexed_triangle_mesh_load("data_fancy_bunny", true, true, false);
-bunny._dump_for_meshlib("out.txt", "bunny");
+bunny._dump_for_library("out.txt", "bunny");
 #endif
 
 #if 0
 Soup3D bunny = _meshutil_soup_TRIANGLES_load("data_basic_bunny", true);
-bunny._dump_for_meshlib("out.txt", "bunny");
+bunny._dump_for_library("out.txt", "bunny");
 #endif
 
 void _meshutil_transform_vertex_positions_to_double_unit_box(int num_vertices, vec3 *vertex_positions) {
@@ -3304,10 +3304,10 @@ void _recorder_begin_frame() { // record
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// #include "meshlib.cpp"///////////////////////////////////////////////////////
+// #include "library.cpp"///////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "meshlib.cpp"
+#include "library.cpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3608,7 +3608,7 @@ void eg_gl() {
 
 }
 
-void eg_meshlib() {
+void eg_library() {
     Camera3D camera = { 5.0, RAD(0.0) };
     real time = 0.0;
     bool paused = false;
@@ -3629,13 +3629,13 @@ void eg_meshlib() {
         mat4 M_smooth = M4_Translation(0.0, 0.0, 0.0) * R;
         mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
-        meshlib.soup_bunny.draw(PV * M_wire, monokai.purple);
-        meshlib.mesh_bunny.draw(P, V, M_smooth, monokai.purple);
-        meshlib.mesh_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
+        library.soups.bunny.draw(PV * M_wire, monokai.purple);
+        library.meshes.bunny.draw(P, V, M_smooth, monokai.purple);
+        library.meshes.bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
 
         gui_checkbox("draw_axes", &draw_axes);
         if (draw_axes) {
-            meshlib.soup_axes.draw(PV);
+            library.soups.axes.draw(PV);
         }
 
         if (!paused) {
@@ -3772,6 +3772,8 @@ void eg_kitchen_sink() {
         mat4 V = camera_get_V(&camera);
         mat4 PV = P * V;
 
+        mat4 M = M4_Translation(0.0, 0.0, -2.0) * M4_Scaling(2.0);
+
         {
             mat4 R = M4_RotationAboutYAxis(time);
 
@@ -3780,13 +3782,13 @@ void eg_kitchen_sink() {
             mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
             vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? monokai.purple : monokai.blue;
-            meshlib.soup_bunny.draw(PV * M_wire, color);
-            meshlib.mesh_bunny.draw(P, V, M_smooth, color);
-            meshlib.mesh_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
+            library.soups.bunny.draw(PV * M_wire, color);
+            library.meshes.bunny.draw(P, V, M_smooth, color);
+            library.meshes.bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
 
             gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
             if (draw_axes) {
-                meshlib.soup_axes.draw(PV);
+                library.soups.axes.draw(PV);
             }
         }
 
@@ -3798,7 +3800,10 @@ void eg_kitchen_sink() {
             if (gui_button("clear trace", 'r')) {
                 sbuff_free(&trace);
             }
-            soup_draw(globals.Identity, SOUP_LINE_STRIP, trace.length, trace.data, NULL, color_plasma(LINEAR_REMAP(globals.mouse_position_NDC.x, -1.0, 1.0, 0.0, 1.0)), 0, false, true);
+            for (int pass = 0; pass < 3; ++pass ) {
+                mat4 transform = (pass < 2) ? globals.Identity : PV * M4_Translation(0.0, 0.0, 0.01) * M;
+                soup_draw(transform, SOUP_LINE_STRIP, trace.length, trace.data, NULL, (pass == 0) ? monokai.white : color_plasma(LINEAR_REMAP(globals.mouse_position_NDC.x, -1.0, 1.0, 0.0, 1.0)), (pass == 0) ? 30.0 : 0, false, pass < 2);
+            }
 
             text_draw(globals.NDC_from_Screen, "  :3", globals.mouse_position_Screen); 
 
@@ -3846,10 +3851,10 @@ void eg_kitchen_sink() {
                 }
                 texture_sync_to_GPU(&texture);
             }
-            meshlib.mesh_square.draw(P, V, M4_Translation(0.0, 0.0, -2.0) * M4_Scaling(2.0), {}, texture.name);
+            library.meshes.square.draw(P, V, M, {}, texture.name);
         }
         {
-            IndexedTriangleMesh3D mesh = meshlib.mesh_teapot;
+            IndexedTriangleMesh3D mesh = library.meshes.teapot;
             int num_vertices       = mesh.num_vertices;
             vec3 *vertex_positions = mesh.vertex_positions;
             vec3 *vertex_normals   = mesh.vertex_normals;
@@ -3902,7 +3907,7 @@ void eg_shader() {
 
     Shader shader = shader_create(vertex_shader_source, 2, fragment_shader_source);
 
-    IndexedTriangleMesh3D mesh = meshlib.mesh_teapot;
+    IndexedTriangleMesh3D mesh = library.meshes.teapot;
     int num_vertices       = mesh.num_vertices;
     vec3 *vertex_positions = mesh.vertex_positions;
     vec3 *vertex_normals   = mesh.vertex_normals;
@@ -3943,7 +3948,7 @@ void eg_texture() {
 
             time += 0.0167;
         }
-        meshlib.mesh_square.draw(P, V, globals.Identity, {}, texture.name);
+        library.meshes.square.draw(P, V, globals.Identity, {}, texture.name);
     }
 }
 
@@ -3995,7 +4000,7 @@ void _eg_no_snail() {
 #define _APP_EXAMPLES_ALL() \
     APP(_eg_no_snail); \
     APP(eg_soup); \
-    APP(eg_meshlib); \
+    APP(eg_library); \
     APP(eg_text); \
     APP(eg_sound);
 #else 
