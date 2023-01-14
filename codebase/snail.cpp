@@ -139,7 +139,7 @@ union int3 {
 // vectors and matrices ////////////////////////////////////////////////////////
 
 template <int T> union Vec {
-    // real data[T];
+    real data[T];
     real &operator [](int index) { return ((real *)(this))[index]; }
 };
 
@@ -389,6 +389,10 @@ template <int T> Vec<T> normalized(Vec<T> v) {
     return (1 / norm_v) * v;
 }
 
+// ALIASES
+// template <int T> real length(Vec<T> v) { return norm(v); }
+// template <int T> real squared_length(Vec<T> v) { return squaredNorm(v); }
+
 // important matrix functions //////////////////////////////////////////////////
 
 template <int T> Mat<T> transpose(Mat<T> M) {
@@ -518,20 +522,25 @@ template <int T> Mat<T> IdentityMatrix() {
     return ret;
 }
 const Mat<4> Identity4x4 = IdentityMatrix<4>();
-Mat<4> Translation(real x, real y, real z = 0) {
+
+
+
+
+
+Mat<4> M4_Translation(real x, real y, real z = 0) {
     Mat<4> ret = Identity4x4;
     ret(0, 3) = x;
     ret(1, 3) = y;
     ret(2, 3) = z;
     return ret;
 }
-Mat<4> Translation(Vec<2> xy) {
-    return Translation(xy.x, xy.y);
+Mat<4> M4_Translation(Vec<2> xy) {
+    return M4_Translation(xy.x, xy.y);
 }
-Mat<4> Translation(Vec<3> xyz) {
-    return Translation(xyz.x, xyz.y, xyz.z);
+Mat<4> M4_Translation(Vec<3> xyz) {
+    return M4_Translation(xyz.x, xyz.y, xyz.z);
 }
-Mat<4> Scaling(real x, real y, real z = 1) {
+Mat<4> M4_Scaling(real x, real y, real z = 1) {
     Mat<4> ret = {};
     ret(0, 0) = x;
     ret(1, 1) = y;
@@ -539,36 +548,35 @@ Mat<4> Scaling(real x, real y, real z = 1) {
     ret(3, 3) = 1;
     return ret;
 }
-Mat<4> Scaling(real s) {
-    return Scaling(s, s, s);
+Mat<4> M4_Scaling(real s) {
+    return M4_Scaling(s, s, s);
 }
-Mat<4> Scaling(Vec<2> xy) {
-    return Scaling(xy.x, xy.y);
+Mat<4> M4_Scaling(Vec<2> xy) {
+    return M4_Scaling(xy.x, xy.y);
 }
-Mat<4> Scaling(Vec<3> xyz) {
-    return Scaling(xyz.x, xyz.y, xyz.z);
+Mat<4> M4_Scaling(Vec<3> xyz) {
+    return M4_Scaling(xyz.x, xyz.y, xyz.z);
 }
-Mat<4> RotationAboutX(real t) {
+Mat<4> M4_RotationAboutXAxis(real t) {
     Mat<4> ret = Identity4x4;
     ret(1, 1) = cos(t); ret(1, 2) = -sin(t);
     ret(2, 1) = sin(t); ret(2, 2) =  cos(t);
     return ret;
 }
-Mat<4> RotationAboutY(real t) {
+Mat<4> M4_RotationAboutYAxis(real t) {
     Mat<4> ret = Identity4x4;
     ret(0, 0) =  cos(t); ret(0, 2) = sin(t);
     ret(2, 0) = -sin(t); ret(2, 2) = cos(t);
     return ret;
 }
-Mat<4> RotationAboutZ(real t) {
+Mat<4> M4_RotationAboutZAxis(real t) {
     Mat<4> ret = Identity4x4;
     ret(0, 0) = cos(t); ret(0, 1) = -sin(t);
     ret(1, 0) = sin(t); ret(1, 1) =  cos(t);
     return ret;
 }
-#define Rotation2D RotationZ
 
-Mat<4> RotationAxisAngle(Vec<3> axis, real angle) {
+Mat<4> M4_RotationAxisAngle(Vec<3> axis, real angle) {
     real x = axis.x;
     real y = axis.y;
     real z = axis.z;

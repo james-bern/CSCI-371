@@ -1641,7 +1641,7 @@ template <int D_pos, int D_color = 3> void soup_draw(
         int num_vertices,
         Vec<D_pos> *vertex_positions,
         Vec<D_color> *vertex_colors,
-        Vec<D_color> color_if_vertex_colors_is_NULL = V3(1, 1, 1),
+        Vec<D_color> color_if_vertex_colors_is_NULL = { 1.0, 1.0, 1.0 },
         real size_in_pixels = 0,
         bool use_world_units_instead_of_pixels = false,
         bool force_draw_on_top = false) {
@@ -1832,7 +1832,7 @@ void _text_draw(
 
     if (IS_BETWEEN(s_NDC[2], -1, 1)) {
         real transform[16] = {}; {
-            // Translation(s_NDC) * app_NDC_from_Screen() * Translation(ds_Screen + dims / 2) * Scaling(size, size);
+            // M4_Translation(s_NDC) * app_NDC_from_Screen() * M4_Translation(ds_Screen + dims / 2) * M4_Scaling(size, size);
 
             real TS[16] = {
                 font_size_in_pixels / 12, 0, 0, dx_in_pixels + window_width_in_pixels / 2,
@@ -2333,10 +2333,9 @@ void itri_draw(
         vec3 *vertex_positions,
         vec3 *vertex_normals,
         vec3 *vertex_colors,
-        vec3 color_if_vertex_colors_is_NULL,
+        vec3 color_if_vertex_colors_is_NULL = { 1.0, 1.0, 1.0 },
         vec2 *vertex_texCoords,
-        char *texture_filename
-        ) {
+        char *texture_filename) {
     _itri_draw(
             P.data,
             V.data,
@@ -2806,20 +2805,20 @@ void IndexedTriangleMesh3D::_dump_for_meshlib(char *filename, char *name) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// #include "_mesh_utils.cpp"///////////////////////////////////////////////////
+// #include "_mesh_util.cpp"///////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 #if 0
-IndexedTriangleMesh3D bunny = _mesh_utils_indexed_triangle_mesh_load("data_fancy_bunny", true, true, false);
+IndexedTriangleMesh3D bunny = _mesh_util_indexed_triangle_mesh_load("data_fancy_bunny", true, true, false);
 bunny._dump_for_meshlib("out.txt", "bunny");
 #endif
 
 #if 0
-Soup3D bunny = _mesh_utils_soup_TRIANGLES_load("data_basic_bunny", true);
+Soup3D bunny = _mesh_util_soup_TRIANGLES_load("data_basic_bunny", true);
 bunny._dump_for_meshlib("out.txt", "bunny");
 #endif
 
-void _mesh_utils_transform_vertex_positions_to_double_unit_box(int num_vertices, vec3 *vertex_positions) {
+void _mesh_util_transform_vertex_positions_to_double_unit_box(int num_vertices, vec3 *vertex_positions) {
     vec3 L = V3(HUGE, HUGE, HUGE);
     vec3 R = V3(-HUGE, -HUGE, -HUGE);
     for (int i = 0; i < num_vertices; ++i) {
@@ -2835,20 +2834,20 @@ void _mesh_utils_transform_vertex_positions_to_double_unit_box(int num_vertices,
     }
 }
 
-void _mesh_utils_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals(IndexedTriangleMesh3D *fancy_mesh) {
-    ASSERT(fancy_mesh->vertex_normals == NULL);
+void _mesh_util_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals(IndexedTriangleMesh3D *itri_mesh) {
+    ASSERT(itri_mesh->vertex_normals == NULL);
     if (1) { // () _itri_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals
-        // TODO allocate fancy_mesh->vertex_normals        
-        // TODO write entries of fancy_mesh->vertex_normals
-        fancy_mesh->vertex_normals = (vec3 *) calloc(fancy_mesh->num_vertices, sizeof(vec3));
-        for (int i_triangle = 0; i_triangle < fancy_mesh->num_triangles; ++i_triangle) {
-            int3 ijk = fancy_mesh->triangle_indices[i_triangle];
+        // TODO allocate itri_mesh->vertex_normals        
+        // TODO write entries of itri_mesh->vertex_normals
+        itri_mesh->vertex_normals = (vec3 *) calloc(itri_mesh->num_vertices, sizeof(vec3));
+        for (int i_triangle = 0; i_triangle < itri_mesh->num_triangles; ++i_triangle) {
+            int3 ijk = itri_mesh->triangle_indices[i_triangle];
             real A;
             vec3 n_hat;
             {
                 vec3 abc[3];
                 for (int d = 0; d < 3; ++d) {
-                    abc[d] = fancy_mesh->vertex_positions[ijk[d]];
+                    abc[d] = itri_mesh->vertex_positions[ijk[d]];
                 }
                 vec3 n = cross(abc[1] - abc[0], abc[2] - abc[0]);
                 real mag_n = norm(n);
@@ -2856,39 +2855,39 @@ void _mesh_utils_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_ver
                 n_hat = n / mag_n;
             }
             for (int d = 0; d < 3; ++d) {
-                fancy_mesh->vertex_normals[ijk[d]] += A * n_hat;
+                itri_mesh->vertex_normals[ijk[d]] += A * n_hat;
             }
         }
-        for (int i_vertex = 0; i_vertex < fancy_mesh->num_vertices; ++i_vertex) {
-            fancy_mesh->vertex_normals[i_vertex] = normalized(fancy_mesh->vertex_normals[i_vertex]);
+        for (int i_vertex = 0; i_vertex < itri_mesh->num_vertices; ++i_vertex) {
+            itri_mesh->vertex_normals[i_vertex] = normalized(itri_mesh->vertex_normals[i_vertex]);
         }
     }
 }
 
-void _mesh_utils_indexed_triangle_mesh_merge_duplicated_vertices(IndexedTriangleMesh3D *fancy_mesh) {
+void _mesh_util_indexed_triangle_mesh_merge_duplicated_vertices(IndexedTriangleMesh3D *itri_mesh) {
     int new_num_vertices = 0;
-    vec3 *new_vertex_positions = (vec3 *) calloc(fancy_mesh->num_vertices, sizeof(vec3)); // (more space than we'll need)
+    vec3 *new_vertex_positions = (vec3 *) calloc(itri_mesh->num_vertices, sizeof(vec3)); // (more space than we'll need)
     if (1) { // [] _itri_mesh_merge_duplicated_vertices
         // TODO set new_num_vertices and entries of new_vertex_positions                   
-        // TODO overwrite entries of fancy_mesh->triangle_indices with new triangle indices
+        // TODO overwrite entries of itri_mesh->triangle_indices with new triangle indices
         // NOTE it is OK if your implementation is slow (mine takes ~5 seconds to run)     
         // NOTE please don't worry about space efficiency at all                           
-        int *primal  = (int *) calloc(fancy_mesh->num_vertices, sizeof(int));
-        int *new_index = (int *) calloc(fancy_mesh->num_vertices, sizeof(int));
-        for (int i = 0; i < fancy_mesh->num_vertices; ++i) {
+        int *primal  = (int *) calloc(itri_mesh->num_vertices, sizeof(int));
+        int *new_index = (int *) calloc(itri_mesh->num_vertices, sizeof(int));
+        for (int i = 0; i < itri_mesh->num_vertices; ++i) {
             primal[i] = -1;
             new_index[i] = -1;
         }
-        for (int i = 0; i < fancy_mesh->num_vertices; ++i) {
+        for (int i = 0; i < itri_mesh->num_vertices; ++i) {
             if (primal[i] != -1) {
                 continue;
             }
-            vec3 p_i = fancy_mesh->vertex_positions[i];
-            for (int j = i + 1; j < fancy_mesh->num_vertices; ++j) {
+            vec3 p_i = itri_mesh->vertex_positions[i];
+            for (int j = i + 1; j < itri_mesh->num_vertices; ++j) {
                 if (primal[j] != -1) {
                     continue;
                 }
-                vec3 p_j = fancy_mesh->vertex_positions[j];
+                vec3 p_j = itri_mesh->vertex_positions[j];
                 if (IS_ZERO(squaredNorm(p_i - p_j))) {
                     ASSERT(primal[j] == -1);
                     primal[j] = i;
@@ -2896,32 +2895,32 @@ void _mesh_utils_indexed_triangle_mesh_merge_duplicated_vertices(IndexedTriangle
             }
         }
         int k = 0;
-        for (int i = 0; i < fancy_mesh->num_vertices; ++i) {
+        for (int i = 0; i < itri_mesh->num_vertices; ++i) {
             if (primal[i] == -1) {
                 ++new_num_vertices;
-                new_vertex_positions[k] = fancy_mesh->vertex_positions[i];
+                new_vertex_positions[k] = itri_mesh->vertex_positions[i];
                 new_index[i] = k;
                 ++k;
             }
         }
-        for (int i_triangle = 0; i_triangle < fancy_mesh->num_triangles; ++i_triangle) {
+        for (int i_triangle = 0; i_triangle < itri_mesh->num_triangles; ++i_triangle) {
             for (int d = 0; d < 3; ++d) {
-                int i = fancy_mesh->triangle_indices[i_triangle][d];
-                fancy_mesh->triangle_indices[i_triangle][d] = (primal[i] == -1) ? new_index[i] : new_index[primal[i]];
+                int i = itri_mesh->triangle_indices[i_triangle][d];
+                itri_mesh->triangle_indices[i_triangle][d] = (primal[i] == -1) ? new_index[i] : new_index[primal[i]];
             }
         }
         free(primal);
         free(new_index);
     }
     if (new_num_vertices) {
-        fancy_mesh->num_vertices = new_num_vertices;
-        free(fancy_mesh->vertex_positions);
-        fancy_mesh->vertex_positions = new_vertex_positions;
+        itri_mesh->num_vertices = new_num_vertices;
+        free(itri_mesh->vertex_positions);
+        itri_mesh->vertex_positions = new_vertex_positions;
     }
 }
 
-IndexedTriangleMesh3D _mesh_utils_indexed_triangle_mesh_load(char *filename, bool transform_vertex_positions_to_double_unit_box, bool compute_normals, bool merge_duplicated_vertices) {
-    IndexedTriangleMesh3D fancy_mesh = {};
+IndexedTriangleMesh3D _mesh_util_indexed_triangle_mesh_load(char *filename, bool transform_vertex_positions_to_double_unit_box, bool compute_normals, bool merge_duplicated_vertices) {
+    IndexedTriangleMesh3D itri_mesh = {};
     {
         StretchyBuffer<vec3> vertex_positions = {};
         StretchyBuffer<int3> triangle_indices = {};
@@ -2946,24 +2945,24 @@ IndexedTriangleMesh3D _mesh_utils_indexed_triangle_mesh_load(char *filename, boo
             fclose(fp);
         }
         // note: don't free the data pointers! (we're stealing them)
-        fancy_mesh.num_triangles = triangle_indices.length;
-        fancy_mesh.triangle_indices = triangle_indices.data;
-        fancy_mesh.num_vertices = vertex_positions.length;
-        fancy_mesh.vertex_positions = vertex_positions.data;
+        itri_mesh.num_triangles = triangle_indices.length;
+        itri_mesh.triangle_indices = triangle_indices.data;
+        itri_mesh.num_vertices = vertex_positions.length;
+        itri_mesh.vertex_positions = vertex_positions.data;
     }
     if (transform_vertex_positions_to_double_unit_box) {
-        _mesh_utils_transform_vertex_positions_to_double_unit_box(fancy_mesh.num_vertices, fancy_mesh.vertex_positions);
+        _mesh_util_transform_vertex_positions_to_double_unit_box(itri_mesh.num_vertices, itri_mesh.vertex_positions);
     }
     if (merge_duplicated_vertices) {
-        _mesh_utils_indexed_triangle_mesh_merge_duplicated_vertices(&fancy_mesh);
+        _mesh_util_indexed_triangle_mesh_merge_duplicated_vertices(&itri_mesh);
     }
     if (compute_normals) {
-        _mesh_utils_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals(&fancy_mesh);
+        _mesh_util_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals(&itri_mesh);
     }
-    return fancy_mesh;
+    return itri_mesh;
 }
 
-Soup3D _mesh_utils_soup_TRIANGLES_load(char *filename, bool transform_vertex_positions_to_double_unit_box) {
+Soup3D _mesh_util_soup_TRIANGLES_load(char *filename, bool transform_vertex_positions_to_double_unit_box) {
     Soup3D soup_mesh = {};
     {
         soup_mesh.primitive = SOUP_TRIANGLE_MESH;
@@ -2986,25 +2985,25 @@ Soup3D _mesh_utils_soup_TRIANGLES_load(char *filename, bool transform_vertex_pos
         soup_mesh.vertex_positions = vertex_positions.data;
     }
     if (transform_vertex_positions_to_double_unit_box) {
-        _mesh_utils_transform_vertex_positions_to_double_unit_box(soup_mesh.num_vertices, soup_mesh.vertex_positions);
+        _mesh_util_transform_vertex_positions_to_double_unit_box(soup_mesh.num_vertices, soup_mesh.vertex_positions);
     }
     return soup_mesh;
 }
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// #include "utils.cpp"/////////////////////////////////////////////////////////
+// #include "util.cpp"/////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-real utils_random_real(real a = 0, real b = 1) {
-    return LERP(real(rand()) / RAND_MAX, a, b);
+real random_real(real lower_bound, real upper_bound) {
+    return LERP(real(rand()) / RAND_MAX, lower_bound, upper_bound);
 }
 
-int utils_random_sign() {
-    return utils_random_real() < .5 ? -1 : 1;
+int random_sign() {
+    return random_real(0.0, 1.0) < .5 ? -1 : 1;
 }
 
-long utils_timestamp_in_milliseconds() { // no promises this is even a little bit accurate
+long _util_timestamp_in_milliseconds() { // no promises this is even a little bit accurate
     using namespace std::chrono;
     milliseconds ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     return (long) ms.count();
@@ -3512,9 +3511,9 @@ bool cow_begin_frame() {
             }
             if (display_fps) {
                 static int fps;
-                static long stamp = utils_timestamp_in_milliseconds();
-                if (utils_timestamp_in_milliseconds() - stamp > 166) {
-                    stamp = utils_timestamp_in_milliseconds();
+                static long stamp = _util_timestamp_in_milliseconds();
+                if (_util_timestamp_in_milliseconds() - stamp > 166) {
+                    stamp = _util_timestamp_in_milliseconds();
                     fps = measured_fps;
                     // printf("fps: %d\n", display_fps);
                 }
@@ -3528,7 +3527,7 @@ bool cow_begin_frame() {
         {
             const int N_MOVING_WINDOW = 5;
             static long prev_stamps[N_MOVING_WINDOW];
-            long stamp = utils_timestamp_in_milliseconds();
+            long stamp = _util_timestamp_in_milliseconds();
             measured_fps = (int) round(N_MOVING_WINDOW / (real(stamp - prev_stamps[N_MOVING_WINDOW - 1]) / 1000.));
             for (int i = N_MOVING_WINDOW - 1; i >= 1; --i) {
                 prev_stamps[i] = prev_stamps[i - 1];
@@ -3580,11 +3579,11 @@ void eg_meshlib() {
         mat4 V = camera_get_V(&camera);
         mat4 PV = P * V;
 
-        mat4 R = RotationAboutY(time);
+        mat4 R = M4_RotationAboutYAxis(time);
 
-        mat4 M_wire = Translation(-2.2, 0.0, 0.0) * R;
-        mat4 M_smooth = Translation(0.0, 0.0, 0.0) * R;
-        mat4 M_matcap = Translation( 2.2, 0.0, 0.0) * R;
+        mat4 M_wire = M4_Translation(-2.2, 0.0, 0.0) * R;
+        mat4 M_smooth = M4_Translation(0.0, 0.0, 0.0) * R;
+        mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
         meshlib.soup_bunny.draw(PV * M_wire, monokai.purple);
         meshlib.itri_bunny.draw(P, V, M_smooth, monokai.purple);
@@ -3708,11 +3707,11 @@ void eg_kitchen_sink() {
         mat4 V = camera_get_V(&camera);
         mat4 PV = P * V;
 
-        mat4 R = RotationAboutY(time);
+        mat4 R = M4_RotationAboutYAxis(time);
 
-        mat4 M_wire = Translation(-2.2, 0.0, 0.0) * R;
-        mat4 M_smooth = Translation(0.0, 0.0, 0.0) * R;
-        mat4 M_matcap = Translation( 2.2, 0.0, 0.0) * R;
+        mat4 M_wire = M4_Translation(-2.2, 0.0, 0.0) * R;
+        mat4 M_smooth = M4_Translation(0.0, 0.0, 0.0) * R;
+        mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
         vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? monokai.purple : monokai.blue;
         meshlib.soup_bunny.draw(PV * M_wire, color);
