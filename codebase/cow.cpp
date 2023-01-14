@@ -263,7 +263,7 @@ struct CX_INTERNAL_CONSTANTS {
         uniform bool has_vertex_colors;
         uniform vec3 color_if_vertex_colors_is_NULL;
 
-        uniform bool has_vertex_texCoords;
+        uniform bool has_vertex_texture_coordinates;
 
         uniform mat4 P, V, M;
 
@@ -273,7 +273,7 @@ struct CX_INTERNAL_CONSTANTS {
             gl_Position = P * V * tmp;
             vs_out.normal_World = inverse(transpose(mat3(M))) * normal;
             vs_out.color = has_vertex_colors ? color : color_if_vertex_colors_is_NULL;
-            vs_out.texCoord = has_vertex_texCoords ? texCoord : vec2(0., 0.);
+            vs_out.texCoord = has_vertex_texture_coordinates ? texCoord : vec2(0., 0.);
         }
     )";
 
@@ -292,7 +292,7 @@ struct CX_INTERNAL_CONSTANTS {
 
         uniform bool has_vertex_normals;
         uniform bool has_vertex_colors;
-        uniform bool has_vertex_texCoords;
+        uniform bool has_vertex_texture_coordinates;
         uniform bool has_texture;
 
         out vec4 frag_color;
@@ -307,17 +307,14 @@ struct CX_INTERNAL_CONSTANTS {
 
             if (has_texture) {
 
-                vec2 texCoords = (has_vertex_texCoords) ? fs_in.texCoord : (.5 + .5 * N).xy;
-                vec4 rgba = texture(i_texture, texCoords);
+                vec2 texture_coordinates = (has_vertex_texture_coordinates) ? fs_in.texCoord : (.5 + .5 * N).xy;
+                vec4 rgba = texture(i_texture, texture_coordinates);
                 rgb = rgba.rgb;
                 a = rgba.a;
 
             } else if (has_vertex_normals) {
 
-                rgb *= .8;
-
-                float distance = length(world_to_eye);
-                float attenuation = 1 / (1 + .02 * distance + .002 * distance * distance);
+                // rgb *= .8;
 
                 vec3 L = E;
                 vec3 H = normalize(L + E);
@@ -327,9 +324,9 @@ struct CX_INTERNAL_CONSTANTS {
                 float specular = pow(max(0, dot(N, H)), 100);
                 float fresnel = F0 + (1 - F0) * pow(1 - max(0, dot(N, H)), 5);
 
-                rgb += attenuation * .7 * diffuse * vec3(.7, 1, .7);
-                rgb += attenuation * .7 * specular * vec3(1, .2, .2);
-                rgb += attenuation * .8 * fresnel * vec3(.2, .2, 1);
+                rgb += .3 * diffuse;
+                rgb += .5 * specular;
+                rgb += .2 * fresnel;
 
             }
 
@@ -2261,7 +2258,7 @@ void _itri_draw(
         real r_if_vertex_colors_is_NULL = 1,
         real g_if_vertex_colors_is_NULL = 1,
         real b_if_vertex_colors_is_NULL = 1,
-        real *vertex_texCoords = NULL,
+        real *vertex_texture_coordinates = NULL,
         char *texture_filename = NULL
         ) {
     if (num_triangles == 0) { return; } // NOTE: num_triangles zero is now valid input
@@ -2298,7 +2295,7 @@ void _itri_draw(
     guarded_push(vertex_positions, 3);
     guarded_push(vertex_normals, 3);
     guarded_push(vertex_colors, 3);
-    guarded_push(vertex_texCoords, 2);
+    guarded_push(vertex_texture_coordinates, 2);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, COW0._itri_EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * num_triangles * sizeof(u32), triangle_indices, GL_DYNAMIC_DRAW);
@@ -2314,7 +2311,7 @@ void _itri_draw(
     }
     _shader_set_uniform_bool(COW0._itri_shader_program, "has_vertex_colors", vertex_colors != NULL);
     _shader_set_uniform_bool(COW0._itri_shader_program, "has_vertex_normals", vertex_normals != NULL);
-    _shader_set_uniform_bool(COW0._itri_shader_program, "has_vertex_texCoords", vertex_texCoords != NULL);
+    _shader_set_uniform_bool(COW0._itri_shader_program, "has_vertex_texture_coordinates", vertex_texture_coordinates != NULL);
     _shader_set_uniform_bool(COW0._itri_shader_program, "has_texture", texture_filename != NULL);
     _shader_set_uniform_int (COW0._itri_shader_program, "i_texture", MAX(0, i_texture));
     _shader_set_uniform_vec3(COW0._itri_shader_program, "color_if_vertex_colors_is_NULL", color_if_vertex_colors_is_NULL);
@@ -2334,8 +2331,8 @@ void itri_draw(
         vec3 *vertex_normals,
         vec3 *vertex_colors,
         vec3 color_if_vertex_colors_is_NULL = { 1.0, 1.0, 1.0 },
-        vec2 *vertex_texCoords,
-        char *texture_filename) {
+        vec2 *vertex_texture_coordinates = NULL,
+        char *texture_filename = NULL) {
     _itri_draw(
             P.data,
             V.data,
@@ -2349,7 +2346,7 @@ void itri_draw(
             color_if_vertex_colors_is_NULL[0],
             color_if_vertex_colors_is_NULL[1],
             color_if_vertex_colors_is_NULL[2],
-            (real *) vertex_texCoords,
+            (real *) vertex_texture_coordinates,
             texture_filename
             );
 }
@@ -2710,8 +2707,6 @@ template <typename T> void sbuff_free(StretchyBuffer<T> *buffer) {
 #ifdef SNAIL_CPP
 struct Soup3D {
     int primitive;
-    int dimension_of_positions;
-    int dimension_of_colors;
     int num_vertices;
     vec3 *vertex_positions;
     vec3 *vertex_colors;
@@ -2732,7 +2727,7 @@ struct IndexedTriangleMesh3D {
     vec3 *vertex_normals;
     vec3 *vertex_colors;
     int3 *triangle_indices;
-    vec2 *vertex_texCoords;
+    vec2 *vertex_texture_coordinates;
     char *texture_filename;
 
     void draw(
@@ -2750,8 +2745,7 @@ void Soup3D::draw(
         mat4 PVM,
         vec3 color_if_vertex_colors_is_NULL = { 1.0, 0.0, 1.0 },
         real size_in_pixels = 0,
-        bool force_draw_on_top = false
-        ) {
+        bool force_draw_on_top = false) {
     soup_draw(
             PVM,
             primitive,
@@ -2764,12 +2758,11 @@ void Soup3D::draw(
 }
 
 void IndexedTriangleMesh3D::draw(
-        mat4 P,
-        mat4 V,
-        mat4 M,
-        vec3 color_if_vertex_colors_is_NULL = { 1.0, 0.0, 1.0 },
-        char *texture_filename_if_texture_filename_is_NULL = NULL
-        ) {
+    mat4 P,
+    mat4 V,
+    mat4 M,
+    vec3 color_if_vertex_colors_is_NULL = { 1.0, 0.0, 1.0 },
+    char *texture_filename_if_texture_filename_is_NULL = NULL) {
     itri_draw(
             P,
             V,
@@ -2781,7 +2774,7 @@ void IndexedTriangleMesh3D::draw(
             vertex_normals,
             vertex_colors,
             color_if_vertex_colors_is_NULL,
-            vertex_texCoords,
+            vertex_texture_coordinates,
             (texture_filename) ? texture_filename : texture_filename_if_texture_filename_is_NULL
             );
 }
@@ -2966,7 +2959,6 @@ Soup3D _mesh_util_soup_TRIANGLES_load(char *filename, bool transform_vertex_posi
     Soup3D soup_mesh = {};
     {
         soup_mesh.primitive = SOUP_TRIANGLE_MESH;
-        soup_mesh.dimension_of_positions = 3;
 
         StretchyBuffer<vec3> vertex_positions = {};
         {
