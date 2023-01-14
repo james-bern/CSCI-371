@@ -1483,9 +1483,9 @@ void _soup_draw(
 
             primitive = SOUP_LINES;
             vertex_colors = NULL;
-            r_if_vertex_colors_is_NULL = 1.0;
-            g_if_vertex_colors_is_NULL = 1.0;
-            b_if_vertex_colors_is_NULL = 1.0;
+            r_if_vertex_colors_is_NULL = LERP(0.4, 1.0, r_if_vertex_colors_is_NULL);
+            g_if_vertex_colors_is_NULL = LERP(0.4, 1.0, g_if_vertex_colors_is_NULL);
+            b_if_vertex_colors_is_NULL = LERP(0.4, 1.0, b_if_vertex_colors_is_NULL);
             a_if_vertex_colors_is_NULL = 1.0;
         }
     }
