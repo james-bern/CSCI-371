@@ -109,7 +109,7 @@ struct C2_READONLY_USER_FACING_DATA {
 };
 
 struct CX_INTERNAL_CONSTANTS {
-    char *_soup_vert = R"(
+    char *_soup_vert = R""(
         #version 330 core
         layout (location = 0) in vec3 vertex;
         layout (location = 1) in vec4 color;
@@ -135,9 +135,9 @@ struct CX_INTERNAL_CONSTANTS {
                 gl_Position.z = -.99 * gl_Position.w; // ?
             }
         }
-    )";
+    )"";
 
-    char *_soup_geom_POINTS = R"(
+    char *_soup_geom_POINTS = R""(
         #version 330 core
         layout (points) in;
         layout (triangle_strip, max_vertices = 4) out;
@@ -170,9 +170,9 @@ struct CX_INTERNAL_CONSTANTS {
             emit(1, 1);
             EndPrimitive();
         }  
-    )";
+    )"";
 
-    char *_soup_frag_POINTS = R"(
+    char *_soup_frag_POINTS = R""(
         #version 330 core
 
         in GS_OUT {
@@ -187,9 +187,9 @@ struct CX_INTERNAL_CONSTANTS {
             frag_color.a = 1.0;
             if (length(fs_in.xy) > 1) { discard; }
         }
-    )";
+    )"";
 
-    char *_soup_geom_LINES = R"(
+    char *_soup_geom_LINES = R""(
         #version 330 core
         layout (lines) in;
         layout (triangle_strip, max_vertices = 4) out;
@@ -230,9 +230,9 @@ struct CX_INTERNAL_CONSTANTS {
 
             EndPrimitive();
         }  
-    )";
+    )"";
 
-    char *_soup_frag = R"(
+    char *_soup_frag = R""(
         #version 330 core
 
         in BLOCK {
@@ -244,9 +244,9 @@ struct CX_INTERNAL_CONSTANTS {
         void main() {
             frag_color = fs_in.color;
         }
-    )";
+    )"";
 
-    char *_itri_vert = R"(
+    char *_mesh_vert = R""(
         #version 330 core
         layout (location = 0) in vec3 vertex;
         layout (location = 1) in vec3 normal;
@@ -275,9 +275,9 @@ struct CX_INTERNAL_CONSTANTS {
             vs_out.color = has_vertex_colors ? color : color_if_vertex_colors_is_NULL;
             vs_out.texCoord = has_vertex_texture_coordinates ? texCoord : vec2(0., 0.);
         }
-    )";
+    )"";
 
-    char *_itri_frag = R"(
+    char *_mesh_frag = R""(
         #version 330 core
 
         in BLOCK {
@@ -304,35 +304,25 @@ struct CX_INTERNAL_CONSTANTS {
 
             vec3 rgb = fs_in.color;
             float a = 1.;
-
             if (has_texture) {
-
                 vec2 texture_coordinates = (has_vertex_texture_coordinates) ? fs_in.texCoord : (.5 + .5 * N).xy;
                 vec4 rgba = texture(i_texture, texture_coordinates);
                 rgb = rgba.rgb;
                 a = rgba.a;
-
             } else if (has_vertex_normals) {
-
-                // rgb *= .8;
-
                 vec3 L = E;
                 vec3 H = normalize(L + E);
                 float F0 = .05;
-
                 float diffuse = max(0, dot(N, L));
                 float specular = pow(max(0, dot(N, H)), 100);
                 float fresnel = F0 + (1 - F0) * pow(1 - max(0, dot(N, H)), 5);
-
-                rgb += .3 * diffuse;
-                rgb += .5 * specular;
-                rgb += .2 * fresnel;
-
+                rgb += .6 * (-1.0 + 2.0 * diffuse);
+                rgb += .6 * specular;
+                rgb += .8 * (-.3 + 1.3 * fresnel);
             }
-
             frag_color = vec4(rgb, a);
         }
-    )";
+    )"";
 };
 
 struct C0_PersistsAcrossApps_NeverAutomaticallyClearedToZero__ManageItYourself {
@@ -349,10 +339,10 @@ struct C0_PersistsAcrossApps_NeverAutomaticallyClearedToZero__ManageItYourself {
     real *_eso_vertex_positions;
     real *_eso_vertex_colors;
 
-    int _itri_shader_program;
-    u32 _itri_VAO;
-    u32 _itri_VBO[4];
-    u32 _itri_EBO;
+    int _mesh_shader_program;
+    u32 _mesh_VAO;
+    u32 _mesh_VBO[4];
+    u32 _mesh_EBO;
 
     FILE *_recorder_fp_mpg;
     FILE *_recorder_fp_dat;
@@ -395,9 +385,9 @@ struct C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset 
     real  _gui__dx_accumulator;
     bool  _gui_hide_and_disable;
 
-    char _itri_texture_filenames[ITRI_MAX_NUM_TEXTURES][ITRI_MAX_FILENAME_LENGTH];
-    u32  _itri_textures[ITRI_MAX_NUM_TEXTURES];
-    int  _itri_num_textures;
+    char _mesh_texture_filenames[ITRI_MAX_NUM_TEXTURES][ITRI_MAX_FILENAME_LENGTH];
+    u32  _mesh_textures[ITRI_MAX_NUM_TEXTURES];
+    int  _mesh_num_textures;
 
     cs_audio_source_t *_sound_audio_source_ptrs[SOUND_MAX_DIFFERENT_FILES];
     char               _sound_filenames[SOUND_MAX_DIFFERENT_FILES][SOUND_MAX_FILENAME_LENGTH];
@@ -1415,9 +1405,9 @@ void shader_draw(Shader *shader, int num_triangles, int3 *triangle_indices) {
 #define SOUP_TRIANGLES      GL_TRIANGLES
 #define SOUP_TRIANGLE_FAN   GL_TRIANGLE_FAN
 #define SOUP_TRIANGLE_STRIP GL_TRIANGLE_STRIP
-#define SOUP_TRIANGLE_MESH  254
+#define SOUP_OUTLINED_TRIANGLES  254
 #define SOUP_QUADS          255
-#define SOUP_QUAD_MESH      253
+#define SOUP_OUTLINED_QUADS      253
 
 
 #define _SOUP_XY 2
@@ -1465,9 +1455,9 @@ void _soup_draw(
     }
 
     int mesh_special_case = 0; {
-        if (primitive == SOUP_TRIANGLE_MESH || primitive == SOUP_QUAD_MESH) {
+        if (primitive == SOUP_OUTLINED_TRIANGLES || primitive == SOUP_OUTLINED_QUADS) {
             _soup_draw(
-                    PVM, primitive == SOUP_TRIANGLE_MESH ? SOUP_TRIANGLES : SOUP_QUADS,
+                    PVM, primitive == SOUP_OUTLINED_TRIANGLES ? SOUP_TRIANGLES : SOUP_QUADS,
                     dimension_of_positions,
                     dimension_of_colors,
                     num_vertices,
@@ -1481,7 +1471,7 @@ void _soup_draw(
                     use_world_units_instead_of_pixels,
                     force_draw_on_top);
 
-            if (primitive == SOUP_TRIANGLE_MESH) {
+            if (primitive == SOUP_OUTLINED_TRIANGLES) {
                 mesh_special_case = 1;
             } else {
                 mesh_special_case = 2;
@@ -2155,18 +2145,18 @@ void gui_slider(
 // #include "indexed.cpp"///////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void _itri_init() {
-    COW0._itri_shader_program = _shader_compile_and_build_program(COWX._itri_vert, COWX._itri_frag);
-    glGenVertexArrays(1, &COW0._itri_VAO);
-    glGenBuffers(_COUNT_OF(COW0._itri_VBO), COW0._itri_VBO);
-    glGenBuffers(1, &COW0._itri_EBO);
+void _mesh_init() {
+    COW0._mesh_shader_program = _shader_compile_and_build_program(COWX._mesh_vert, COWX._mesh_frag);
+    glGenVertexArrays(1, &COW0._mesh_VAO);
+    glGenBuffers(_COUNT_OF(COW0._mesh_VBO), COW0._mesh_VBO);
+    glGenBuffers(1, &COW0._mesh_EBO);
     stbi_set_flip_vertically_on_load(true);
 }
 
-bool _itri_texture_find(int *i_texture, char *texture_filename) { // fornow O(n)
+bool _mesh_texture_find(int *i_texture, char *texture_filename) { // fornow O(n)
     bool already_loaded = false;
-    for ((*i_texture) = 0; (*i_texture) < COW1._itri_num_textures; (*i_texture)++) {
-        if (strcmp(texture_filename, COW1._itri_texture_filenames[*i_texture]) == 0) {
+    for ((*i_texture) = 0; (*i_texture) < COW1._mesh_num_textures; (*i_texture)++) {
+        if (strcmp(texture_filename, COW1._mesh_texture_filenames[*i_texture]) == 0) {
             already_loaded = true;
             break;
         }
@@ -2174,28 +2164,28 @@ bool _itri_texture_find(int *i_texture, char *texture_filename) { // fornow O(n)
     return already_loaded;
 }
 
-int _itri_texture_get_format(int number_of_channels) {
+int _mesh_texture_get_format(int number_of_channels) {
     ASSERT(number_of_channels == 1 || number_of_channels == 3 || number_of_channels == 4);
     return (number_of_channels == 1) ? GL_RED : (number_of_channels == 3) ? GL_RGB : GL_RGBA;
 }
 
-void _itri_texture_create(char *texture_filename, int width, int height, int number_of_channels, u8 *data) {
+void _mesh_texture_create(char *texture_filename, int width, int height, int number_of_channels, u8 *data) {
     ASSERT(texture_filename);
-    ASSERT(COW1._itri_num_textures < ITRI_MAX_NUM_TEXTURES);
+    ASSERT(COW1._mesh_num_textures < ITRI_MAX_NUM_TEXTURES);
     ASSERT(strlen(texture_filename) < ITRI_MAX_FILENAME_LENGTH);
     ASSERT(width > 0);
     ASSERT(height > 0);
     ASSERT(number_of_channels == 1 || number_of_channels == 3 || number_of_channels == 4);
     ASSERT(data);
 
-    int format = _itri_texture_get_format(number_of_channels);
+    int format = _mesh_texture_get_format(number_of_channels);
 
-    int i_texture = COW1._itri_num_textures++;
-    strcpy(COW1._itri_texture_filenames[i_texture], texture_filename);
+    int i_texture = COW1._mesh_num_textures++;
+    strcpy(COW1._mesh_texture_filenames[i_texture], texture_filename);
 
-    glGenTextures(1, COW1._itri_textures + i_texture);
+    glGenTextures(1, COW1._mesh_textures + i_texture);
     glActiveTexture(GL_TEXTURE0 + i_texture);
-    glBindTexture(GL_TEXTURE_2D, COW1._itri_textures[i_texture]);
+    glBindTexture(GL_TEXTURE_2D, COW1._mesh_textures[i_texture]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2204,24 +2194,24 @@ void _itri_texture_create(char *texture_filename, int width, int height, int num
     glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-void _itri_texture_sync_to_GPU(char *texture_filename, int width, int height, int number_of_channels, u8 *data) {
+void _mesh_texture_sync_to_GPU(char *texture_filename, int width, int height, int number_of_channels, u8 *data) {
     ASSERT(texture_filename);
     ASSERT(width > 0);
     ASSERT(height > 0);
     ASSERT(number_of_channels == 1 || number_of_channels == 3 || number_of_channels == 4);
     ASSERT(data);
 
-    int format = _itri_texture_get_format(number_of_channels);
+    int format = _mesh_texture_get_format(number_of_channels);
 
     int i_texture;
-    ASSERT(_itri_texture_find(&i_texture, texture_filename));
+    ASSERT(_mesh_texture_find(&i_texture, texture_filename));
     glActiveTexture(GL_TEXTURE0 + i_texture);
-    glBindTexture(GL_TEXTURE_2D, COW1._itri_textures[i_texture]);
+    glBindTexture(GL_TEXTURE_2D, COW1._mesh_textures[i_texture]);
 
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, GL_UNSIGNED_BYTE, data);
 }
 
-void _itri_texture_load(char *texture_filename) {
+void _mesh_texture_load(char *texture_filename) {
     ASSERT(texture_filename);
     int width, height, number_of_channels;
     u8 *data = stbi_load(texture_filename, &width, &height, &number_of_channels, 0);
@@ -2229,7 +2219,7 @@ void _itri_texture_load(char *texture_filename) {
     ASSERT(width > 0);
     ASSERT(height > 0);
     ASSERT(number_of_channels == 3 || number_of_channels == 4);
-    _itri_texture_create(texture_filename, width, height, number_of_channels, data);
+    _mesh_texture_create(texture_filename, width, height, number_of_channels, data);
     stbi_image_free(data);
 }
 
@@ -2252,7 +2242,7 @@ Texture texture_create(char *texture_name, int width, int height, int number_of_
     texture.height = height;
     texture.number_of_channels = number_of_channels;
     texture.data = (u8 *) calloc(width * height * number_of_channels, sizeof(u8));
-    _itri_texture_create(texture.name, texture.width, texture.height, texture.number_of_channels, texture.data);
+    _mesh_texture_create(texture.name, texture.width, texture.height, texture.number_of_channels, texture.data);
     return texture;
 }
 
@@ -2277,10 +2267,10 @@ void texture_set_pixel(Texture *texture, int i, int j, vec3 rgb, real a = 1.0) {
 #endif
 
 void texture_sync_to_GPU(Texture *texture) {
-    _itri_texture_sync_to_GPU(texture->name, texture->width, texture->height, texture->number_of_channels, texture->data);
+    _mesh_texture_sync_to_GPU(texture->name, texture->width, texture->height, texture->number_of_channels, texture->data);
 }
 
-void _itri_draw(
+void _mesh_draw(
         real *P,
         real *V,
         real *M,
@@ -2305,22 +2295,22 @@ void _itri_draw(
 
     int i_texture = -1;
     if (texture_filename) {
-        if (!_itri_texture_find(&i_texture, texture_filename)) {
-            _itri_texture_load(texture_filename);
-            _itri_texture_find(&i_texture, texture_filename);
+        if (!_mesh_texture_find(&i_texture, texture_filename)) {
+            _mesh_texture_load(texture_filename);
+            _mesh_texture_find(&i_texture, texture_filename);
         }
     }
 
     // NOTE moved this up before the pushes; is that okay?
-    ASSERT(COW0._itri_shader_program);
-    glUseProgram(COW0._itri_shader_program);
+    ASSERT(COW0._mesh_shader_program);
+    glUseProgram(COW0._mesh_shader_program);
 
-    glBindVertexArray(COW0._itri_VAO);
+    glBindVertexArray(COW0._mesh_VAO);
     int i_attrib = 0;
     auto guarded_push = [&](void *array, int dim) {
         glDisableVertexAttribArray(i_attrib); // fornow
         if (array) {
-            glBindBuffer(GL_ARRAY_BUFFER, COW0._itri_VBO[i_attrib]);
+            glBindBuffer(GL_ARRAY_BUFFER, COW0._mesh_VBO[i_attrib]);
             glBufferData(GL_ARRAY_BUFFER, num_vertices * dim * sizeof(real), array, GL_DYNAMIC_DRAW);
             glVertexAttribPointer(i_attrib, dim, GL_REAL, 0, 0, NULL);
             glEnableVertexAttribArray(i_attrib);
@@ -2333,30 +2323,30 @@ void _itri_draw(
     guarded_push(vertex_colors, 3);
     guarded_push(vertex_texture_coordinates, 2);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, COW0._itri_EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, COW0._mesh_EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * num_triangles * sizeof(u32), triangle_indices, GL_DYNAMIC_DRAW);
 
-    _shader_set_uniform_mat4(COW0._itri_shader_program, "P", P);
-    _shader_set_uniform_mat4(COW0._itri_shader_program, "V", V);
-    _shader_set_uniform_mat4(COW0._itri_shader_program, "M", M);
+    _shader_set_uniform_mat4(COW0._mesh_shader_program, "P", P);
+    _shader_set_uniform_mat4(COW0._mesh_shader_program, "V", V);
+    _shader_set_uniform_mat4(COW0._mesh_shader_program, "M", M);
     { // fornow scavenge the camera position from V
         real C[16];
         _linalg_mat4_inverse(C, V);
         real eye_World[4] = { C[3], C[7], C[11], 1 };
-        _shader_set_uniform_vec4(COW0._itri_shader_program, "eye_World", eye_World);
+        _shader_set_uniform_vec4(COW0._mesh_shader_program, "eye_World", eye_World);
     }
-    _shader_set_uniform_bool(COW0._itri_shader_program, "has_vertex_colors", vertex_colors != NULL);
-    _shader_set_uniform_bool(COW0._itri_shader_program, "has_vertex_normals", vertex_normals != NULL);
-    _shader_set_uniform_bool(COW0._itri_shader_program, "has_vertex_texture_coordinates", vertex_texture_coordinates != NULL);
-    _shader_set_uniform_bool(COW0._itri_shader_program, "has_texture", texture_filename != NULL);
-    _shader_set_uniform_int (COW0._itri_shader_program, "i_texture", MAX(0, i_texture));
-    _shader_set_uniform_vec3(COW0._itri_shader_program, "color_if_vertex_colors_is_NULL", color_if_vertex_colors_is_NULL);
+    _shader_set_uniform_bool(COW0._mesh_shader_program, "has_vertex_colors", vertex_colors != NULL);
+    _shader_set_uniform_bool(COW0._mesh_shader_program, "has_vertex_normals", vertex_normals != NULL);
+    _shader_set_uniform_bool(COW0._mesh_shader_program, "has_vertex_texture_coordinates", vertex_texture_coordinates != NULL);
+    _shader_set_uniform_bool(COW0._mesh_shader_program, "has_texture", texture_filename != NULL);
+    _shader_set_uniform_int (COW0._mesh_shader_program, "i_texture", MAX(0, i_texture));
+    _shader_set_uniform_vec3(COW0._mesh_shader_program, "color_if_vertex_colors_is_NULL", color_if_vertex_colors_is_NULL);
 
     glDrawElements(GL_TRIANGLES, 3 * num_triangles, GL_UNSIGNED_INT, NULL);
 }
 
 #ifdef SNAIL_CPP
-void itri_draw(
+void mesh_draw(
         mat4 P,
         mat4 V,
         mat4 M,
@@ -2369,7 +2359,7 @@ void itri_draw(
         vec3 color_if_vertex_colors_is_NULL = { 1.0, 1.0, 1.0 },
         vec2 *vertex_texture_coordinates = NULL,
         char *texture_filename = NULL) {
-    _itri_draw(
+    _mesh_draw(
             P.data,
             V.data,
             M.data,
@@ -2735,11 +2725,14 @@ template <typename T> struct StretchyBuffer {
     int length;
     int _capacity;
     T *data;
+
     T &operator [](int index) { return data[index]; }
 };
 
 template <typename T> void sbuff_push_back(StretchyBuffer<T> *buffer, T element) {
     if (buffer->_capacity == 0) {
+        ASSERT(!buffer->data);
+        ASSERT(buffer->length == 0);
         buffer->_capacity = 16;
         buffer->data = (T *) malloc(buffer->_capacity * sizeof(T));
     }
@@ -2820,7 +2813,7 @@ void IndexedTriangleMesh3D::draw(
         mat4 M,
         vec3 color_if_vertex_colors_is_NULL = { 1.0, 0.0, 1.0 },
         char *texture_filename_if_texture_filename_is_NULL = NULL) {
-    itri_draw(
+    mesh_draw(
             P,
             V,
             M,
@@ -2837,7 +2830,7 @@ void IndexedTriangleMesh3D::draw(
 }
 
 void Soup3D::_dump_for_meshlib(char *filename, char *name) {
-    ASSERT(primitive == SOUP_TRIANGLE_MESH);
+    ASSERT(primitive == SOUP_OUTLINED_TRIANGLES);
     FILE *fp = fopen(filename, "w");
     fprintf(fp, "const int _meshlib_soup_%s_num_vertices = %d;\n", name, num_vertices); 
     fprintf(fp, "const vec3 _meshlib_soup_%s_vertex_positions[_meshlib_soup_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_positions[i][0],vertex_positions[i][1],vertex_positions[i][2]); fprintf(fp, "};\n");
@@ -2846,29 +2839,29 @@ void Soup3D::_dump_for_meshlib(char *filename, char *name) {
 
 void IndexedTriangleMesh3D::_dump_for_meshlib(char *filename, char *name) {
     FILE *fp = fopen(filename, "w");
-    fprintf(fp, "const int _meshlib_itri_%s_num_triangles = %d;\n", name, num_triangles); 
-    fprintf(fp, "const int _meshlib_itri_%s_num_vertices = %d;\n", name, num_vertices); 
-    fprintf(fp, "const int3 _meshlib_itri_%s_triangle_indices[_meshlib_itri_%s_num_triangles] = {\n    ", name, name); for (int i = 0; i < num_triangles; ++i) fprintf(fp, "{%d,%d,%d},",triangle_indices[i].i,triangle_indices[i].j,triangle_indices[i].k); fprintf(fp, "};\n");
-    fprintf(fp, "const vec3 _meshlib_itri_%s_vertex_positions[_meshlib_itri_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_positions[i][0],vertex_positions[i][1],vertex_positions[i][2]); fprintf(fp, "};\n");
-    fprintf(fp, "const vec3 _meshlib_itri_%s_vertex_normals  [_meshlib_itri_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_normals[i][0],vertex_normals[i][1],vertex_normals[i][2]); fprintf(fp, "};\n");
+    fprintf(fp, "const int _meshlib_mesh_%s_num_triangles = %d;\n", name, num_triangles); 
+    fprintf(fp, "const int _meshlib_mesh_%s_num_vertices = %d;\n", name, num_vertices); 
+    fprintf(fp, "const int3 _meshlib_mesh_%s_triangle_indices[_meshlib_mesh_%s_num_triangles] = {\n    ", name, name); for (int i = 0; i < num_triangles; ++i) fprintf(fp, "{%d,%d,%d},",triangle_indices[i].i,triangle_indices[i].j,triangle_indices[i].k); fprintf(fp, "};\n");
+    fprintf(fp, "const vec3 _meshlib_mesh_%s_vertex_positions[_meshlib_mesh_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_positions[i][0],vertex_positions[i][1],vertex_positions[i][2]); fprintf(fp, "};\n");
+    fprintf(fp, "const vec3 _meshlib_mesh_%s_vertex_normals  [_meshlib_mesh_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_normals[i][0],vertex_normals[i][1],vertex_normals[i][2]); fprintf(fp, "};\n");
     fclose(fp);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// #include "_mesh_util.cpp"///////////////////////////////////////////////////
+// #include "_meshutil.cpp"///////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 #if 0
-IndexedTriangleMesh3D bunny = _mesh_util_indexed_triangle_mesh_load("data_fancy_bunny", true, true, false);
+IndexedTriangleMesh3D bunny = _meshutil_indexed_triangle_mesh_load("data_fancy_bunny", true, true, false);
 bunny._dump_for_meshlib("out.txt", "bunny");
 #endif
 
 #if 0
-Soup3D bunny = _mesh_util_soup_TRIANGLES_load("data_basic_bunny", true);
+Soup3D bunny = _meshutil_soup_TRIANGLES_load("data_basic_bunny", true);
 bunny._dump_for_meshlib("out.txt", "bunny");
 #endif
 
-void _mesh_util_transform_vertex_positions_to_double_unit_box(int num_vertices, vec3 *vertex_positions) {
+void _meshutil_transform_vertex_positions_to_double_unit_box(int num_vertices, vec3 *vertex_positions) {
     vec3 L = V3(HUGE, HUGE, HUGE);
     vec3 R = V3(-HUGE, -HUGE, -HUGE);
     for (int i = 0; i < num_vertices; ++i) {
@@ -2884,20 +2877,20 @@ void _mesh_util_transform_vertex_positions_to_double_unit_box(int num_vertices, 
     }
 }
 
-void _mesh_util_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals(IndexedTriangleMesh3D *itri_mesh) {
-    ASSERT(itri_mesh->vertex_normals == NULL);
-    if (1) { // () _itri_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals
-        // TODO allocate itri_mesh->vertex_normals        
-        // TODO write entries of itri_mesh->vertex_normals
-        itri_mesh->vertex_normals = (vec3 *) calloc(itri_mesh->num_vertices, sizeof(vec3));
-        for (int i_triangle = 0; i_triangle < itri_mesh->num_triangles; ++i_triangle) {
-            int3 ijk = itri_mesh->triangle_indices[i_triangle];
+void _meshutil_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals(IndexedTriangleMesh3D *mesh_mesh) {
+    ASSERT(mesh_mesh->vertex_normals == NULL);
+    if (1) { // () _mesh_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals
+        // TODO allocate mesh_mesh->vertex_normals        
+        // TODO write entries of mesh_mesh->vertex_normals
+        mesh_mesh->vertex_normals = (vec3 *) calloc(mesh_mesh->num_vertices, sizeof(vec3));
+        for (int i_triangle = 0; i_triangle < mesh_mesh->num_triangles; ++i_triangle) {
+            int3 ijk = mesh_mesh->triangle_indices[i_triangle];
             real A;
             vec3 n_hat;
             {
                 vec3 abc[3];
                 for (int d = 0; d < 3; ++d) {
-                    abc[d] = itri_mesh->vertex_positions[ijk[d]];
+                    abc[d] = mesh_mesh->vertex_positions[ijk[d]];
                 }
                 vec3 n = cross(abc[1] - abc[0], abc[2] - abc[0]);
                 real mag_n = norm(n);
@@ -2905,39 +2898,39 @@ void _mesh_util_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vert
                 n_hat = n / mag_n;
             }
             for (int d = 0; d < 3; ++d) {
-                itri_mesh->vertex_normals[ijk[d]] += A * n_hat;
+                mesh_mesh->vertex_normals[ijk[d]] += A * n_hat;
             }
         }
-        for (int i_vertex = 0; i_vertex < itri_mesh->num_vertices; ++i_vertex) {
-            itri_mesh->vertex_normals[i_vertex] = normalized(itri_mesh->vertex_normals[i_vertex]);
+        for (int i_vertex = 0; i_vertex < mesh_mesh->num_vertices; ++i_vertex) {
+            mesh_mesh->vertex_normals[i_vertex] = normalized(mesh_mesh->vertex_normals[i_vertex]);
         }
     }
 }
 
-void _mesh_util_indexed_triangle_mesh_merge_duplicated_vertices(IndexedTriangleMesh3D *itri_mesh) {
+void _meshutil_indexed_triangle_mesh_merge_duplicated_vertices(IndexedTriangleMesh3D *mesh_mesh) {
     int new_num_vertices = 0;
-    vec3 *new_vertex_positions = (vec3 *) calloc(itri_mesh->num_vertices, sizeof(vec3)); // (more space than we'll need)
-    if (1) { // [] _itri_mesh_merge_duplicated_vertices
+    vec3 *new_vertex_positions = (vec3 *) calloc(mesh_mesh->num_vertices, sizeof(vec3)); // (more space than we'll need)
+    if (1) { // [] _mesh_mesh_merge_duplicated_vertices
         // TODO set new_num_vertices and entries of new_vertex_positions                   
-        // TODO overwrite entries of itri_mesh->triangle_indices with new triangle indices
+        // TODO overwrite entries of mesh_mesh->triangle_indices with new triangle indices
         // NOTE it is OK if your implementation is slow (mine takes ~5 seconds to run)     
         // NOTE please don't worry about space efficiency at all                           
-        int *primal  = (int *) calloc(itri_mesh->num_vertices, sizeof(int));
-        int *new_index = (int *) calloc(itri_mesh->num_vertices, sizeof(int));
-        for (int i = 0; i < itri_mesh->num_vertices; ++i) {
+        int *primal  = (int *) calloc(mesh_mesh->num_vertices, sizeof(int));
+        int *new_index = (int *) calloc(mesh_mesh->num_vertices, sizeof(int));
+        for (int i = 0; i < mesh_mesh->num_vertices; ++i) {
             primal[i] = -1;
             new_index[i] = -1;
         }
-        for (int i = 0; i < itri_mesh->num_vertices; ++i) {
+        for (int i = 0; i < mesh_mesh->num_vertices; ++i) {
             if (primal[i] != -1) {
                 continue;
             }
-            vec3 p_i = itri_mesh->vertex_positions[i];
-            for (int j = i + 1; j < itri_mesh->num_vertices; ++j) {
+            vec3 p_i = mesh_mesh->vertex_positions[i];
+            for (int j = i + 1; j < mesh_mesh->num_vertices; ++j) {
                 if (primal[j] != -1) {
                     continue;
                 }
-                vec3 p_j = itri_mesh->vertex_positions[j];
+                vec3 p_j = mesh_mesh->vertex_positions[j];
                 if (IS_ZERO(squaredNorm(p_i - p_j))) {
                     ASSERT(primal[j] == -1);
                     primal[j] = i;
@@ -2945,32 +2938,32 @@ void _mesh_util_indexed_triangle_mesh_merge_duplicated_vertices(IndexedTriangleM
             }
         }
         int k = 0;
-        for (int i = 0; i < itri_mesh->num_vertices; ++i) {
+        for (int i = 0; i < mesh_mesh->num_vertices; ++i) {
             if (primal[i] == -1) {
                 ++new_num_vertices;
-                new_vertex_positions[k] = itri_mesh->vertex_positions[i];
+                new_vertex_positions[k] = mesh_mesh->vertex_positions[i];
                 new_index[i] = k;
                 ++k;
             }
         }
-        for (int i_triangle = 0; i_triangle < itri_mesh->num_triangles; ++i_triangle) {
+        for (int i_triangle = 0; i_triangle < mesh_mesh->num_triangles; ++i_triangle) {
             for (int d = 0; d < 3; ++d) {
-                int i = itri_mesh->triangle_indices[i_triangle][d];
-                itri_mesh->triangle_indices[i_triangle][d] = (primal[i] == -1) ? new_index[i] : new_index[primal[i]];
+                int i = mesh_mesh->triangle_indices[i_triangle][d];
+                mesh_mesh->triangle_indices[i_triangle][d] = (primal[i] == -1) ? new_index[i] : new_index[primal[i]];
             }
         }
         free(primal);
         free(new_index);
     }
     if (new_num_vertices) {
-        itri_mesh->num_vertices = new_num_vertices;
-        free(itri_mesh->vertex_positions);
-        itri_mesh->vertex_positions = new_vertex_positions;
+        mesh_mesh->num_vertices = new_num_vertices;
+        free(mesh_mesh->vertex_positions);
+        mesh_mesh->vertex_positions = new_vertex_positions;
     }
 }
 
-IndexedTriangleMesh3D _mesh_util_indexed_triangle_mesh_load(char *filename, bool transform_vertex_positions_to_double_unit_box, bool compute_normals, bool merge_duplicated_vertices) {
-    IndexedTriangleMesh3D itri_mesh = {};
+IndexedTriangleMesh3D _meshutil_indexed_triangle_mesh_load(char *filename, bool transform_vertex_positions_to_double_unit_box, bool compute_normals, bool merge_duplicated_vertices) {
+    IndexedTriangleMesh3D mesh_mesh = {};
     {
         StretchyBuffer<vec3> vertex_positions = {};
         StretchyBuffer<int3> triangle_indices = {};
@@ -2995,27 +2988,27 @@ IndexedTriangleMesh3D _mesh_util_indexed_triangle_mesh_load(char *filename, bool
             fclose(fp);
         }
         // note: don't free the data pointers! (we're stealing them)
-        itri_mesh.num_triangles = triangle_indices.length;
-        itri_mesh.triangle_indices = triangle_indices.data;
-        itri_mesh.num_vertices = vertex_positions.length;
-        itri_mesh.vertex_positions = vertex_positions.data;
+        mesh_mesh.num_triangles = triangle_indices.length;
+        mesh_mesh.triangle_indices = triangle_indices.data;
+        mesh_mesh.num_vertices = vertex_positions.length;
+        mesh_mesh.vertex_positions = vertex_positions.data;
     }
     if (transform_vertex_positions_to_double_unit_box) {
-        _mesh_util_transform_vertex_positions_to_double_unit_box(itri_mesh.num_vertices, itri_mesh.vertex_positions);
+        _meshutil_transform_vertex_positions_to_double_unit_box(mesh_mesh.num_vertices, mesh_mesh.vertex_positions);
     }
     if (merge_duplicated_vertices) {
-        _mesh_util_indexed_triangle_mesh_merge_duplicated_vertices(&itri_mesh);
+        _meshutil_indexed_triangle_mesh_merge_duplicated_vertices(&mesh_mesh);
     }
     if (compute_normals) {
-        _mesh_util_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals(&itri_mesh);
+        _meshutil_indexed_triangle_mesh_alloc_compute_and_store_area_weighted_vertex_normals(&mesh_mesh);
     }
-    return itri_mesh;
+    return mesh_mesh;
 }
 
-Soup3D _mesh_util_soup_TRIANGLES_load(char *filename, bool transform_vertex_positions_to_double_unit_box) {
+Soup3D _meshutil_soup_TRIANGLES_load(char *filename, bool transform_vertex_positions_to_double_unit_box) {
     Soup3D soup_mesh = {};
     {
-        soup_mesh.primitive = SOUP_TRIANGLE_MESH;
+        soup_mesh.primitive = SOUP_OUTLINED_TRIANGLES;
 
         StretchyBuffer<vec3> vertex_positions = {};
         {
@@ -3034,7 +3027,7 @@ Soup3D _mesh_util_soup_TRIANGLES_load(char *filename, bool transform_vertex_posi
         soup_mesh.vertex_positions = vertex_positions.data;
     }
     if (transform_vertex_positions_to_double_unit_box) {
-        _mesh_util_transform_vertex_positions_to_double_unit_box(soup_mesh.num_vertices, soup_mesh.vertex_positions);
+        _meshutil_transform_vertex_positions_to_double_unit_box(soup_mesh.num_vertices, soup_mesh.vertex_positions);
     }
     return soup_mesh;
 }
@@ -3480,7 +3473,7 @@ void _cow_init() {
     _eso_init();
     _window_init();
     _soup_init();
-    _itri_init();
+    _mesh_init();
     _sound_init();
 
     COW0._cow_initialized = true;
@@ -3635,8 +3628,8 @@ void eg_meshlib() {
         mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
         meshlib.soup_bunny.draw(PV * M_wire, monokai.purple);
-        meshlib.itri_bunny.draw(P, V, M_smooth, monokai.purple);
-        meshlib.itri_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
+        meshlib.mesh_bunny.draw(P, V, M_smooth, monokai.purple);
+        meshlib.mesh_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
 
         gui_checkbox("draw_axes", &draw_axes);
         if (draw_axes) {
@@ -3762,8 +3755,8 @@ void eg_kitchen_sink() {
 
         vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? monokai.purple : monokai.blue;
         meshlib.soup_bunny.draw(PV * M_wire, color);
-        meshlib.itri_bunny.draw(P, V, M_smooth, color);
-        meshlib.itri_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
+        meshlib.mesh_bunny.draw(P, V, M_smooth, color);
+        meshlib.mesh_bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
 
         gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
         if (draw_axes) {
@@ -3850,7 +3843,7 @@ void eg_shader() {
 
     Shader shader = shader_create(vertex_shader_source, 2, fragment_shader_source);
 
-    IndexedTriangleMesh3D mesh = meshlib.itri_bunny;
+    IndexedTriangleMesh3D mesh = meshlib.mesh_bunny;
     int num_vertices       = mesh.num_vertices;
     vec3 *vertex_positions = mesh.vertex_positions;
     vec3 *vertex_normals   = mesh.vertex_normals;
@@ -3891,7 +3884,7 @@ void eg_texture() {
 
             time += 0.0167;
         }
-        meshlib.itri_square.draw(P, V, globals.Identity, {}, texture.name);
+        meshlib.mesh_square.draw(P, V, globals.Identity, {}, texture.name);
     }
 }
 

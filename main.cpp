@@ -1,33 +1,11 @@
 #include "include.cpp"
 
-void app_treasure() {
-    StretchyBuffer<vec3> vertex_positions = {}; {
-        FILE *fp = fopen("TreasureChest.obj", "r");
-        ASSERT(fp);
-        char line[4096];
-        while (fgets(line, _COUNT_OF(line), fp) != NULL) {
-            char prefix[64] = {};
-            sscanf(line, "%s", prefix);
-            if (strcmp(prefix, "v") == 0) {
-                real x, y, z;
-                ASSERT(sscanf(line, "%s %lf %lf %lf", prefix, &x, &y, &z) == 4);
-                sbuff_push_back(&vertex_positions, { x, y, z });
-            }
-        }
-        fclose(fp);
-    }
-
-    Camera3D camera = { 10.0, RAD(0) };
+void app_sketch() {
+    Camera3D camera = { 3.0, RAD(0) };
     while (cow_begin_frame()) {
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
-        meshlib.soup_axes.draw(PV);
-        vec2 s_mouse = mouse_get_position(PV);
-        soup_draw(PV, SOUP_POINTS, 1, &s_mouse, NULL, monokai.red);
-        // TODO add this line to wiki
-        soup_draw(PV, SOUP_POINTS, vertex_positions.length, vertex_positions.data, NULL, monokai.red);
         meshlib.soup_teapot.draw(PV, monokai.green);
-
     }
 }
 
@@ -39,9 +17,9 @@ int main() {
     vec2 b = a + V2(5.0, 3.0);
 
     APPS {
-        APP(eg_shader);
-        APP(eg_texture);
-        APP(app_treasure);
+        // APP(eg_shader);
+        // APP(eg_texture);
+        APP(app_sketch);
         APP(eg_kitchen_sink);
     }
 
