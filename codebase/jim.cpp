@@ -25,7 +25,7 @@
 // // http://nothings.org/stb_ds/
 // *((int*)(stb)-8)
 #define STB_DS_IMPLEMENTATION
-#include "ext/stb/stb_ds.h"
+#include "ext/stb_ds.h"
 #undef arrput
 #undef arrlen
 #undef arrlenu

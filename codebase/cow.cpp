@@ -44,6 +44,8 @@
 #define COW_KEY_ARROW_RIGHT GLFW_KEY_RIGHT
 #undef GLFW_KEY_LEFT_SHIFT  // use globals.key_shift_held instead
 #undef GLFW_KEY_RIGHT_SHIFT // use globals.key_shift_held instead
+#define COW_KEY_BACKSPACE GLFW_KEY_BACKSPACE
+#define COW_KEY_ENTER GLFW_KEY_ENTER
 #define SOUND_MAX_DIFFERENT_FILES 32
 #define SOUND_MAX_FILENAME_LENGTH 64
 #define ITRI_MAX_NUM_TEXTURES 32
@@ -68,7 +70,7 @@ typedef real _mat4[16];
 struct CW_USER_FACING_CONFIG {
     int hotkeys_app_next = COW_KEY_ARROW_RIGHT;
     int hotkeys_app_prev = COW_KEY_ARROW_LEFT;
-    int hotkeys_app_menu = '0';
+    int hotkeys_app_menu = '=';
     int hotkeys_gui_hide = '-';
 
     bool tweaks_soup_draw_with_rounded_corners_for_all_line_primitives = false;
@@ -1075,7 +1077,6 @@ void _callback_key(GLFWwindow *, int key, int, int action, int mods) {
     if (action == GLFW_PRESS) {
         globals.key_pressed[key] = true;
         globals.key_held[key] = true;
-        // globals.key_toggle[key] = !globals.key_toggle[key];
     } else if (action == GLFW_RELEASE) {
         globals.key_released[key] = true;
         globals.key_held[key] = false;
@@ -3049,7 +3050,7 @@ int random_sign() {
     return random_real(0.0, 1.0) < .5 ? -1 : 1;
 }
 
-long _util_timestamp_in_milliseconds() { // no promises this is even a little bit accurate
+long util_timestamp_in_milliseconds() { // no promises this is even a little bit accurate
     using namespace std::chrono;
     milliseconds ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     return (long) ms.count();
@@ -3556,9 +3557,9 @@ bool cow_begin_frame() {
             }
             if (display_fps) {
                 static int fps;
-                static long stamp = _util_timestamp_in_milliseconds();
-                if (_util_timestamp_in_milliseconds() - stamp > 166) {
-                    stamp = _util_timestamp_in_milliseconds();
+                static long stamp = util_timestamp_in_milliseconds();
+                if (util_timestamp_in_milliseconds() - stamp > 166) {
+                    stamp = util_timestamp_in_milliseconds();
                     fps = measured_fps;
                     // printf("fps: %d\n", display_fps);
                 }
@@ -3572,7 +3573,7 @@ bool cow_begin_frame() {
         {
             const int N_MOVING_WINDOW = 5;
             static long prev_stamps[N_MOVING_WINDOW];
-            long stamp = _util_timestamp_in_milliseconds();
+            long stamp = util_timestamp_in_milliseconds();
             measured_fps = (int) round(N_MOVING_WINDOW / (real(stamp - prev_stamps[N_MOVING_WINDOW - 1]) / 1000.));
             for (int i = N_MOVING_WINDOW - 1; i >= 1; --i) {
                 prev_stamps[i] = prev_stamps[i - 1];
