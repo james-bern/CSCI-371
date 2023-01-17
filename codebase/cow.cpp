@@ -539,7 +539,7 @@ void _linalg_mat4_times_vec4_persp_divide(real *b, real *A, real *x) { // b = A 
     real tmp[4] = {}; { // allows for x <- A x
         for (int i = 0; i < 4; ++i) for (int j = 0; j < 4; ++j) tmp[i] += _LINALG_4X4(A, i, j) * x[j];
         if (!IS_ZERO(tmp[3])) {
-            ASSERT(!IS_ZERO(x[3]));
+            // ASSERT(!IS_ZERO(x[3]));
             for (int i = 0; i < 4; ++i) tmp[i] /= tmp[3]; 
         }
     }
@@ -902,7 +902,7 @@ void _window_get_P_perspective(real *P, real angle_of_view, real n = 0, real f =
 
 void _window_get_P_ortho(real *P, real screen_height_World, real n = 0, real f = 0, real aspect = 0) {
     ASSERT(P);
-    ASSERT(!IS_ZERO(screen_height_World));
+    // ASSERT(!IS_ZERO(screen_height_World));
     if (ARE_EQUAL(n, f)) {
         n = 1000.0;
         f =  -1000.0; 
@@ -2530,9 +2530,9 @@ void _camera_get_PV(Camera3D *camera, real *PV) {
 void camera_move(Camera2D *camera, bool disable_pan = false, bool disable_zoom = false) {
     real NDC_from_World[16] = {};
     _camera_get_PV(camera, NDC_from_World);
-    real x, y, dx, dy;
-    _input_get_mouse_position_and_change_in_position_in_world_coordinates(NDC_from_World, &x, &y, &dx, &dy);
     if (!disable_pan && globals.mouse_right_held) {
+        real dx, dy;
+        _input_get_mouse_position_and_change_in_position_in_world_coordinates(NDC_from_World, NULL, NULL, &dx, &dy);
         camera->o_x -= dx;
         camera->o_y -= dy;
     }
@@ -2551,6 +2551,9 @@ void camera_move(Camera2D *camera, bool disable_pan = false, bool disable_zoom =
         // mouse_World - eye' = inv(P') mouse_NDC              
         //               eye' = mouse_World - inv(P') mouse_NDC
         //                                    ^----- a -------^
+
+        real x, y;
+        _input_get_mouse_position_and_change_in_position_in_world_coordinates(NDC_from_World, &x, &y, NULL, NULL);
 
         real mouse_World[4] = { x, y, 0, 1 };
         real a[4] = {};

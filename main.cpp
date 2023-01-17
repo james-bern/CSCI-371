@@ -66,16 +66,16 @@ int main() {
     vec2 a = { 1.0, 2.0 };
     vec2 b = a + V2(5.0, 3.0);
 
-    // APPS {
-    //     APP(eg_shader);
-    //     // APP(eg_texture);
-    //     // APP(app_sketch);
-    //     APP(eg_kitchen_sink);
-    // }
+    APPS {
+        // APP(eg_shader);
+        // APP(eg_texture);
+        // APP(app_sketch);
+        APP(eg_kitchen_sink);
+    }
 
-    _cow_init();
-    _cow_reset();
-    app_hud();
+    // _cow_init();
+    // _cow_reset();
+    // app_hud();
 
     return 0;
 }
