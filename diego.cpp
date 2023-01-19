@@ -63,58 +63,53 @@ void app_diego() {
     link_theta = (real *) (optimization_vector + 2 * num_links);
 
     while (cow_begin_frame()) {
-        mat4 PV = camera_get_PV(&camera);
 
-        // todo theta
-        // todo draw coordinate system
+        // todo solve physics
 
-        widget_drag(PV, num_links, (vec2 *) optimization_vector);
-        for_(link_i, num_links) {
-            static char buffer[16];
-            sprintf(buffer, "theta_%d", link_i);
-            gui_slider(buffer, &link_theta[link_i], -PI, PI, true);
-            sprintf(buffer, "x_%d", link_i);
-            gui_readout(buffer, &link_o[link_i].x);
-            sprintf(buffer, "y_%d", link_i);
-            gui_readout(buffer, &link_o[link_i].y);
-        }
-
-        {
-            vec2 *a;
-            real *b = (real *) a;
-
-        }
-
-        eso_begin(PV, SOUP_LINES);
-        for_(link_i, num_links) {
-            eso_color(color_kelly(link_i));
-            for_sign(sign) {
-                eso_vertex(link_o[link_i] + sign * .5 * link_L[link_i] * e_theta(link_theta[link_i]));
+        { // gui and draw
+            mat4 PV = camera_get_PV(&camera);
+            widget_drag(PV, num_links, (vec2 *) optimization_vector);
+            for_(link_i, num_links) {
+                static char buffer[16];
+                sprintf(buffer, "theta_%d", link_i);
+                gui_slider(buffer, &link_theta[link_i], -PI, PI, true);
+                sprintf(buffer, "x_%d", link_i);
+                gui_readout(buffer, &link_o[link_i].x);
+                sprintf(buffer, "y_%d", link_i);
+                gui_readout(buffer, &link_o[link_i].y);
             }
+
+            eso_begin(PV, SOUP_LINES); {
+                for_(link_i, num_links) {
+                    eso_color(color_kelly(link_i));
+                    for_sign(sign) {
+                        eso_vertex(link_o[link_i] + sign * .5 * link_L[link_i] * e_theta(link_theta[link_i]));
+                    }
+                }
+            } eso_end();
+
+            eso_begin(PV, SOUP_POINTS); {
+
+                eso_color(monokai.blue);
+
+                for_(joint_i, num_joints) {
+                    Joint *joint = joints + joint_i;
+                    for_(d, 2) {
+
+                        vec2 S = joint->S[d];
+
+                        int link_i = joint->i[d];
+                        vec2 o = link_o[link_i];
+                        vec2 x = e_theta(link_theta[link_i]);
+                        vec2 y = e_theta(link_theta[link_i] + RAD(90));
+
+
+                        eso_vertex(o + S.x * x + S.y * y);
+
+                    } 
+                }
+            } eso_end();
         }
-        eso_end();
-
-        eso_begin(PV, SOUP_POINTS); {
-
-            eso_color(monokai.blue);
-
-            for_(joint_i, num_joints) {
-                Joint *joint = joints + joint_i;
-                for_(d, 2) {
-
-                    vec2 S = joint->S[d];
-
-                    int link_i = joint->i[d];
-                    vec2 o = link_o[link_i];
-                    vec2 x = e_theta(link_theta[link_i]);
-                    vec2 y = e_theta(link_theta[link_i] + RAD(90));
-
-
-                    eso_vertex(o + S.x * x + S.y * y);
-
-                } 
-            }
-        } eso_end();
     }
 }
 
