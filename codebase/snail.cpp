@@ -521,14 +521,14 @@ template <int T> Mat<T> IdentityMatrix() {
     }
     return ret;
 }
-const Mat<4> Identity4x4 = IdentityMatrix<4>();
+const Mat<4> _Identity4x4 = IdentityMatrix<4>();
 
-
-
-
+Mat<4> M4_Identity() {
+    return _Identity4x4;
+}
 
 Mat<4> M4_Translation(real x, real y, real z = 0) {
-    Mat<4> ret = Identity4x4;
+    Mat<4> ret = _Identity4x4;
     ret(0, 3) = x;
     ret(1, 3) = y;
     ret(2, 3) = z;
@@ -558,19 +558,19 @@ Mat<4> M4_Scaling(Vec<3> xyz) {
     return M4_Scaling(xyz.x, xyz.y, xyz.z);
 }
 Mat<4> M4_RotationAboutXAxis(real t) {
-    Mat<4> ret = Identity4x4;
+    Mat<4> ret = _Identity4x4;
     ret(1, 1) = cos(t); ret(1, 2) = -sin(t);
     ret(2, 1) = sin(t); ret(2, 2) =  cos(t);
     return ret;
 }
 Mat<4> M4_RotationAboutYAxis(real t) {
-    Mat<4> ret = Identity4x4;
+    Mat<4> ret = _Identity4x4;
     ret(0, 0) =  cos(t); ret(0, 2) = sin(t);
     ret(2, 0) = -sin(t); ret(2, 2) = cos(t);
     return ret;
 }
 Mat<4> M4_RotationAboutZAxis(real t) {
-    Mat<4> ret = Identity4x4;
+    Mat<4> ret = _Identity4x4;
     ret(0, 0) = cos(t); ret(0, 1) = -sin(t);
     ret(1, 0) = sin(t); ret(1, 1) =  cos(t);
     return ret;
