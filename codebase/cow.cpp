@@ -78,12 +78,6 @@ struct CW_USER_FACING_CONFIG {
     bool tweaks_record_raw_then_encode_everything_WARNING_USES_A_LOT_OF_DISK_SPACE = false;
     real tweaks_size_in_pixels_soup_draw_defaults_to_if_you_pass_0_for_size_in_pixels = 12.0;
 
-    _vec2 default_window_position = { 0.0, 30.0 };
-    _vec2 default_window_size = { 1280.0, 720.0 };
-    _vec3 _default_window_color_rgb = { 0.0, 0.0, 0.0 };
-    real default_window_color_a = 1.0;
-    bool default_window_floating = false;
-    bool default_window_decorated = true;
 };
 
 struct C2_READONLY_USER_FACING_DATA {
@@ -734,24 +728,16 @@ void _window_init() {
         glfwGetWindowSize(COW0._window_glfw_window, &den, &_);
         COW0._window_macbook_retina_scale = num / den;
     }
+
+    _window_set_position(0.0, 30.0);
+    _window_set_size(1280.0, 720.0);
+    window_set_floating(false);
+    window_set_decorated(true);
 }
 
 void _window_reset() {
+    // TODO clear the default window resetting stuff out
     glfwSetInputMode(COW0._window_glfw_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    COW1._window_clear_color[0] = config._default_window_color_rgb[0];
-    COW1._window_clear_color[1] = config._default_window_color_rgb[1];
-    COW1._window_clear_color[2] = config._default_window_color_rgb[2];
-    COW1._window_clear_color[3] = config.default_window_color_a;
-    _window_set_position(
-            config.default_window_position[0],
-            config.default_window_position[1]
-            );
-    _window_set_size(
-            config.default_window_size[0],
-            config.default_window_size[1]
-            );
-    window_set_floating(config.default_window_floating);
-    window_set_decorated(config.default_window_decorated);
     _window_clear_draw_buffer();
     glfwShowWindow(COW0._window_glfw_window); // only actually does anything on first reset
 }
@@ -1916,11 +1902,19 @@ void gui_printf(const char *format, ...) {
     char *text = _text;
     char *sep = strchr(text, '`'); // fornow hacking in two color text
     if (!sep) {
-        _text_draw((real *) &globals.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 1.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
+        _text_draw((real *) &globals.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0,
+                1.0 - COW1._window_clear_color[0],
+                1.0 - COW1._window_clear_color[1],
+                1.0 - COW1._window_clear_color[2],
+                1.0, 0, 0.0, 0.0, true);
     } else {
         real tmp = COW1._gui_x_curr; {
             *sep = 0;
-            _text_draw((real *) &globals.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 1.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
+            _text_draw((real *) &globals.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0,
+                    1.0 - COW1._window_clear_color[0],
+                    1.0 - COW1._window_clear_color[1],
+                    1.0 - COW1._window_clear_color[2],
+                    1.0, 0, 0.0, 0.0, true);
             COW1._gui_x_curr += 2 * stb_easy_font_width(text);
             text = sep + 1;
             _text_draw((real *) &globals.NDC_from_Screen, text, COW1._gui_x_curr, COW1._gui_y_curr, 0.0, 0.0, 1.0, 1.0, 1.0, 0, 0.0, 0.0, true);
@@ -3502,7 +3496,7 @@ bool cow_begin_frame() {
 
     _window_get_NDC_from_Screen((real *) &globals.NDC_from_Screen);
 
-    { // _cow_help_toggle force_draw_on_top
+    { // _cow_help_toggle overlay
         static bool push_gui_hide_and_disable;
         if (globals.key_shift_held && globals.key_pressed['/']) {
             COW1._cow_help_toggle = !COW1._cow_help_toggle;
@@ -3516,7 +3510,11 @@ bool cow_begin_frame() {
         // TODO better hiding
         if (COW1._cow_help_toggle) {
             real box[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
-            _soup_draw((real *) &globals.Identity, SOUP_QUADS, 2, 4, 4, box, NULL, 0.0, 0.0, 0.0, 0.8, 0, false, true);
+            _soup_draw((real *) &globals.Identity, SOUP_QUADS, 2, 4, 4, box, NULL,
+                    COW1._window_clear_color[0],
+                    COW1._window_clear_color[1],
+                    COW1._window_clear_color[2],
+                    0.8, 0, false, true);
             COW1._gui_hide_and_disable = false; {
                 _gui_begin_frame();
                 gui_printf("config.hotkeys_*");
