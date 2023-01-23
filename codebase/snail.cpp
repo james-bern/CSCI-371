@@ -487,28 +487,28 @@ Mat<4> inverse(Mat<4> M) {
 
 template <int T> Vec<T> transformPoint(const Mat<4> &M, Vec<T> p) {
     Vec<4> p_hom = {};
-    memcpy(p_hom.data, p.data, T * sizeof(real));
+    memcpy(&p_hom, &p, T * sizeof(real));
     p_hom.w = 1;
     Vec<4> ret_hom = M * p_hom;
     ret_hom /= ret_hom.w;
     Vec<T> ret = {};
-    memcpy(ret.data, ret_hom.data, T * sizeof(real));
+    memcpy(&ret, &ret_hom, T * sizeof(real));
     return ret;
 }
 template <int T> Vec<T> transformVector(const Mat<4> &M, Vec<T> p) {
     Vec<4> p_hom = {};
-    memcpy(p_hom.data, p.data, T * sizeof(real));
+    memcpy(&p_hom, &p, T * sizeof(real));
     Vec<4> ret_hom = M * p_hom;
     Vec<T> ret = {};
-    memcpy(ret.data, ret_hom.data, T * sizeof(real));
+    memcpy(&ret, &ret_hom, T * sizeof(real));
     return ret;
 }
 template <int T> Vec<T> transformNormal(const Mat<4> &M, Vec<T> p) {
     Vec<4> p_hom = {};
-    memcpy(p_hom.data, p.data, T * sizeof(real));
+    memcpy(&p_hom, &p, T * sizeof(real));
     Vec<4> ret_hom = inverse(transpose(M)) * p_hom;
     Vec<T> ret = {};
-    memcpy(ret.data, ret_hom.data, T * sizeof(real));
+    memcpy(&ret, &ret_hom, T * sizeof(real));
     return ret;
 }
 
