@@ -2852,6 +2852,7 @@ void IndexedTriangleMesh3D::draw(
 void Soup3D::_dump_for_library(char *filename, char *name) {
     ASSERT(primitive == SOUP_OUTLINED_TRIANGLES);
     FILE *fp = fopen(filename, "w");
+    ASSERT(fp);
     fprintf(fp, "const int _library_soup_%s_num_vertices = %d;\n", name, num_vertices); 
     fprintf(fp, "const vec3 _library_soup_%s_vertex_positions[_library_soup_%s_num_vertices] = {\n    ", name, name); for (int i = 0; i < num_vertices; ++i) fprintf(fp, "{%.3lf,%.3lf,%.3lf},",vertex_positions[i][0],vertex_positions[i][1],vertex_positions[i][2]); fprintf(fp, "};\n");
     fclose(fp);
@@ -2859,6 +2860,7 @@ void Soup3D::_dump_for_library(char *filename, char *name) {
 
 void IndexedTriangleMesh3D::_dump_for_library(char *filename, char *name) {
     FILE *fp = fopen(filename, "w");
+    ASSERT(fp);
     fprintf(fp, "const int _library_mesh_%s_num_triangles = %d;\n", name, num_triangles); 
     fprintf(fp, "const int _library_mesh_%s_num_vertices = %d;\n", name, num_vertices); 
     fprintf(fp, "const int3 _library_mesh_%s_triangle_indices[_library_mesh_%s_num_triangles] = {\n    ", name, name); for (int i = 0; i < num_triangles; ++i) fprintf(fp, "{%d,%d,%d},",triangle_indices[i].i,triangle_indices[i].j,triangle_indices[i].k); fprintf(fp, "};\n");
@@ -3242,6 +3244,7 @@ void _recorder_begin_frame() { // record
                 strftime(filename, sizeof(filename), "codebase/recordings/%Y-%m-%d--%H-%M-%S.mpg", timenow);
             }
             COW0._recorder_fp_mpg = fopen(filename, "wb");
+            ASSERT(COW0._recorder_fp_mpg);
             if (config.tweaks_record_raw_then_encode_everything_WARNING_USES_A_LOT_OF_DISK_SPACE) {
                 COW0._recorder_fp_dat = fopen(RECORDER_DAT_FILENAME, "wb");
             }
@@ -3250,6 +3253,7 @@ void _recorder_begin_frame() { // record
                 ASSERT(COW0._recorder_fp_dat);
                 fclose(COW0._recorder_fp_dat);
                 COW0._recorder_fp_dat = fopen(RECORDER_DAT_FILENAME, "rb");
+                ASSERT(COW0._recorder_fp_dat);
 
                 for (int frame = 0; frame < COW0._recorder_num_frames_recorded; ++frame) {
                     fread(COW0._recorder_buffer2, COW0._recorder_size_of_frame, 1, COW0._recorder_fp_dat);
