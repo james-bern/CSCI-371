@@ -85,6 +85,8 @@ struct C2_READONLY_USER_FACING_DATA {
     bool key_held[512];
     bool key_released[512];
     bool key_shift_held;
+    bool key_control_held;
+    bool key_alt_held;
 
     bool mouse_left_pressed;
     bool mouse_left_held;
@@ -1067,7 +1069,9 @@ void _callback_key(GLFWwindow *, int key, int, int action, int mods) {
         globals.key_released[key] = true;
         globals.key_held[key] = false;
     }
-    globals.key_shift_held = (mods & GLFW_MOD_SHIFT);
+    globals.key_shift_held   = (mods & GLFW_MOD_SHIFT);
+    globals.key_control_held = (mods & GLFW_MOD_CONTROL);
+    globals.key_alt_held     = (mods & GLFW_MOD_ALT);
 }
 
 void _callback_cursor_position(GLFWwindow *, real xpos, real ypos) {
