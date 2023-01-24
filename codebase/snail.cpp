@@ -636,6 +636,9 @@ template <int T> Vec<T> cwiseProduct(Vec<T> a, Vec<T> b) {
 Vec<2> e_theta(real theta) {
     return { cos(theta), sin(theta) };
 }
+double atan2(Vec<2> a) {
+    return atan2(a.y, a.x);
+}
 Vec<2> rotated(Vec<2> a, real theta) {
     return { cos(theta) * a.x - sin(theta) * a.y, sin(theta) * a.x + cos(theta) * a.y };
 }

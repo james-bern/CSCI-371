@@ -94,6 +94,7 @@ struct C2_READONLY_USER_FACING_DATA {
     bool mouse_right_pressed;
     bool mouse_right_held;
     bool mouse_right_released;
+    bool mouse_left_double_clicked;
     real mouse_wheel_offset;
     _vec2 mouse_position_Screen;
     _vec2 mouse_position_NDC;
@@ -101,6 +102,7 @@ struct C2_READONLY_USER_FACING_DATA {
     _vec2 mouse_change_in_position_NDC;
 
     int _mouse_owner;
+    int _frames_since_mouse_left_pressed;
 
     _mat4 Identity = { 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
     _mat4 NDC_from_Screen;
@@ -469,7 +471,7 @@ C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
 #define CONCAT(a, b) CONCAT_(a, b)
 #define _NOOP(foo) foo
 
-#define _SUPPRESS_UNUSED_VARIABLE_COMPILER_WARNING(expr) do { (void)(expr); } while (0)
+#define _SUPPRESS_COMPILER_WARNING_UNUSED_VARIABLE(expr) do { (void)(expr); } while (0)
 
 // // horrifying
 #define do_once \
@@ -1013,6 +1015,7 @@ void _input_begin_frame() {
     globals.mouse_left_released = false;
     globals.mouse_right_pressed = false;
     globals.mouse_right_released = false;
+    globals.mouse_left_double_clicked = false;
     globals.mouse_change_in_position_Screen[0] = 0;
     globals.mouse_change_in_position_Screen[1] = 0;
     globals.mouse_change_in_position_NDC[0] = 0;
@@ -1024,6 +1027,14 @@ void _input_begin_frame() {
         globals.key_pressed ['a' + i] = globals.key_pressed ['A' + i];
         globals.key_held    ['a' + i] = globals.key_held    ['A' + i];
         globals.key_released['a' + i] = globals.key_released['A' + i];
+    }
+    if (globals.mouse_left_pressed) {
+        if (globals._frames_since_mouse_left_pressed < 12) {
+            globals.mouse_left_double_clicked = true;
+        }
+        globals._frames_since_mouse_left_pressed = 0;
+    } else {
+        ++globals._frames_since_mouse_left_pressed;
     }
 }
 
@@ -1937,7 +1948,7 @@ void gui_readout(char *name, int *variable) {
 void gui_readout(char *name, real *variable) {
     if (!name) name = "";
     char *join = (char *)((name) ? " " : "");
-    gui_printf("%s%s%.2lf", name, join, *variable);
+    gui_printf("%s%s%.4lf", name, join, *variable);
 }
 
 char *_gui_hotkey2string(int hotkey) {
@@ -2057,42 +2068,42 @@ void gui_checkbox(char *name, bool *variable, int hotkey = '\0') {
     COW1._gui_x_curr -= 2 * L;
 }
 
-void _gui_slider(char *text, void *variable, real *t_copy, real lower_bound, real upper_bound) {
+void _gui_slider(char *text, void *variable__for_ID_must_persist, real *_variable__for_out_must_be_real, real lower_bound, real upper_bound) {
     COW1._gui_y_curr += 8;
     real s_mouse[2];
     _input_get_mouse_position_and_change_in_position_in_world_coordinates((real *) &globals.NDC_from_Screen, s_mouse, s_mouse + 1, NULL, NULL);
     real w = 166;
     real band[4] = { COW1._gui_x_curr, COW1._gui_y_curr, COW1._gui_x_curr + w, COW1._gui_y_curr };
-    real s_dot[2] = { LERP(INVERSE_LERP(*t_copy, lower_bound, upper_bound), band[0], band[2]), band[1] };
+    real s_dot[2] = { LERP(INVERSE_LERP(*_variable__for_out_must_be_real, lower_bound, upper_bound), band[0], band[2]), band[1] };
 
     if (globals._mouse_owner == COW_MOUSE_OWNER_NONE || globals._mouse_owner == COW_MOUSE_OWNER_GUI) {
         bool is_near = _linalg_vecX_squared_distance(2, s_dot, s_mouse) < COW0._window_macbook_retina_scale * 16;
         if (is_near) {
-            COW1._gui_hot = variable;
+            COW1._gui_hot = variable__for_ID_must_persist;
             globals._mouse_owner = COW_MOUSE_OWNER_GUI;
         }
-        if (COW1._gui_hot == variable && !is_near) {
+        if (COW1._gui_hot == variable__for_ID_must_persist && !is_near) {
             COW1._gui_hot = 0;
-            if (COW1._gui_selected != variable) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
+            if (COW1._gui_selected != variable__for_ID_must_persist) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
         }
     }
-    if (!COW1._gui_selected && (COW1._gui_hot == variable) && globals.mouse_left_pressed) {
+    if (!COW1._gui_selected && (COW1._gui_hot == variable__for_ID_must_persist) && globals.mouse_left_pressed) {
         globals._mouse_owner = COW_MOUSE_OWNER_GUI;
-        COW1._gui_selected = variable;
+        COW1._gui_selected = variable__for_ID_must_persist;
     }
-    if (COW1._gui_selected == variable) {
+    if (COW1._gui_selected == variable__for_ID_must_persist) {
         if (globals.mouse_left_held) {
-            *t_copy = LERP(CLAMP(INVERSE_LERP(s_mouse[0], band[0], band[2]), 0, 1), lower_bound, upper_bound);
+            *_variable__for_out_must_be_real = LERP(CLAMP(INVERSE_LERP(s_mouse[0], band[0], band[2]), 0, 1), lower_bound, upper_bound);
         }
         if (globals.mouse_left_released) {
-            if (COW1._gui_hot != variable) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
+            if (COW1._gui_hot != variable__for_ID_must_persist) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
             COW1._gui_selected = 0;
         }
     }
     {
         _soup_draw((real *) &globals.NDC_from_Screen, SOUP_LINES, _SOUP_XY, _SOUP_RGB, 2, band, NULL, .6, .6, .6, 1, 6, false, true);
-        real r = (COW1._gui_selected == variable) ? 1 : (COW1._gui_hot == variable) ? .9 : .8;
-        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_POINTS, _SOUP_XY, _SOUP_RGB, 1, s_dot, NULL, r, r, r, 1, (COW1._gui_hot == variable && COW1._gui_selected != variable) ? 17 : 14, false, true);
+        real r = (COW1._gui_selected == variable__for_ID_must_persist) ? 1 : (COW1._gui_hot == variable__for_ID_must_persist) ? .9 : .8;
+        _soup_draw((real *) &globals.NDC_from_Screen, SOUP_POINTS, _SOUP_XY, _SOUP_RGB, 1, s_dot, NULL, r, r, r, 1, (COW1._gui_hot == variable__for_ID_must_persist && COW1._gui_selected != variable__for_ID_must_persist) ? 17 : 14, false, true);
     }
     COW1._gui_y_curr -= 8;
     COW1._gui_x_curr += w + 16;
@@ -2112,13 +2123,13 @@ void gui_slider(
     real tmp = real(*variable);
     static char text[256]; {
         if (!decrement_hotkey && !increment_hotkey) {
-            snprintf(text, sizeof(text), "%s", name);
+            snprintf(text, sizeof(text), "%s %d", name, *variable);
         } else {
             snprintf(text, sizeof(text), "%s %d `%s %s", name, *variable, decrement_hotkey ? _gui_hotkey2string(decrement_hotkey) : "~", increment_hotkey ? _gui_hotkey2string(increment_hotkey) : "~");
         }
     }
     _gui_slider(text, variable, &tmp, lower_bound, upper_bound);
-    *variable = int(.5 + tmp);
+    *variable = int(round(tmp));
     if (globals.key_pressed[increment_hotkey]) ++(*variable);
     if (globals.key_pressed[decrement_hotkey]) --(*variable);
     if (globals.key_pressed[increment_hotkey] || globals.key_pressed[decrement_hotkey]) {
@@ -2131,17 +2142,28 @@ void gui_slider(
         real *variable,
         real lower_bound,
         real upper_bound,
-        bool readout_in_degrees = false) {
+        bool slide_variable_in_degrees_NOTE_pass_bounds_in_radians_FORNOW = false,
+        bool slide_variable_in_log10__NOTE_pass_bounds_in_log10 = false) {
+
     if (COW1._gui_hide_and_disable) { return; }
+
+    ASSERT(!(slide_variable_in_degrees_NOTE_pass_bounds_in_radians_FORNOW && slide_variable_in_log10__NOTE_pass_bounds_in_log10));
+
     static char text[256];
-    if (!readout_in_degrees) {
-        snprintf(text, sizeof(text), "%s %.1lf", name, *variable);
+    if (slide_variable_in_log10__NOTE_pass_bounds_in_log10) {
+        double tmp = log10(*variable);
+        snprintf(text, sizeof(text), "%s %lf", name, *variable);
+        _gui_slider(text, variable, &tmp, lower_bound, upper_bound);
+        *variable = pow(10.0, tmp);
     } else {
-        int tmp = (int) round(DEG(*((real *) variable)));
-        snprintf(text, sizeof(text), "%s %d deg", name, tmp);
+        if (slide_variable_in_degrees_NOTE_pass_bounds_in_radians_FORNOW) {
+            snprintf(text, sizeof(text), "%s %d deg", name, (int) round(DEG(*variable)));
+        } else {
+            snprintf(text, sizeof(text), "%s %.1lf", name, *variable);
+        }
+        _gui_slider(text, variable, variable, lower_bound, upper_bound);
     }
 
-    _gui_slider(text, variable, variable, lower_bound, upper_bound);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3812,6 +3834,11 @@ void eg_kitchen_sink() {
             }
             if (gui_button("clear trace", 'r')) {
                 sbuff_free(&trace);
+            }
+            if (globals.mouse_left_double_clicked) {
+                for (int i = 0; i < trace.length; ++i) {
+                    trace[i] *= -1;
+                }
             }
             for (int pass = 0; pass < 3; ++pass ) {
                 mat4 transform = (pass < 2) ? globals.Identity : PV * M4_Translation(0.0, 0.0, 0.01) * M;
