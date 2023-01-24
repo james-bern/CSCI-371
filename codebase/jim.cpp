@@ -45,10 +45,10 @@ template <typename T> T *jim_raw2stb(int n, T *raw) {
 }
 
 // https://handmade.network/forums/t/1273-post_your_c_c++_macro_tricks/3
-#define __defer(line) defer_ ## line
-#define _defer(line) __defer(line)
-#define defer auto _defer(__LINE__) = defer_dummy() + [&]( )
-template <typename F> struct Defer { Defer(F f) : f(f) {} ~Defer() { f(); } F f; }; template <typename F> Defer<F> makeDefer( F f ) { return Defer<F>( f ); }; struct defer_dummy {}; template<typename F> Defer<F> operator+( defer_dummy, F&& f ) { return makeDefer<F>( std::forward<F>(f) ); }
+// #define __defer(line) defer_ ## line
+// #define _defer(line) __defer(line)
+// #define defer auto _defer(__LINE__) = defer_dummy() + [&]( )
+// template <typename F> struct Defer { Defer(F f) : f(f) {} ~Defer() { f(); } F f; }; template <typename F> Defer<F> makeDefer( F f ) { return Defer<F>( f ); }; struct defer_dummy {}; template<typename F> Defer<F> operator+( defer_dummy, F&& f ) { return makeDefer<F>( std::forward<F>(f) ); }
 
 
 // https://en.cppreference.com/w/c/algorithm/qsort

@@ -1,5 +1,6 @@
 #define JIM_IS_JIM
 #include "include.cpp"
+#include "diego.cpp"
 
 int main() {
     {
@@ -8,8 +9,9 @@ int main() {
     }
 
     APPS {
-        APP(eg_soup);
-        APP(eg_texture);
+        // APP(eg_soup);
+        // APP(eg_texture);
+        APP(app_diego);
         APP(eg_kitchen_sink);
     }
 
