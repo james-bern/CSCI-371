@@ -120,3 +120,9 @@ FILE *jim_hot_fopen(char *filename, bool DONT_ACTUALLY_OPEN = 0) {
 }
 #endif
 #endif
+
+// ohno
+#define _UNIQUE_ISH_VARIABLE_NAME CONCAT(_VAR_, __COUNTER__)
+#define BEGIN_PRE_MAIN static int _UNIQUE_ISH_VARIABLE_NAME = []() {
+    #define END_PRE_MAIN return 0; }();
+
