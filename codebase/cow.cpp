@@ -452,6 +452,7 @@ C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
 #define LERP(t, a, b) ((1.0 - (t)) * (a) + (t) * (b)) // works on vecX, matX
 #define INVERSE_LERP(p, a, b) (((p) - (a)) / real((b) - (a)))
 #define LINEAR_REMAP(p, a, b, c, d) LERP(INVERSE_LERP(p, a, b), c, d)
+#define BUCKET(p, a, b, n) LERP(round(INVERSE_LERP(p, a, b) * (n)) / (n), a, b)
 #define CLAMP(t, a, b) MIN(MAX(t, a), b)
 #define CLAMPED_LERP(t, a, b) LERP(CLAMP(t, 0.0, 1.0), a, b)
 #define WRAP(t, a, b) ((a) + fmod((t) - (a), (b) - (a)))
@@ -3084,8 +3085,8 @@ long util_timestamp_in_milliseconds() { // no promises this is even a little bit
 // #include "widget.cpp"////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool _widget_drag(real *PV, int num_vertices, real *vertex_positions, real size_in_pixels, real r, real g, real b, real a) {
-    if (globals._mouse_owner != COW_MOUSE_OWNER_NONE && globals._mouse_owner != COW_MOUSE_OWNER_WIDGET) return false;
+void *_widget_drag(real *PV, int num_vertices, real *vertex_positions, real size_in_pixels, real r, real g, real b, real a) {
+    if (globals._mouse_owner != COW_MOUSE_OWNER_NONE && globals._mouse_owner != COW_MOUSE_OWNER_WIDGET) return NULL;
     static real *selected;
     if (selected) { // fornow: allows multiple calls to this function between begin_frame
         bool found = false;
@@ -3095,7 +3096,7 @@ bool _widget_drag(real *PV, int num_vertices, real *vertex_positions, real size_
                 break;
             }
         }
-        if (!found) return false;
+        if (!found) return NULL;
     }
     real *hot = selected;
     if (!selected) {
@@ -3134,9 +3135,9 @@ bool _widget_drag(real *PV, int num_vertices, real *vertex_positions, real size_
 }
 
 #ifdef SNAIL_CPP
-template<int D_color = 3> bool widget_drag(mat4 PV, int num_vertices, vec2 *vertex_positions, real size_in_pixels = 0, Vec<D_color> color = { 1.0, 1.0, 1.0 }) {
+template<int D_color = 3> vec2 *widget_drag(mat4 PV, int num_vertices, vec2 *vertex_positions, real size_in_pixels = 0, Vec<D_color> color = { 1.0, 1.0, 1.0 }) {
     STATIC_ASSERT(D_color == 3 || D_color == 4);
-    return _widget_drag(PV.data, num_vertices, (real *) vertex_positions, size_in_pixels, color[0], color[1], color[2], D_color == 4 ? color[3] : 1);
+    return (vec2 *) _widget_drag(PV.data, num_vertices, (real *) vertex_positions, size_in_pixels, color[0], color[1], color[2], D_color == 4 ? color[3] : 1);
 }
 #endif
 
