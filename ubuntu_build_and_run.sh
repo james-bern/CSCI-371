@@ -20,7 +20,7 @@ else
         echo "[36m[cow] compiling in debug mode[0m"
     fi
 
-    g++ -O$OPTARG -g -std=c++11 -Wall -Wextra -Werror=vla -Wno-format-security -Wno-misleading-indentation -Wno-char-subscripts -Wno-conversion -Wno-write-strings -Wno-missing-field-initializers -o executable.exe main.cpp -lglfw -lGL
+    g++ -Werror=vla -fno-strict-aliasing -O$OPTARG -g -std=c++11 -Wall -Wextra -Werror=vla -Wno-format-security -Wno-misleading-indentation -Wno-char-subscripts -Wno-conversion -Wno-write-strings -Wno-missing-field-initializers -o executable.exe main.cpp -lglfw -lGL
 
     if [ -f "executable.exe" ]; then
         if [ "$1" = "--debug-vscode" ]; then
