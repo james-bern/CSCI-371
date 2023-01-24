@@ -6,48 +6,55 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-// todo COW_OS_* flags (follow roughly cute_sound's approach)
-
-
-// todo only on mac
-#define CUTE_SOUND_SCALAR_MODE
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wsign-compare"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-// #pragma clang diagnostic ignored "-Wunused-but-set-variable"
-#define CUTE_SOUND_IMPLEMENTATION
-#include "ext/cute_sound.h"
-#pragma clang diagnostic pop
-
-
+#if defined(unix) || defined(__unix__) || defined(__unix)
+#define COW_OS_UBUNTU
+#elif defined(__APPLE__) || defined(__MACH__)
+#define COW_OS_APPLE
+#elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
+#define COW_OS_WINDOWS
+#else
+#pragma message("[cow] operating system not recognized")
+#endif
 
 #include "ext/stb_easy_font.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "ext/stb_image.h"
 #include "ext/jo_mpeg.h"
+#ifdef COW_OS_APPLE
+#define CUTE_SOUND_SCALAR_MODE
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-compare"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#endif
+#ifndef COW_OS_UBUNTU
+#define CUTE_SOUND_IMPLEMENTATION
+#include "ext/cute_sound.h"
+#endif
+#ifdef COW_OS_APPLE
+#pragma clang diagnostic pop
+#endif
 
-#if defined(unix) || defined(__unix__) || defined(__unix)
+#ifdef COW_OS_UBUNTU
 #define GL_GLEXT_PROTOTYPES
 #include "ext/glfw3.h"
-#elif defined(__APPLE__) || defined(__MACH__)
+#elif defined(COW_OS_APPLE)
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_GL_COREARB
 #include <OpenGL/gl3.h>
 #include "ext/glfw3.h"
-#elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
+#else
 #include "ext/glad.c"
 #include "ext/glfw3.h"
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_EXPOSE_NATIVE_WGL
 #define GLFW_NATIVE_INCLUDE_NONE
 #include "ext/glfw3native.h"
-#else
-#pragma message("[cow] operating system not recognized")
 #endif
 
 #include <cmath>
 #include <time.h>
 #include <chrono>
+#include <utility>
 
 #define COW_MOUSE_OWNER_NONE 0
 #define COW_MOUSE_OWNER_GUI 1
@@ -401,10 +408,12 @@ struct C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset 
     u32  _mesh_textures[ITRI_MAX_NUM_TEXTURES];
     int  _mesh_num_textures;
 
+#ifndef COW_OS_UBUNTU
     cs_audio_source_t *_sound_audio_source_ptrs[SOUND_MAX_DIFFERENT_FILES];
     char               _sound_filenames[SOUND_MAX_DIFFERENT_FILES][SOUND_MAX_FILENAME_LENGTH];
     int                _sound_num_loaded;
     real               _sound_music_gui_1_minus_volume;
+#endif
 
     real _window_clear_color[4];
 
@@ -715,9 +724,9 @@ void _window_init() {
 
     glfwMakeContextCurrent(COW0._window_glfw_window);
 
-    #if defined(WIN32) || defined(_WIN64) // windows ///////////////////////////////
+    #ifdef COW_OS_WINDOWS
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-    #endif /////////////////////////////////////////////////////////////////////////
+    #endif
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -734,7 +743,7 @@ void _window_init() {
 
     _callback_set_callbacks();
 
-    #if defined(WIN32) || defined(_WIN64)
+    #ifdef COW_OS_WINDOWS
     COW0._window_hwnd__note_this_is_NULL_if_not_on_Windows = glfwGetWin32Window(COW0._window_glfw_window);
     #endif
 
@@ -1188,7 +1197,7 @@ bool _app_while_loop_condition() {
                 _cow_reset(); \
                 _window_set_title(COW0._app_buffer); \
                 _app_name(); \
-                if (globals.key_pressed['q'] && globals.key_shift_held || glfwWindowShouldClose(COW0._window_glfw_window)) { break; } \
+                if ((globals.key_pressed['q'] && globals.key_shift_held) || glfwWindowShouldClose(COW0._window_glfw_window)) { break; } \
                 if (globals.key_pressed['q']) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { break; } } \
                 if (globals.key_pressed[config.hotkeys_app_next]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { COW0._app_index = 0; } } \
                 if (globals.key_pressed[config.hotkeys_app_prev]) { COW0._app_index--; if (COW0._app_index == -1 ) { COW0._app_index = COW0._app_numApps - 1; } } \
@@ -2884,8 +2893,8 @@ bunny._dump_for_library("out.txt", "bunny");
 #endif
 
 void _meshutil_transform_vertex_positions_to_double_unit_box(int num_vertices, vec3 *vertex_positions) {
-    vec3 L = V3(HUGE, HUGE, HUGE);
-    vec3 R = V3(-HUGE, -HUGE, -HUGE);
+    vec3 L = V3(HUGE_VAL, HUGE_VAL, HUGE_VAL);
+    vec3 R = V3(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
     for (int i = 0; i < num_vertices; ++i) {
         L = cwiseMin(L, vertex_positions[i]);
         R = cwiseMax(R, vertex_positions[i]);
@@ -3138,6 +3147,18 @@ template<int D_color = 3> bool widget_drag(mat4 PV, int num_vertices, vec2 *vert
 // #include "sound.cpp"/////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef COW_OS_UBUNTU
+void _sound_init() {}
+void _sound_reset() {}
+int _sound_load(char *) { return 0; }
+void _sound_play_sound(int ) {}
+void _sound_loop_music(int ) {}
+int _sound_find_load(char *) { return 0; }
+void sound_attach_to_gui() {}
+void sound_play_sound(char *) {}
+void sound_loop_music(char *) {}
+void sound_stop_all() {}
+#else
 void _sound_init() {
     ASSERT(cs_init(COW0._window_hwnd__note_this_is_NULL_if_not_on_Windows, 44100, 8192, NULL) == CUTE_SOUND_ERROR_NONE);
     cs_spawn_mix_thread();
@@ -3200,7 +3221,9 @@ void sound_loop_music(char *filename) {
     _sound_loop_music(_sound_find_load(filename));
 }
 
-#define sound_stop_all do {cs_stop_all_playing_sounds sound_stop_all(); } while (0)
+#define sound_stop_all() do {cs_stop_all_playing_sounds sound_stop_all(); } while (0)
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // #include "recorder.cpp" /////////////////////////////////////////////////////

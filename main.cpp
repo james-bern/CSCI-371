@@ -11,8 +11,8 @@ int main() {
     APPS {
         // APP(eg_soup);
         // APP(eg_texture);
-        // APP(eg_kitchen_sink);
         APP(app_diego);
+        APP(eg_kitchen_sink);
     }
 
     return 0;
