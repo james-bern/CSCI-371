@@ -2808,6 +2808,18 @@ template <typename T> void sbuff_free(StretchyBuffer<T> *buffer) {
     *buffer = {};
 }
 
+template <typename T> void sbuff_insert(StretchyBuffer<T> *buffer, int i, T element) {
+    sbuff_push_back(buffer, element); // shrug-emoji
+    memmove(buffer->data + i + 1, buffer->data + i, (buffer->length - i) * sizeof(T));
+    buffer->data[i] = element;
+}
+
+template <typename T> void sbuff_delete(StretchyBuffer<T> *buffer, int i) {
+    ASSERT(i <= buffer->length - 1);
+    memmove(buffer->data + i, buffer->data + i + 1, (buffer->length - i - 1) * sizeof(T));
+    --buffer->length;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // #include "mesh.cpp"//////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3577,7 +3589,7 @@ bool cow_begin_frame() {
             }
         }
     }
-    
+
 
     { // _cow_help_toggle overlay
         static bool push_gui_hide_and_disable;
