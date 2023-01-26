@@ -712,7 +712,7 @@ void _window_init() {
 
     // glfwWindowHint(GLFW_SAMPLES, 4); // multisampling
 
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    // glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     COW0._window_glfw_window = glfwCreateWindow(1000, 1000, "", NULL, NULL);
     if (!COW0._window_glfw_window) {
@@ -774,7 +774,7 @@ void _window_reset() {
     // TODO clear the default window resetting stuff out
     glfwSetInputMode(COW0._window_glfw_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     _window_clear_draw_buffer();
-    glfwShowWindow(COW0._window_glfw_window); // only actually does anything on first reset
+    // glfwShowWindow(COW0._window_glfw_window); // only actually does anything on first reset
 }
 
 void _window_begin_frame() {
@@ -3177,10 +3177,63 @@ void *_widget_drag(real *PV, int num_vertices, real *vertex_positions, real size
     return selected;
 }
 
+struct WidgetLineEditorResult {
+    bool success;
+    bool add_delete;
+    int index;
+    vec2 vertex_position;
+};
+WidgetLineEditorResult _widget_line_editor__NOTE_no_drag(mat4 PV, int primitive, int num_vertices, vec2 *vertices, real size = 0, real tolerance_NDC = 0.02) {
+    ASSERT(primitive == SOUP_LINE_STRIP || primitive == SOUP_LINE_LOOP);
+    int N = (primitive == SOUP_LINE_STRIP) ? num_vertices - 1 : num_vertices;
+    for (int i = 0; i < N; ++i) {
+        int j = (i + 1) % num_vertices;
+        vec2 s = transformPoint(PV, vertices[i]);
+        vec2 t = transformPoint(PV, vertices[j]);
+        vec2 a = globals.mouse_position_NDC - s;
+        vec2 b = t - s;
+        real norm_b = norm(b);
+        vec2 b_hat = b / norm_b;
+        real a1 = dot(a, b_hat);
+        real f = a1 / norm(b);
+        if (IS_BETWEEN(a1, tolerance_NDC, norm_b - tolerance_NDC)) {
+            real a2 = sqrt(squaredNorm(a) - pow(a1, 2));
+            if (a2 < tolerance_NDC) {
+                vec2 vertex_position = LERP(f, vertices[i], vertices[j]);
+                soup_draw(PV, SOUP_POINTS, 1, &vertex_position, NULL, monokai.green, size);
+                if (globals.mouse_right_pressed) return { true, 0, j, vertex_position };
+            }
+        } else if ((primitive == SOUP_LINE_STRIP && num_vertices > 2) || (primitive == SOUP_LINE_LOOP && num_vertices > 3)) {
+            if (IS_BETWEEN(a1, -tolerance_NDC, norm_b + tolerance_NDC)) {
+                int k = (f < .5) ? i : j;
+                vec2 s_t = (k == 0) ? s : t;
+                real dist = norm(globals.mouse_position_NDC - s_t);
+                if (dist < tolerance_NDC) {
+                    vec2 vertex_position = vertices[k];
+                    soup_draw(PV, SOUP_POINTS, 1, &vertex_position, NULL, monokai.red, size);
+                    if (globals.mouse_right_pressed) return { true, 1, k };
+                }
+            }
+        }
+    }
+    return {};
+}
+
 #ifdef SNAIL_CPP
 template<int D_color = 3> vec2 *widget_drag(mat4 PV, int num_vertices, vec2 *vertex_positions, real size_in_pixels = 0, Vec<D_color> color = { 1.0, 1.0, 1.0 }) {
     STATIC_ASSERT(D_color == 3 || D_color == 4);
     return (vec2 *) _widget_drag(PV.data, num_vertices, (real *) vertex_positions, size_in_pixels, color[0], color[1], color[2], D_color == 4 ? color[3] : 1);
+}
+void widget_line_editor(mat4 PV, int primitive, StretchyBuffer<vec2> *vertices, real size = 0) {
+    WidgetLineEditorResult result = _widget_line_editor__NOTE_no_drag(PV, primitive, vertices->length, vertices->data, size);
+    if (result.success) {
+        if (!result.add_delete) {
+            sbuff_insert(vertices, result.index, result.vertex_position);
+        } else {
+            sbuff_delete(vertices, result.index);
+        }
+    }
+    widget_drag(PV, vertices->length, vertices->data);
 }
 #endif
 
@@ -3188,7 +3241,7 @@ template<int D_color = 3> vec2 *widget_drag(mat4 PV, int num_vertices, vec2 *ver
 // #include "sound.cpp"/////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef COW_OS_UBUNTU
+#if defined(COW_OS_UBUNTU) || defined(COW_NO_SOUND)
 void _sound_init() {}
 void _sound_reset() {}
 int _sound_load(char *) { return 0; }
