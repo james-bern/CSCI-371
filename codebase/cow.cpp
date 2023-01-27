@@ -339,9 +339,9 @@ struct CX_INTERNAL_CONSTANTS {
                 float diffuse = max(0, dot(N, L));
                 float specular = pow(max(0, dot(N, H)), 100);
                 float fresnel = F0 + (1 - F0) * pow(1 - max(0, dot(N, H)), 5);
-                rgb += .6 * (-1.0 + 2.0 * diffuse);
-                rgb += .6 * specular;
-                rgb += .9 * (-.3 + 1.3 * fresnel);
+                rgb += .2 * (-1.0 + 2.0 * diffuse);
+                rgb += .1 * specular;
+                rgb += .6 * (-.3 + 1.3 * fresnel);
             }
             frag_color = vec4(rgb, a);
         }
