@@ -100,21 +100,21 @@ void app_space_fish() {
             _Q({ size_x, size_y, size_z }, { datum_x, datum_y, datum_z }, M2);
         };
 
-
-        vec3 s_axle = { 3.0, 1.5, 0.0 };
-
-
         fish_theta += .0167;
         vec3 s_virtual = { 4.0 * sin(fish_theta), 4.0 };
+        dynamixel_Y_theta = LERP(CLAMP(INVERSE_LERP(s_virtual.x, -1.0, 1.0), 0.0, 1.0), -PI, 0);
+
+        vec3 S_axle = { 3.0, 1.5, 0.0 };
+        vec3 s_axle = transformPoint(M4_RotationAboutYAxis(dynamixel_Y_theta), S_axle);
+
 
         // todo transform heirarchy
 
         double target_asm5601_theta = atan2((s_virtual - s_axle).xy);
-        asm5601_theta = CLAMP(target_asm5601_theta, RAD(45), RAD(135));
+        asm5601_theta = CLAMP(target_asm5601_theta, RAD(60), RAD(120));
 
         real L_bar = 2.5;
-        vec3 s_real = transformPoint(M4_RotationAboutYAxis(dynamixel_Y_theta), s_axle + L_bar * V3(e_theta(asm5601_theta), 0.0));
-        s_axle = transformPoint(M4_RotationAboutYAxis(dynamixel_Y_theta), s_axle);
+        vec3 s_real = s_axle + L_bar * V3(e_theta(asm5601_theta), 0.0);
 
 
         {
@@ -124,11 +124,12 @@ void app_space_fish() {
             eso_vertex(s_real);
             eso_end();
         }
+        library.meshes.sphere.draw(P, V, M4_Translation(s_axle) * M4_Scaling(0.1), monokai.blue);
         library.meshes.sphere.draw(P, V, M4_Translation(s_real), monokai.blue);
         library.meshes.sphere.draw(P, V, M4_Translation(s_virtual), monokai.orange);
 
 
-        Q(10.0, 0.1, 10.0, 0.0, -1.0, 0.0);
+        Q(10.0, 0.1, 10.0, 0.0, -1.0, 0.0, M4_RotationAboutYAxis(dynamixel_Y_theta));
         // Q(1.0, 3.0, 0.1, 0.0, -1.0, 0.0, M4_Translation(1.0, 1.0) * M4_RotationAboutZAxis(-dynamixel_Z_theta));
         // Q(1.0, 3.0, 0.1, 0.0, -1.0, 0.0, M4_Translation(3.0, 1.0) * M4_RotationAboutZAxis(-asm5601_theta));
 
