@@ -1,10 +1,18 @@
 #define _CRT_SECURE_NO_WARNINGS
 typedef double real;
 #define GL_REAL GL_DOUBLE
+
 #ifndef JIM_NO_SNAIL
-#include "codebase/snail.cpp"
+//
+#ifdef JIM_IS_JIM
+#define SNAIL_I_SOLEMNLY_SWEAR_I_AM_UP_TO_NO_GOOD
 #endif
+#include "codebase/snail.cpp"
+//
+#endif
+
 #include "codebase/cow.cpp"
+
 #ifdef JIM_IS_JIM
 #include "codebase/jim.cpp"
 #endif

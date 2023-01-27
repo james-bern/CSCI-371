@@ -7,7 +7,7 @@ void app_hud() {
     char *filename = "codebase/316818__steaq__432-hz.wav";
     char buffer[128] = {};
     int num_chars = 0;
-    real interval_time_in_minutes = 10.0;
+    real interval_time_in_minutes = 15.0;
     real timestamp = util_timestamp_in_milliseconds();
     int num_badges = 0;
     sound_play_sound(filename);
@@ -65,11 +65,11 @@ void app_hud() {
 }
 
 void app_space_fish() {
-    real data[3] = {};
-    real *dynamixel_angle = data;
-    real *asm5601_angle = data + 1;
+    real dynamixel_Z_theta = 0.0;
+    real dynamixel_Y_theta = 0.0;
+    real asm5601_theta = 0.0;
 
-    real fish_theta = 0.;
+    real fish_theta = 0.0;
 
     // todo save camera to camera.txt super easily
     Camera3D camera = { 10.0 };
@@ -81,8 +81,9 @@ void app_space_fish() {
             PV = P * V;
         }
 
-        gui_slider("dynamixel_angle", dynamixel_angle, RAD(-180), RAD(180), true);
-        gui_slider("asm5601_angle", asm5601_angle, RAD(-180), RAD(180), true);
+        gui_slider("dynamixel_Z_theta", &dynamixel_Z_theta, RAD(-180), RAD(180), true);
+        gui_slider("dynamixel_Y_theta", &dynamixel_Y_theta, RAD(-180), RAD(180), true);
+        gui_slider("asm5601_theta", &asm5601_theta, RAD(-180), RAD(180), true);
 
         int kelly_i = 0;
         auto _Q = [&](vec3 size, vec3 origin_datum, mat4 M2) {
@@ -92,19 +93,46 @@ void app_space_fish() {
             // (1, 1, 0) center of upper right edge
             // (1, 1, 1) ... corner
             mat4 M = M4_Translation(-cwiseProduct(origin_datum, .5 * size)) * M4_Scaling(.5 * size);
-            library.meshes.box.draw(P, V, M2 * M, color_kelly(kelly_i++));
+            library.meshes.box.draw(P, V, M2 * M, AVG(monokai.gray, color_kelly(kelly_i++)));
             // library.soups.box.draw(P * V * M2 * M, color_kelly(kelly_i++));
         };
         auto Q = [&](real size_x, real size_y, real size_z, real datum_x, real datum_y, real datum_z, mat4 M2 = globals.Identity) {
             _Q({ size_x, size_y, size_z }, { datum_x, datum_y, datum_z }, M2);
         };
+
+
+        vec3 s_axle = { 3.0, 1.5, 0.0 };
+
+
+        fish_theta += .0167;
+        vec3 s_virtual = { 4.0 * sin(fish_theta), 4.0 };
+
+        // todo transform heirarchy
+
+        double target_asm5601_theta = atan2((s_virtual - s_axle).xy);
+        asm5601_theta = CLAMP(target_asm5601_theta, RAD(45), RAD(135));
+
+        real L_bar = 2.5;
+        vec3 s_real = transformPoint(M4_RotationAboutYAxis(dynamixel_Y_theta), s_axle + L_bar * V3(e_theta(asm5601_theta), 0.0));
+        s_axle = transformPoint(M4_RotationAboutYAxis(dynamixel_Y_theta), s_axle);
+
+
+        {
+            eso_begin(PV, SOUP_LINES, 1.0, true);
+            eso_color(monokai.blue);
+            eso_vertex(s_axle);
+            eso_vertex(s_real);
+            eso_end();
+        }
+        library.meshes.sphere.draw(P, V, M4_Translation(s_real), monokai.blue);
+        library.meshes.sphere.draw(P, V, M4_Translation(s_virtual), monokai.orange);
+
+
         Q(10.0, 0.1, 10.0, 0.0, -1.0, 0.0);
-        Q(1.0, 3.0, 0.1, 0.0, -1.0, 0.0, M4_Translation(1.0, 1.0) * M4_RotationAboutZAxis(-*dynamixel_angle));
-        Q(1.0, 3.0, 0.1, 0.0, -1.0, 0.0, M4_Translation(3.0, 1.0) * M4_RotationAboutZAxis(-*asm5601_angle));
+        // Q(1.0, 3.0, 0.1, 0.0, -1.0, 0.0, M4_Translation(1.0, 1.0) * M4_RotationAboutZAxis(-dynamixel_Z_theta));
+        // Q(1.0, 3.0, 0.1, 0.0, -1.0, 0.0, M4_Translation(3.0, 1.0) * M4_RotationAboutZAxis(-asm5601_theta));
 
-        library.meshes.sphere.draw(P, V, M4_Translation(4.0 * sin(fish_theta), 4.0), monokai.red);
 
-        fish_theta += .0167;;
     }
 
 }
