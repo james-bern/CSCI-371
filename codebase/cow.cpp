@@ -3753,14 +3753,6 @@ bool cow_begin_frame() {
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef SNAIL_CPP
-void eg_input() {
-
-}
-
-void eg_gl() {
-
-}
-
 void eg_library() {
     Camera3D camera = { 5.0, RAD(0.0) };
     real time = 0.0;
@@ -4043,9 +4035,6 @@ void eg_kitchen_sink() {
     }
 }
 
-
-// TODO improve
-
 void eg_shader() {
     char *vertex_shader_source = R""(
         #version 330 core
@@ -4122,7 +4111,7 @@ void _eg_no_snail() {
     Camera2D camera = { 5.0, -1.0 };
     int num_polygon_sides = 16;
     real foo[] = { -1.5, -1.5, -1.5, 1.5, 1.5, 1.5, 1.5, -1.5 };
-    real size_in_pixels = 3.0;
+    real size_in_pixels = 12.0;
     real PV[16];
 
     while (cow_begin_frame()) {
@@ -4130,7 +4119,7 @@ void _eg_no_snail() {
         _camera_get_PV(&camera, PV);
 
         gui_slider("num_polygon_sides", &num_polygon_sides, 0, 32, 'j', 'k', false);
-        gui_slider("size_in_pixels", &size_in_pixels, 0.0, 10.0, false);
+        gui_slider("size_in_pixels", &size_in_pixels, 0.0, 24.0, false);
 
         _eso_begin(PV, SOUP_LINE_LOOP, size_in_pixels, false, false); {
             eso_color(0.0, 1.0, 0.0);
