@@ -1,2 +1,0 @@
-make sure strict aliasing is turned off
-disallow vla's in mac (and linux?)

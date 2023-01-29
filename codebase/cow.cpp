@@ -91,6 +91,7 @@ typedef real _mat4[16];
 struct CW_USER_FACING_CONFIG {
     int hotkeys_app_next = COW_KEY_ARROW_RIGHT;
     int hotkeys_app_prev = COW_KEY_ARROW_LEFT;
+    int hotkeys_app_quit = 'q';
     int hotkeys_app_menu = '=';
     int hotkeys_gui_hide = '-';
 
@@ -1204,7 +1205,7 @@ bool _app_while_loop_condition() {
         ++COW0._app_numApps; \
     } else { \
         if (COW0._app_menu) { \
-            if (globals.key_pressed['q']) { break; } \
+            if (globals.key_pressed[config.hotkeys_app_quit]) { break; } \
             if (gui_button(STR(_app_name)"()", 'a' + COW0._app_check)) { \
                 COW0._app_index = COW0._app_check; \
                 COW0._app_menu = false; \
@@ -1215,8 +1216,8 @@ bool _app_while_loop_condition() {
                 _cow_reset(); \
                 _window_set_title(COW0._app_buffer); \
                 _app_name(); \
-                if ((globals.key_pressed['q'] && globals.key_shift_held) || glfwWindowShouldClose(COW0._window_glfw_window)) { break; } \
-                if (globals.key_pressed['q']) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { break; } } \
+                if ((globals.key_pressed[config.hotkeys_app_quit] && globals.key_shift_held) || glfwWindowShouldClose(COW0._window_glfw_window)) { break; } \
+                if (globals.key_pressed[config.hotkeys_app_quit]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { break; } } \
                 if (globals.key_pressed[config.hotkeys_app_next]) { COW0._app_index++; if (COW0._app_index == COW0._app_numApps) { COW0._app_index = 0; } } \
                 if (globals.key_pressed[config.hotkeys_app_prev]) { COW0._app_index--; if (COW0._app_index == -1 ) { COW0._app_index = COW0._app_numApps - 1; } } \
                 if (globals.key_pressed[config.hotkeys_app_menu]) { \
@@ -3666,14 +3667,20 @@ bool cow_begin_frame() {
             COW1._gui_hide_and_disable = false; {
                 _gui_begin_frame();
                 gui_printf("config.hotkeys_*");
-                gui_printf("next app (wraps around) `%s", _gui_hotkey2string(config.hotkeys_app_next));
-                gui_printf("previous app (wraps around) `%s", _gui_hotkey2string(config.hotkeys_app_prev));
-                gui_printf("quit (next app no wrap) `q");
-                gui_printf("quit all `Q");
-                gui_printf("exit to main menu `%s", _gui_hotkey2string(config.hotkeys_app_menu));
+                if (config.hotkeys_app_next) { gui_printf("next app (wraps around) `%s", _gui_hotkey2string(config.hotkeys_app_next)); }
+                if (config.hotkeys_app_prev) { gui_printf("previous app (wraps around) `%s", _gui_hotkey2string(config.hotkeys_app_prev)); }
+                if (config.hotkeys_app_quit) {
+                    gui_printf("quit (next app no wrap) `%s", _gui_hotkey2string(config.hotkeys_app_quit));
+                    gui_printf("quit all `SHIFT + %s", _gui_hotkey2string(config.hotkeys_app_quit));
+                }
+                if (config.hotkeys_app_menu) {
+                    gui_printf("exit to main menu `%s", _gui_hotkey2string(config.hotkeys_app_menu));
+                }
                 gui_printf("display fps counter` \\");
                 gui_printf("uncap fps `/");
-                gui_printf("(un)hide gui `%s", _gui_hotkey2string(config.hotkeys_gui_hide));
+                if (config.hotkeys_gui_hide) {
+                    gui_printf("(un)hide gui `%s", _gui_hotkey2string(config.hotkeys_gui_hide));
+                }
                 gui_printf("(un)hide help `?");
                 gui_printf("start/stop recording (note: no sound) `~");
                 gui_printf("");
@@ -3734,7 +3741,7 @@ bool cow_begin_frame() {
             glfwWindowShouldClose(COW0._window_glfw_window)
             || globals.key_pressed[config.hotkeys_app_next]
             || globals.key_pressed[config.hotkeys_app_prev]
-            || globals.key_pressed['q']
+            || globals.key_pressed[config.hotkeys_app_quit]
             || globals.key_pressed[config.hotkeys_app_menu]
             );
 }
