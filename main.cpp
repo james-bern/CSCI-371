@@ -20,8 +20,8 @@ int main() {
             // APP(eg_texture);
             // APP(app_diego);
             // APP(eg_kitchen_sink);
-            APP(app_interval_timer);
-            // APP(app_space_fish_2D);
+            // APP(app_interval_timer);
+            APP(app_space_fish_2D);
             // APP(app_space_fish_exploration);
             // APP(app_space_fish_arduino);
         }

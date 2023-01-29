@@ -56,7 +56,7 @@ Joint joints[num_joints] = {
     },
 };
 
-void app_diego() {
+void app_linkage_simulation() {
     Camera2D camera = { 10.0 };
 
     link_o = (vec2 *) optimization_vector;

@@ -19,13 +19,12 @@ void app_space_fish_2D() {
     bool playing = false;
     while (cow_begin_frame()) {
         gui_checkbox("playing", &playing, 'p');
-        time += timestep;
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
 
         if (playing) {
-            theta_motor += RAD(sin(3.0 * time));
-            theta_magnet += RAD(sin(3.0 * time));
+            time += timestep;
+            theta_magnet = RAD(90.0 + 10.0 * sin(3.0 * time));
         }
         gui_slider("theta_motor", &theta_motor, RAD(0), RAD(270));
         gui_slider("theta_magnet", &theta_magnet, RAD(0), RAD(270));
@@ -46,10 +45,9 @@ void app_space_fish_2D() {
         vec2 s_fourth = s_magnet + 50.0 * e_theta(theta_magnet);
         vec2 s_fish = s_magnet + 100.0 * e_theta(theta_magnet);
         eso_begin(PV, SOUP_LINES); {
-            eso_color(monokai.blue);
+            eso_color(monokai.gray);
             eso_vertex(s_motor);
             eso_vertex(s_magnet);
-            eso_color(monokai.orange);
             eso_vertex(s_motor);
             eso_vertex(s_third);
             eso_vertex(s_magnet);

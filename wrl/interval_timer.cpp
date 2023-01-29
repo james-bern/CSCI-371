@@ -8,7 +8,7 @@ void app_interval_timer() {
     sound_play_sound(filename);
     COW1._gui_hide_and_disable = true;
     config.tweaks_soup_draw_with_rounded_corners_for_all_line_primitives = false;
-    // config.hotkeys_app_quit = '\0';
+    config.hotkeys_app_quit = '\0';
 
     while (cow_begin_frame()) {
         gui_printf("> %s", buffer);
