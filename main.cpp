@@ -22,9 +22,9 @@ int main() {
             // APP(eg_kitchen_sink);
             // APP(app_interval_timer);
             APP(app_space_fish_2D);
-            APP(_eg_no_snail);
+            // APP(_eg_no_snail);
             // APP(app_space_fish_exploration);
-            // APP(app_space_fish_arduino);
+            // APP(app_space_fish_electronics);
         }
     }
     return 0;

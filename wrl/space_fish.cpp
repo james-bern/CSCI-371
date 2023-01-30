@@ -1,17 +1,21 @@
-void app_space_fish_arduino() {
-    // turn on/off led from cow
-    // turn on/off virtual led Arduino
-    // closed loop mass-spring control to hit target axle_theta
-    while (cow_begin_frame()) {
-
-    }
-}
+// the artist prescribes a target motion
+// the system displays the 
 
 void app_space_fish_2D() {
+    #define FISH_STATE_NORMAL 0
+    #define FISH_STATE_PUSHED 1
+    #define FISH_STATE_ERROR 2
+    #define FISH_STATE_HIDDEN 3
+    vec3 fish_state_color[] = { monokai.orange, monokai.blue, monokai.red, AVG(monokai.gray, monokai.orange) };
+
     vec2 s_motor = {};
     vec2 s_magnet = s_motor + V2(100.0, 0.0);
     real theta_motor = RAD(90);
     real theta_magnet = RAD(90);
+
+    real r_fish = 25.0;
+
+    real x_cutoff = 80.0;
 
     Camera2D camera = { 250.0 };
     double timestep = .0167;
@@ -29,21 +33,26 @@ void app_space_fish_2D() {
         gui_slider("theta_motor", &theta_motor, RAD(0), RAD(270));
         gui_slider("theta_magnet", &theta_magnet, RAD(0), RAD(270));
 
-        #define FISH_STATE_NORMAL_TRACKING 0
-        #define FISH_STATE_PUSHED 1
-        #define FISH_STATE_ERROR 2
-        int fish_state = FISH_STATE_NORMAL_TRACKING;
+
         double Delta = theta_magnet - theta_motor;
         double r_tol = RAD(5);
-        if (Delta > r_tol) {
-            fish_state = FISH_STATE_PUSHED;
-        } else if (Delta < -r_tol) {
-            fish_state = FISH_STATE_ERROR;
-        }
 
         vec2 s_third = s_motor + 50.0 * e_theta(theta_motor);
         vec2 s_fourth = s_magnet + 50.0 * e_theta(theta_magnet);
         vec2 s_fish = s_magnet + 100.0 * e_theta(theta_magnet);
+
+        int fish_state;
+        if (s_fish.x + r_fish < x_cutoff) {
+            fish_state = FISH_STATE_HIDDEN;
+        } else {
+            fish_state = FISH_STATE_NORMAL;
+            if (Delta > r_tol) {
+                fish_state = FISH_STATE_PUSHED;
+            } else if (Delta < -r_tol) {
+                fish_state = FISH_STATE_ERROR;
+            }
+        }
+
         eso_begin(PV, SOUP_LINES); {
             eso_color(monokai.gray);
             eso_vertex(s_motor);
@@ -56,16 +65,31 @@ void app_space_fish_2D() {
             eso_vertex(s_third);
             eso_vertex(s_fourth);
         } eso_end();
-        eso_begin(PV, SOUP_LINES); {
-            eso_color(
-                    (fish_state == FISH_STATE_NORMAL_TRACKING) ? monokai.orange :
-                    (fish_state == FISH_STATE_PUSHED) ? monokai.blue :
-                    monokai.red);
+        eso_begin(PV, SOUP_LINE_LOOP); {
+            eso_color(fish_state_color[fish_state]);
             int N = 64;
             for_(i, N) {
-                eso_vertex(s_fish + 25 * e_theta(NUM_DENm1(i, N) * 2.0 * PI));
+                eso_vertex(s_fish + r_fish * e_theta(NUM_DENm1(i, N) * 2.0 * PI));
             }
         } eso_end();
+        eso_begin(PV, SOUP_LINES); {
+            eso_color(monokai.white);
+            double r = 15.0;
+            eso_vertex(x_cutoff, s_fish.y + r);
+            eso_vertex(x_cutoff, s_fish.y - r);
+        } eso_end();
+    }
+}
+
+void app_space_fish_electronics() {
+    // turn on/off led from cow
+    // turn on/off virtual led from Arduino
+    // bluetooth
+    // dynamixel
+    // magnet
+    // closed loop model-based control to hit target axle_theta
+    while (cow_begin_frame()) {
+
     }
 }
 

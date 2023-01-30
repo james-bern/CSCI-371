@@ -1045,11 +1045,11 @@ void _input_begin_frame() {
     globals.mouse_right_pressed = false;
     globals.mouse_right_released = false;
     globals.mouse_left_double_clicked = false;
-    globals.mouse_change_in_position_Screen[0] = 0;
-    globals.mouse_change_in_position_Screen[1] = 0;
-    globals.mouse_change_in_position_NDC[0] = 0;
-    globals.mouse_change_in_position_NDC[1] = 0;
-    globals.mouse_wheel_offset = 0;
+    globals.mouse_change_in_position_Screen[0] = 0.0;
+    globals.mouse_change_in_position_Screen[1] = 0.0;
+    globals.mouse_change_in_position_NDC[0] = 0.0;
+    globals.mouse_change_in_position_NDC[1] = 0.0;
+    globals.mouse_wheel_offset = 0.0;
     glfwPollEvents();
     // NOTE e.g. key_*['j'] the same as key_*['J']
     for (int i = 0; i < 26; ++i) {
