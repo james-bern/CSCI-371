@@ -134,6 +134,11 @@ union int3 {
     *((volatile int *) 0) = 0; \
 } } while (0)
 
+#define SNAIL_ABS(a) ((a) < 0 ? -(a) : (a))
+#define SNAIL_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define SNAIL_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define SNAIL_CLAMP(t, a, b) SNAIL_MIN(SNAIL_MAX(t, a), b)
+
 #define SNAIL_FOR_(i, N) for (int i = 0; i < N; ++i)
 
 // vectors and matrices ////////////////////////////////////////////////////////
@@ -656,6 +661,11 @@ Mat<4> xyzo2mat4(vec3 x, vec3 y, vec3 z, vec3 o) {
         0, 0, 0, 1
     };
 }
+template <int T> Vec<T> magClamped(Vec<T> a, real c) {
+    double norm_a = norm(a);
+    if (SNAIL_ABS(norm_a) < c) { return a; }
+    return a / norm_a * SNAIL_CLAMP(norm_a, -c, c);
+}
 
 // utility /////////////////////////////////////////////////////////////////////
 
@@ -678,8 +688,12 @@ template <int T> void pprint(Mat<T> M) {
     }
 }
 
-#undef SNAIL_FOR_
 #undef SNAIL_ASSERT
+#undef SNAIL_ABS
+#undef SNAIL_MIN
+#undef SNAIL_MAX
+#undef SNAIL_CLAMP
+#undef SNAIL_FOR_
 #endif
 
 

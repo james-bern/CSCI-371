@@ -2,11 +2,11 @@
 // the system displays the 
 
 void app_space_fish_2D() {
-    #define FISH_STATE_NORMAL 0
-    #define FISH_STATE_PUSHED 1
-    #define FISH_STATE_ERROR 2
-    #define FISH_STATE_HIDDEN 3
-    vec3 fish_state_color[] = { monokai.orange, monokai.blue, monokai.red, AVG(monokai.gray, monokai.orange) };
+    #define ACTUAL_FISH_STATE_NORMAL 0
+    #define ACTUAL_FISH_STATE_PUSHED 1
+    #define ACTUAL_FISH_STATE_ERROR 2
+    #define ACTUAL_FISH_STATE_HIDDEN 3
+    vec3 actual_fish_state_color[] = { monokai.orange, monokai.blue, monokai.red, monokai.green };
 
     vec2 s_motor = {};
     vec2 s_magnet = s_motor + V2(100.0, 0.0);
@@ -17,67 +17,94 @@ void app_space_fish_2D() {
 
     real x_cutoff = 80.0;
 
+    vec2 s_virtual = {};
+
+    vec2 s_dragger = { 50.0, 100.0 };
+    vec2 s_target;
+
     Camera2D camera = { 250.0 };
     double timestep = .0167;
     double time = -timestep;
     bool playing = false;
     while (cow_begin_frame()) {
-        gui_checkbox("playing", &playing, 'p');
         camera_move(&camera);
         mat4 PV = camera_get_PV(&camera);
 
+        gui_slider("theta_motor", &theta_motor, RAD(0), RAD(270));
+        gui_slider("theta_magnet", &theta_magnet, RAD(0), RAD(270));
+        gui_checkbox("playing", &playing, 'p');
         if (playing) {
             time += timestep;
             theta_magnet = RAD(90.0 + 10.0 * sin(3.0 * time));
         }
-        gui_slider("theta_motor", &theta_motor, RAD(0), RAD(270));
-        gui_slider("theta_magnet", &theta_magnet, RAD(0), RAD(270));
-
 
         double Delta = theta_magnet - theta_motor;
         double r_tol = RAD(5);
 
-        vec2 s_third = s_motor + 50.0 * e_theta(theta_motor);
-        vec2 s_fourth = s_magnet + 50.0 * e_theta(theta_magnet);
-        vec2 s_fish = s_magnet + 100.0 * e_theta(theta_magnet);
-
-        int fish_state;
-        if (s_fish.x + r_fish < x_cutoff) {
-            fish_state = FISH_STATE_HIDDEN;
-        } else {
-            fish_state = FISH_STATE_NORMAL;
-            if (Delta > r_tol) {
-                fish_state = FISH_STATE_PUSHED;
-            } else if (Delta < -r_tol) {
-                fish_state = FISH_STATE_ERROR;
+        vec2 s_actual = s_magnet + 100.0 * e_theta(theta_magnet);
+        int fish_state; {
+            if (s_actual.x + r_fish < x_cutoff) {
+                fish_state = ACTUAL_FISH_STATE_HIDDEN;
+            } else {
+                fish_state = ACTUAL_FISH_STATE_NORMAL;
+                if (Delta > r_tol) {
+                    fish_state = ACTUAL_FISH_STATE_PUSHED;
+                } else if (Delta < -r_tol) {
+                    fish_state = ACTUAL_FISH_STATE_ERROR;
+                }
             }
         }
 
-        eso_begin(PV, SOUP_LINES); {
-            eso_color(monokai.gray);
-            eso_vertex(s_motor);
-            eso_vertex(s_magnet);
-            eso_vertex(s_motor);
-            eso_vertex(s_third);
-            eso_vertex(s_magnet);
-            eso_vertex(s_fish);
-            eso_color(monokai.purple);
-            eso_vertex(s_third);
-            eso_vertex(s_fourth);
-        } eso_end();
-        eso_begin(PV, SOUP_LINE_LOOP); {
-            eso_color(fish_state_color[fish_state]);
+        if (fish_state != ACTUAL_FISH_STATE_HIDDEN) {
+            s_target = s_virtual = s_actual; // *
+        } else {
+            s_target = s_dragger;
+            s_virtual += magClamped(s_target - s_virtual, 3.0);
+        }
+
+        { // draw
+            eso_begin(PV, SOUP_LINES); {
+                vec2 _s_third = s_motor + 50.0 * e_theta(theta_motor);
+                vec2 _s_fourth = s_magnet + 50.0 * e_theta(theta_magnet);
+                eso_color(monokai.gray);
+                eso_vertex(s_motor);
+                eso_vertex(s_magnet);
+                eso_vertex(s_motor);
+                eso_vertex(_s_third);
+                eso_vertex(s_magnet);
+                eso_vertex(s_actual);
+                eso_color(monokai.purple);
+                eso_vertex(_s_third);
+                eso_vertex(_s_fourth);
+            } eso_end();
             int N = 64;
-            for_(i, N) {
-                eso_vertex(s_fish + r_fish * e_theta(NUM_DENm1(i, N) * 2.0 * PI));
-            }
-        } eso_end();
-        eso_begin(PV, SOUP_LINES); {
-            eso_color(monokai.white);
-            double r = 15.0;
-            eso_vertex(x_cutoff, s_fish.y + r);
-            eso_vertex(x_cutoff, s_fish.y - r);
-        } eso_end();
+            eso_begin(PV, SOUP_TRIANGLE_FAN); {
+                eso_color(AVG(monokai.white, actual_fish_state_color[fish_state]));
+                for_(i, N) {
+                    eso_vertex(s_virtual + r_fish * e_theta(NUM_DENm1(i, N) * 2.0 * PI));
+                }
+            } eso_end();
+            eso_begin(PV, SOUP_LINE_LOOP); {
+                eso_color(actual_fish_state_color[fish_state]);
+                for_(i, N) {
+                    eso_vertex(s_actual + r_fish * e_theta(NUM_DENm1(i, N) * 2.0 * PI));
+                }
+            } eso_end();
+            eso_begin(PV, SOUP_POINTS, 24.0); {
+                eso_color(actual_fish_state_color[fish_state]);
+                eso_vertex(s_actual + V2(r_fish, 0));
+            } eso_end();
+            eso_begin(PV, SOUP_LINES); {
+                eso_color(monokai.white, 0.5);
+                double r = 15.0;
+                eso_vertex(x_cutoff, 100.0 + r);
+                eso_vertex(x_cutoff, 100.0 - r);
+            } eso_end();
+        }
+
+        widget_drag(PV, 1, &s_dragger);
+        soup_draw(PV, SOUP_POINTS, 1, &s_dragger, NULL, V3(1.0, 0.0, 1.0));
+        soup_draw(PV, SOUP_POINTS, 1, &s_target, NULL, V3(1.0, 0.0, 1.0), 24.0);
     }
 }
 
