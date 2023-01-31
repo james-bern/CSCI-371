@@ -26,11 +26,13 @@ typedef double real;
 #include <cstring>
 #include <cmath>
 
-#if 0
-// // optional style guide (consider disabling after hw0 if you already enjoy modern C++)
+// (very) optional style guide; feel free to delete entirely
+// however, if you're newer to C/C++ then this guide may help reduce bugs
+#ifndef JIM_IS_JIM
+#define static     error__cow_style__prefer__setup_loop_structure__over__static
 #define new        error__cow_style__prefer__malloc_free__over__new_delete
 #define delete     error__cow_style__prefer__malloc_free__over__new_delete
-#define malloc     error__cow_style__prefer_calloc_over_malloc
+// #define malloc     error__cow_style__prefer_calloc_over_malloc
 #define float      error__cow_style__prefer_real_over_float
 #define double     error__cow_style__prefer_real_over_double
 #define unsigned   error__cow_style__prefer__int__over__unsigned_int__prefer_u8_over_unsigned_char
