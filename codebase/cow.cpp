@@ -3921,8 +3921,6 @@ void eg_kitchen_sink() {
 
         static int kelly_i;
         gui_slider("kelly_i", &kelly_i, 0, 20 - 1, 'j', 'k', true);
-        vec2 s = { 1.0, 1.0 };
-        soup_draw(PV, SOUP_POINTS, 1, &s, NULL, color_kelly(kelly_i));
 
         {
             mat4 R = M4_RotationAboutYAxis(time);
@@ -3975,7 +3973,7 @@ void eg_kitchen_sink() {
             }
         }
 
-        {
+        if (0) {
             vec3 o, x, y, z;
 
             o = { 0.0, 2.0, 0.0 };
