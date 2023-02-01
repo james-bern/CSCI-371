@@ -9,7 +9,7 @@
 - **(optional but recommended) old-style fullscreen Terminal:** hold `option`; click green circle
 - **navigate to Desktop:** `cd Desktop`
 - **install Mac build tools if you don't have them already**
-  - **(option a) you alread have Xcode and are done:**
+  - **(option a) you alread have Xcode and are done!**
   - **(option b -- recommended if you don't have Xcode) install standalone command line tools:**
     - go to this random link https://developer.apple.com/download/all/?q=xcode
     - sign in (make an account if necessary)
