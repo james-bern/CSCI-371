@@ -1,36 +1,16 @@
 // #define COW_NO_STYLE_GUIDE
 #include "include.cpp"
 
-void app_hello_snail() {
+void hw00() {
     while(cow_begin_frame()) {
 
     }
 }
-
-void app_hello_cow() {
-    while(cow_begin_frame()) {
-
-    }
-}
-
-void app_hello_extra_credit() {
-    while(cow_begin_frame()) {
-
-    }
-}
-
-// todo code flow setup/loop
-// todo snail
-
-// todo random_vec2(double a, double b)
-// todo keyboard intpu
 
 int main() {
     APPS {
         APP(eg_kitchen_sink);
-        APP(app_hello_snail);
-        APP(app_hello_cow);
-        APP(app_hello_extra_credit);
+        APP(hw00);
     }
 
     return 0;
