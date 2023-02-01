@@ -1,4 +1,4 @@
-#define JIM_IS_JIM
+// #define COW_NO_STYLE_GUIDE
 #include "include.cpp"
 
 void app_hello_snail() {

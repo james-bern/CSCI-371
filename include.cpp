@@ -1,18 +1,14 @@
-#define _CRT_SECURE_NO_WARNINGS
 typedef double real;
 #define GL_REAL GL_DOUBLE
+#define _CRT_SECURE_NO_WARNINGS
 
 #ifndef JIM_NO_SNAIL
-//
 #ifdef JIM_IS_JIM
 #define SNAIL_I_SOLEMNLY_SWEAR_I_AM_UP_TO_NO_GOOD
 #endif
 #include "codebase/snail.cpp"
-//
 #endif
-
 #include "codebase/cow.cpp"
-
 #ifdef JIM_IS_JIM
 #include "codebase/jim.cpp"
 #endif
@@ -28,7 +24,7 @@ typedef double real;
 
 // (very) optional style guide; feel free to delete entirely
 // however, if you're newer to C/C++ then this guide may help reduce bugs
-#ifndef JIM_IS_JIM
+#if !defined(JIM_IS_JIM) && !defined(COW_NO_STYLE_GUIDE)
 #define static     error__cow_style__prefer__setup_loop_structure__over__static
 #define new        error__cow_style__prefer__malloc_free__over__new_delete
 #define delete     error__cow_style__prefer__malloc_free__over__new_delete
