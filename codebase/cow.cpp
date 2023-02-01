@@ -3948,11 +3948,11 @@ void eg_kitchen_sink() {
             if (gui_button("clear trace", 'r')) {
                 sbuff_free(&trace);
             }
-            if (globals.mouse_left_double_clicked) {
-                for (int i = 0; i < trace.length; ++i) {
-                    trace[i] *= -1;
-                }
-            }
+            // if (globals.mouse_left_double_clicked) {
+            //     for (int i = 0; i < trace.length; ++i) {
+            //         trace[i] *= -1;
+            //     }
+            // }
             for (int pass = 0; pass < 3; ++pass ) {
                 mat4 transform = (pass < 2) ? globals.Identity : PV * M4_Translation(0.0, 0.0, 0.01) * M;
                 soup_draw(transform, SOUP_LINE_STRIP, trace.length, trace.data, NULL, (pass == 0) ? monokai.white : color_plasma(LINEAR_REMAP(globals.mouse_position_NDC.x, -1.0, 1.0, 0.0, 1.0)), (pass == 0) ? 30.0 : 0, false, pass < 2);
