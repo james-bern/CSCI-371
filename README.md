@@ -8,7 +8,13 @@
 - **open terminal:** `⌘ + Space`; type `Terminal`; press `Enter`
 - **(optional but recommended) old-style fullscreen Terminal:** hold `option`; click green circle
 - **navigate to Desktop:** `cd Desktop`
-- **install Xcode if you don't have it already:** https://apps.apple.com/us/app/xcode/id497799835?mt=12
+- **install Mac build tools if you don't have them already**
+  - **(option a) you alread have Xcode and are done:**
+  - **(option b -- recommended if you don't have Xcode) install standalone command line tools:**
+    - go to this random link https://developer.apple.com/download/all/?q=xcode
+    - sign in (make an account if necessary)
+    - download the command line tools for your operating system (to find out which OS you have, click the apple logo at the top left of the screen -> about this Mac)
+  - **(option c) install Xcode:** https://apps.apple.com/us/app/xcode/id497799835?mt=12
 - **clone codebase:** `git clone https://github.com/james-bern/CSCI-371.git`
   - **_if prompted, install developer tools and then repeat this step_**
 - **navigate into repo:** `cd CSCI-371`
