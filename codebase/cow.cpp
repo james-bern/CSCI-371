@@ -3918,12 +3918,10 @@ void eg_kitchen_sink() {
         mat4 PV = P * V;
         mat4 M = M4_Translation(0.0, 0.0, -2.0) * M4_Scaling(2.0);
 
-        {
-            static int i;
-            gui_slider("i", &i, 0, 20 - 1, 'j', 'k', true);
-            vec2 s = { 1.0, 1.0 };
-            soup_draw(PV, SOUP_POINTS, 1, &s, NULL, color_kelly(i));
-        }
+        static int kelly_i;
+        gui_slider("kelly_i", &kelly_i, 0, 20 - 1, 'j', 'k', true);
+        vec2 s = { 1.0, 1.0 };
+        soup_draw(PV, SOUP_POINTS, 1, &s, NULL, color_kelly(kelly_i));
 
         {
             mat4 R = M4_RotationAboutYAxis(time);
@@ -3932,7 +3930,7 @@ void eg_kitchen_sink() {
             mat4 M_smooth = M4_Translation(0.0, 0.0, 0.0) * R;
             mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
-            vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? monokai.purple : monokai.blue;
+            vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? color_kelly(kelly_i) : monokai.white;
             library.soups.bunny.draw(PV * M_wire, color);
             library.meshes.bunny.draw(P, V, M_smooth, color);
             library.meshes.bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
