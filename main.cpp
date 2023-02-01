@@ -1,3 +1,4 @@
+#define JIM_IS_JIM
 #include "include.cpp"
 
 void app_hello_snail() {
@@ -25,7 +26,6 @@ void app_hello_extra_credit() {
 // todo keyboard intpu
 
 int main() {
-    static int i = 0;
     APPS {
         APP(eg_kitchen_sink);
         APP(app_hello_snail);
