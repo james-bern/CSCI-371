@@ -3932,7 +3932,7 @@ void eg_kitchen_sink() {
             vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? color_kelly(kelly_i) : monokai.white;
             library.soups.bunny.draw(PV * M_wire, color);
             library.meshes.bunny.draw(P, V, M_smooth, color);
-            library.meshes.bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png");
+            if (0) { library.meshes.bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png"); }
 
             gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
             if (draw_axes) {
@@ -3993,7 +3993,7 @@ void eg_kitchen_sink() {
             eso_vertex(o + z);
             eso_end();
         }
-        {
+       if (0) {
             {
                 for (int i = 0; i < texture.height; ++i) {
                     real v = real(i) / (texture.height - 1);
@@ -4006,7 +4006,7 @@ void eg_kitchen_sink() {
             }
             library.meshes.square.draw(P, V, M, {}, texture.name);
         }
-        {
+        if (1) {
             IndexedTriangleMesh3D mesh = library.meshes.teapot;
             int num_vertices       = mesh.num_vertices;
             vec3 *vertex_positions = mesh.vertex_positions;
