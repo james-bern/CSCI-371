@@ -31,7 +31,7 @@
 - **show hidden folders in finder:** `⌘ + Shift + .`
 - **show all file extensions in finder:** Finder -> Preferences... -> Advanced -> Show all filename extensions
 </details>
-
+<hr>
 <details>
   <summary>🤷‍♂️ on your windows 10 computer (note: windows 11 may have multiple issues--e.g. Desktop may be located inside of OneDrive--see me in person and we'll make it work)</summary>
 
@@ -64,6 +64,7 @@
 - **open file explorer:** start .
 - **show hidden files:** press `⊞ Win`; type Show hidden files; File Explorer Options -> Show hidden files... (also a good time to make sure Hide extensions for known file types is unchecked)
 </details>
+<hr>
 <details>
   <summary>🐧 on a linux machine in the Ward Lab (TBL 301; has NUC's) or Unix Lab (TCL 312; computers with blue dots have GPU's)</summary>
  
