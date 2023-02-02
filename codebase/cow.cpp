@@ -712,7 +712,9 @@ void _window_init() {
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     #endif
 
-    // glfwWindowHint(GLFW_SAMPLES, 4); // multisampling
+    #ifdef JIM_MULTISAMPLING
+    glfwWindowHint(GLFW_SAMPLES, 4);
+    #endif
 
     // glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
@@ -1461,6 +1463,7 @@ void _soup_init() {
     glGenBuffers(_COUNT_OF(COW0._soup_EBO), COW0._soup_EBO);
 }
 
+vec3 FORNOW_DONT_PUSH_THIS_CRAP;
 void _soup_draw(
         real *PVM,
         int primitive,
@@ -1514,9 +1517,12 @@ void _soup_draw(
 
                 primitive = SOUP_LINES;
                 vertex_colors = NULL;
-                r_if_vertex_colors_is_NULL = LERP(0.4, 1.0, r_if_vertex_colors_is_NULL);
-                g_if_vertex_colors_is_NULL = LERP(0.4, 1.0, g_if_vertex_colors_is_NULL);
-                b_if_vertex_colors_is_NULL = LERP(0.4, 1.0, b_if_vertex_colors_is_NULL);
+
+                // FORNOW
+    _vec3 blue   = { 102./255, 217./255, 239./255 }; /** blue */
+                r_if_vertex_colors_is_NULL = FORNOW_DONT_PUSH_THIS_CRAP[0],
+                g_if_vertex_colors_is_NULL = FORNOW_DONT_PUSH_THIS_CRAP[1],
+                b_if_vertex_colors_is_NULL = FORNOW_DONT_PUSH_THIS_CRAP[2],
                 a_if_vertex_colors_is_NULL = 1.0;
             }
         }
@@ -2739,20 +2745,20 @@ mat4 camera_get_PV(Camera3D *camera) {
 // #include "color.cpp"/////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef SNAIL_CPP
 struct {
-    vec3 red    = { 249./255,  38./255, 114./255 }; /** red */
-    vec3 orange = { 253./255, 151./255,  31./255 }; /** orange */
-    vec3 yellow = { 255./255, 255./255,  50./255 }; /** not the actual monokai yellow cause i don't like it */
-    vec3 green  = { 166./255, 226./255,  46./255 }; /** green */
-    vec3 blue   = { 102./255, 217./255, 239./255 }; /** blue */
-    vec3 purple = { 174./255, 129./255, 255./255 }; /** purple */
-    vec3 white  = { 255./255, 255./255, 255./255 }; /** full white */
-    vec3 gray   = { 127./255, 127./255, 127./255 }; /** 50% gray */
-    vec3 black  = {   0./255,   0./255,   0./255 }; /** full black */
-    vec3 brown  = { 123./255,  63./255,   0./255 }; /** monokai doesn't actually define a brown so i made this one up */
+    _vec3 red    = { 249./255,  38./255, 114./255 }; /** red */
+    _vec3 orange = { 253./255, 151./255,  31./255 }; /** orange */
+    _vec3 yellow = { 255./255, 255./255,  50./255 }; /** not the actual monokai yellow cause i don't like it */
+    _vec3 green  = { 166./255, 226./255,  46./255 }; /** green */
+    _vec3 blue   = { 102./255, 217./255, 239./255 }; /** blue */
+    _vec3 purple = { 174./255, 129./255, 255./255 }; /** purple */
+    _vec3 white  = { 255./255, 255./255, 255./255 }; /** full white */
+    _vec3 gray   = { 127./255, 127./255, 127./255 }; /** 50% gray */
+    _vec3 black  = {   0./255,   0./255,   0./255 }; /** full black */
+    _vec3 brown  = { 123./255,  63./255,   0./255 }; /** monokai doesn't actually define a brown so i made this one up */
 } monokai;
 
+#ifdef SNAIL_CPP
 vec3 color_kelly(int i) {
     static vec3 _kelly_colors[]={{255./255,179./255,0./255},{128./255,62./255,117./255},{255./255,104./255,0./255},{166./255,189./255,215./255},{193./255,0./255,32./255},{206./255,162./255,98./255},{129./255,112./255,102./255},{0./255,125./255,52./255},{246./255,118./255,142./255},{0./255,83./255,138./255},{255./255,122./255,92./255},{83./255,55./255,122./255},{255./255,142./255,0./255},{179./255,40./255,81./255},{244./255,200./255,0./255},{127./255,24./255,13./255},{147./255,170./255,0./255},{89./255,51./255,21./255},{241./255,58./255,19./255},{35./255,44./255,22./255}};
     return _kelly_colors[MODULO(i, _COUNT_OF(_kelly_colors))];
