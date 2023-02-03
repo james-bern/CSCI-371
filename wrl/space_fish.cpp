@@ -22,6 +22,30 @@ void app_space_fish_2D() {
     vec2 s_dragger = { 50.0, 100.0 };
     vec2 s_target;
 
+    // ik is always fun
+    // maybe the animator is specifying target behaviors
+    // - a chance to work with someone in dance could be fun
+    // - lion tamer?
+    // - bullfight
+
+    // i think we actually do want a simulation
+    // funny
+
+    // well let's just model it as a mass spring system
+    // do we end up back at impedance control?
+
+    // what can we do without a simulation?
+
+    // what assumptions can we make?
+    // - human is infinitely stiff and strong
+
+    // taking a step back questions
+    // - do we want/need the silicone plate?
+    // - if not, then the human can touch the fish any time any where
+    // - - this seems like a very different (albeit interesting) problem
+    // - - also not a fish
+
+
     Camera2D camera = { 250.0 };
     double timestep = .0167;
     double time = -timestep;

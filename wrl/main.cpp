@@ -1,9 +1,8 @@
-// #define COW_NO_SOUND
 #define JIM_IS_JIM
-#include "include.cpp"
+#include "../include.cpp"
 
-#include "wrl/space_fish.cpp"
-#include "wrl/interval_timer.cpp"
+#include "space_fish.cpp"
+#include "interval_timer.cpp"
 
 
 int main() {
