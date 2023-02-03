@@ -1463,7 +1463,6 @@ void _soup_init() {
     glGenBuffers(_COUNT_OF(COW0._soup_EBO), COW0._soup_EBO);
 }
 
-vec3 FORNOW_DONT_PUSH_THIS_CRAP;
 void _soup_draw(
         real *PVM,
         int primitive,
@@ -1519,10 +1518,9 @@ void _soup_draw(
                 vertex_colors = NULL;
 
                 // FORNOW
-    _vec3 blue   = { 102./255, 217./255, 239./255 }; /** blue */
-                r_if_vertex_colors_is_NULL = FORNOW_DONT_PUSH_THIS_CRAP[0],
-                g_if_vertex_colors_is_NULL = FORNOW_DONT_PUSH_THIS_CRAP[1],
-                b_if_vertex_colors_is_NULL = FORNOW_DONT_PUSH_THIS_CRAP[2],
+                r_if_vertex_colors_is_NULL = 1.0,
+                g_if_vertex_colors_is_NULL = 1.0,
+                b_if_vertex_colors_is_NULL = 1.0,
                 a_if_vertex_colors_is_NULL = 1.0;
             }
         }
