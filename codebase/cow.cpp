@@ -3406,19 +3406,20 @@ void _recorder_begin_frame() { // record
     }
     if (COW0._recorder_recording) { // save frame
         { // draw mouse
+            double f = config.tweaks_scale_factor_for_everything_involving_pixels_ie_gui_text_soup_NOTE_this_will_init_to_2_on_macbook_retina;
             eso_color(1.0, 1.0, 1.0, 1.0);
             _eso_begin((real *) &globals.NDC_from_Screen, SOUP_TRIANGLE_FAN, 10.0, false, true);
-            eso_vertex(globals.mouse_position_Screen[0] +  0, globals.mouse_position_Screen[1] +  0);
-            eso_vertex(globals.mouse_position_Screen[0] +  0, globals.mouse_position_Screen[1] + 14);
-            eso_vertex(globals.mouse_position_Screen[0] +  4, globals.mouse_position_Screen[1] + 11);
-            eso_vertex(globals.mouse_position_Screen[0] +  6, globals.mouse_position_Screen[1] + 11);
-            eso_vertex(globals.mouse_position_Screen[0] + 12, globals.mouse_position_Screen[1] + 11);
+            eso_vertex(globals.mouse_position_Screen[0] + f *  0, globals.mouse_position_Screen[1] + f *  0);
+            eso_vertex(globals.mouse_position_Screen[0] + f *  0, globals.mouse_position_Screen[1] + f * 14);
+            eso_vertex(globals.mouse_position_Screen[0] + f *  4, globals.mouse_position_Screen[1] + f * 11);
+            eso_vertex(globals.mouse_position_Screen[0] + f *  6, globals.mouse_position_Screen[1] + f * 11);
+            eso_vertex(globals.mouse_position_Screen[0] + f * 12, globals.mouse_position_Screen[1] + f * 11);
             eso_end();
             _eso_begin((real *) &globals.NDC_from_Screen, SOUP_QUADS, 10.0, false, true);
-            eso_vertex(globals.mouse_position_Screen[0] +  4, globals.mouse_position_Screen[1] + 11);
-            eso_vertex(globals.mouse_position_Screen[0] +  6, globals.mouse_position_Screen[1] + 11);
-            eso_vertex(globals.mouse_position_Screen[0] +  9, globals.mouse_position_Screen[1] + 17);
-            eso_vertex(globals.mouse_position_Screen[0] +  7, globals.mouse_position_Screen[1] + 17);
+            eso_vertex(globals.mouse_position_Screen[0] +  f * 4, globals.mouse_position_Screen[1] + f * 11);
+            eso_vertex(globals.mouse_position_Screen[0] +  f * 6, globals.mouse_position_Screen[1] + f * 11);
+            eso_vertex(globals.mouse_position_Screen[0] +  f * 9, globals.mouse_position_Screen[1] + f * 17);
+            eso_vertex(globals.mouse_position_Screen[0] +  f * 7, globals.mouse_position_Screen[1] + f * 17);
             eso_end();
         }
 
