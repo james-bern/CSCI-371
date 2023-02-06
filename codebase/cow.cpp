@@ -3321,7 +3321,7 @@ void sound_loop_music(char *filename) {
     _sound_loop_music(_sound_find_load(filename));
 }
 
-#define sound_stop_all() do {cs_stop_all_playing_sounds sound_stop_all(); } while (0)
+#define sound_stop_all() do { cs_stop_all_playing_sounds(); } while (0)
 
 #endif
 
