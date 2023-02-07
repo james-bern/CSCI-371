@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef COW_CPP
+#define ASSERT(b) do { if (!(b)) { \
+    *((volatile int *) 0) = 0; \
+} } while (0)
+#define _COUNT_OF(fixed_size_array) ((sizeof(fixed_size_array)/sizeof(0[fixed_size_array])) / ((size_t)(!(sizeof(fixed_size_array) % sizeof(0[fixed_size_array])))))
+#endif
+
 // msvc details switches /Bt /d2cgsummary 
 
 #define MID(a, b, c) MAX(MIN((a), (b)), MIN(MAX((a), (b)), (c)))
