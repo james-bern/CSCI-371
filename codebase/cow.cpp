@@ -3116,7 +3116,8 @@ Soup3D _meshutil_soup_TRIANGLES_load(char *filename, bool transform_vertex_posit
 ////////////////////////////////////////////////////////////////////////////////
 
 real random_real(real lower_bound, real upper_bound) {
-    return LERP(real(rand()) / RAND_MAX, lower_bound, upper_bound);
+    real t = real(rand()) / RAND_MAX;
+    return LERP(t, lower_bound, upper_bound);
 }
 
 int random_sign() {
