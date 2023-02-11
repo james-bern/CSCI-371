@@ -476,7 +476,8 @@ C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
 #define IS_POSITIVE(a) ((a) > TINY_VAL)
 #define IS_NEGATIVE(a) ((a) < -TINY_VAL)
 
-#define LERP(t, a, b) ((1.0 - (t)) * (a) + (t) * (b)) // works on vecX, matX
+// TODO: rewrite as functions
+#define LERP(t, a, b) ((a) + (t) * ((b) - (a))) // works on vecX, matX
 #define INVERSE_LERP(p, a, b) (((p) - (a)) / real((b) - (a)))
 #define LINEAR_REMAP(p, a, b, c, d) LERP(INVERSE_LERP(p, a, b), c, d)
 #define BUCKET(p, a, b, n) LERP(round(INVERSE_LERP(p, a, b) * (n)) / (n), a, b)
