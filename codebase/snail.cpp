@@ -196,6 +196,10 @@ Mat<2> M2(real a0, real a1, real a2, real a3) { Mat<2> ret = { a0, a1, a2, a3 };
 Mat<3> M3(real a0, real a1, real a2, real a3, real a4, real a5, real a6, real a7, real a8) { Mat<3> ret = { a0, a1, a2, a3, a4, a5, a6, a7, a8 }; return ret; }
 Mat<4> M4(real a0, real a1, real a2, real a3, real a4, real a5, real a6, real a7, real a8, real a9, real a10, real a11, real a12, real a13, real a14, real a15) { Mat<4> ret = { a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15 }; return ret; }
 
+Mat<2> hstack(Vec<2> col0, Vec<2> col1) { return M2(col0.x, col1.x, col0.y, col1.y); }
+Mat<3> hstack(Vec<3> col0, Vec<3> col1, Vec<3> col2) { return M3(col0.x, col1.x, col2.x, col0.y, col1.y, col2.y, col0.z, col1.z, col2.z); }
+Mat<4> hstack(Vec<4> col0, Vec<4> col1, Vec<4> col2, Vec<4> col3) { return M4(col0.x, col1.x, col2.x, col3.x, col0.y, col1.y, col2.y, col3.y, col0.z, col1.z, col2.z, col3.z, col0.w, col1.w, col2.w, col3.w); }
+
 // short names /////////////////////////////////////////////////////////////////
 
 // typedef Vec<2> vec2;
