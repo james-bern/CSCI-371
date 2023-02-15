@@ -1,3 +1,4 @@
+#define COW_NO_STYLE_GUIDE
 #include "include.cpp"
 
 int main() {
