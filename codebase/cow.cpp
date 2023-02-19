@@ -456,6 +456,7 @@ C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
 
 // // working with real's
 #define PI 3.14159265359
+#define TAU (2 * PI)
 #define TINY_VAL 1e-7
 #undef HUGE_VAL
 #define HUGE_VAL 1e7
