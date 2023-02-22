@@ -3937,10 +3937,13 @@ void eg_kitchen_sink() {
             mat4 M_smooth = M4_Translation(0.0, 0.0, 0.0) * R;
             mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(0, 0, 300, 300);
             vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? color_kelly(kelly_i) : monokai.white;
             library.soups.bunny.draw(PV * M_wire, color);
             library.meshes.bunny.draw(P, V, M_smooth, color);
             if (0) { library.meshes.bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png"); }
+            glDisable(GL_SCISSOR_TEST);
 
             gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
             if (draw_axes) {
