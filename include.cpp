@@ -22,6 +22,7 @@ typedef double real;
 #include <cstring>
 #include <cmath>
 
+/*
 // (very) optional style guide; feel free to delete entirely
 // however, if you're newer to C/C++ then this guide may help reduce bugs
 #if !defined(JIM_IS_JIM) && !defined(COW_NO_STYLE_GUIDE)
@@ -36,3 +37,4 @@ typedef double real;
 #define weak_ptr   error__cow_style__prefer_raw_pointer
 #define shared_ptr error__cow_style__prefer_raw_pointer
 #endif
+*/
