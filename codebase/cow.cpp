@@ -1,10 +1,14 @@
 #ifndef COW_CPP
 #define COW_CPP
 
+#include <iostream>
+
 ////////////////////////////////////////////////////////////////////////////////
 // #include "cow.h"/////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// 02/23/2023 - COW_PATCH_FRAMERATE
+// 02/23/2023 - COW_PATCH_FRAMERATE_SLEEP
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
 #define COW_OS_UBUNTU
@@ -55,6 +59,10 @@
 #include <time.h>
 #include <chrono>
 #include <utility>
+
+#ifdef COW_PATCH_FRAMERATE
+#include <thread>
+#endif
 
 #define COW_MOUSE_OWNER_NONE 0
 #define COW_MOUSE_OWNER_GUI 1
@@ -351,6 +359,8 @@ struct CX_INTERNAL_CONSTANTS {
 };
 
 struct C0_PersistsAcrossApps_NeverAutomaticallyClearedToZero__ManageItYourself {
+
+
     bool _app__completedFirstPass_helper;
     bool _app_completedFirstPass;
     bool _app_menu;
@@ -360,6 +370,7 @@ struct C0_PersistsAcrossApps_NeverAutomaticallyClearedToZero__ManageItYourself {
     char _app_buffer[64];
 
     bool _cow_initialized;
+    bool _cow_framerate_uncapped;
 
     real *_eso_vertex_positions;
     real *_eso_vertex_colors;
@@ -753,6 +764,9 @@ void _window_init() {
     glDisable(GL_CULL_FACE);   // fornow
 
     glfwSwapInterval(1);
+    #ifdef COW_PATCH_FRAMERATE
+    glfwSwapInterval(0);
+    #endif
 
     _callback_set_callbacks();
 
@@ -1521,9 +1535,9 @@ void _soup_draw(
 
                 // FORNOW
                 r_if_vertex_colors_is_NULL = 1.0,
-                g_if_vertex_colors_is_NULL = 1.0,
-                b_if_vertex_colors_is_NULL = 1.0,
-                a_if_vertex_colors_is_NULL = 1.0;
+                                           g_if_vertex_colors_is_NULL = 1.0,
+                                           b_if_vertex_colors_is_NULL = 1.0,
+                                           a_if_vertex_colors_is_NULL = 1.0;
             }
         }
 
@@ -3643,108 +3657,127 @@ void _cow_reset() {
 bool cow_begin_frame() {
     ASSERT(COW0._cow_initialized);
 
-    _window_get_NDC_from_Screen((real *) &globals.NDC_from_Screen);
-    memcpy((real *) &globals._gui_NDC_from_Screen, (real *) &globals.NDC_from_Screen, 16 * sizeof(real));
-    if (config.tweaks_scale_factor_for_everything_involving_pixels_ie_gui_text_soup_NOTE_this_will_init_to_2_on_macbook_retina != 1) {
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                _LINALG_4X4(((real *) &globals._gui_NDC_from_Screen), i, j) *= config.tweaks_scale_factor_for_everything_involving_pixels_ie_gui_text_soup_NOTE_this_will_init_to_2_on_macbook_retina;
+    { // cow
+        _window_get_NDC_from_Screen((real *) &globals.NDC_from_Screen);
+        { // _gui_NDC_from_Screen
+            memcpy((real *) &globals._gui_NDC_from_Screen, (real *) &globals.NDC_from_Screen, 16 * sizeof(real));
+            if (config.tweaks_scale_factor_for_everything_involving_pixels_ie_gui_text_soup_NOTE_this_will_init_to_2_on_macbook_retina != 1) {
+                for (int i = 0; i < 3; ++i) {
+                    for (int j = 0; j < 3; ++j) {
+                        _LINALG_4X4(((real *) &globals._gui_NDC_from_Screen), i, j) *= config.tweaks_scale_factor_for_everything_involving_pixels_ie_gui_text_soup_NOTE_this_will_init_to_2_on_macbook_retina;
+                    }
+                }
             }
         }
-    }
 
-
-    { // _cow_help_toggle overlay
-        static bool push_gui_hide_and_disable;
-        if (globals.key_shift_held && globals.key_pressed['/']) {
-            COW1._cow_help_toggle = !COW1._cow_help_toggle;
+        { // _cow_help_toggle overlay
+            static bool push_gui_hide_and_disable;
+            if (globals.key_shift_held && globals.key_pressed['/']) {
+                COW1._cow_help_toggle = !COW1._cow_help_toggle;
+                if (COW1._cow_help_toggle) {
+                    push_gui_hide_and_disable = COW1._gui_hide_and_disable;
+                }
+                if (!COW1._cow_help_toggle) {
+                    COW1._gui_hide_and_disable = push_gui_hide_and_disable;
+                }
+            }
             if (COW1._cow_help_toggle) {
-                push_gui_hide_and_disable = COW1._gui_hide_and_disable;
-            }
-            if (!COW1._cow_help_toggle) {
-                COW1._gui_hide_and_disable = push_gui_hide_and_disable;
+                real box[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
+                _soup_draw((real *) &globals.Identity, SOUP_QUADS, 2, 4, 4, box, NULL,
+                        COW1._window_clear_color[0],
+                        COW1._window_clear_color[1],
+                        COW1._window_clear_color[2],
+                        0.8, 0, false, true);
+                COW1._gui_hide_and_disable = false; {
+                    _gui_begin_frame();
+                    gui_printf("config.hotkeys_*");
+                    if (config.hotkeys_app_next) { gui_printf("next app (wraps around) `%s", _gui_hotkey2string(config.hotkeys_app_next)); }
+                    if (config.hotkeys_app_prev) { gui_printf("previous app (wraps around) `%s", _gui_hotkey2string(config.hotkeys_app_prev)); }
+                    if (config.hotkeys_app_quit) {
+                        gui_printf("quit (next app no wrap) `%s", _gui_hotkey2string(config.hotkeys_app_quit));
+                        gui_printf("quit all `SHIFT + %s", _gui_hotkey2string(config.hotkeys_app_quit));
+                    }
+                    if (config.hotkeys_app_menu) {
+                        gui_printf("exit to main menu `%s", _gui_hotkey2string(config.hotkeys_app_menu));
+                    }
+                    gui_printf("display fps counter` \\");
+                    gui_printf("uncap fps `/");
+                    if (config.hotkeys_gui_hide) {
+                        gui_printf("(un)hide gui `%s", _gui_hotkey2string(config.hotkeys_gui_hide));
+                    }
+                    gui_printf("(un)hide help `?");
+                    gui_printf("start/stop recording (note: no sound) `~");
+                    gui_printf("");
+                    gui_printf("config.tweaks_*");
+                    gui_checkbox("soup_draw_with_rounded_corners_for_all_line_primitives", &config.tweaks_soup_draw_with_rounded_corners_for_all_line_primitives);
+                    gui_slider("size_in_pixels_soup_draw_defaults_to_if_you_pass_0_for_size_in_pixels", &config.tweaks_size_in_pixels_soup_draw_defaults_to_if_you_pass_0_for_size_in_pixels, 2.0, 32.0, false);
+                    gui_checkbox("ASSERT_crashes_the_program_without_you_having_to_press_Enter", &config.tweaks_ASSERT_crashes_the_program_without_you_having_to_press_Enter);
+                    gui_checkbox("record_raw_then_encode_everything_WARNING_USES_A_LOT_OF_DISK_SPACE", &config.tweaks_record_raw_then_encode_everything_WARNING_USES_A_LOT_OF_DISK_SPACE);
+                } COW1._gui_hide_and_disable = true;
             }
         }
-        // TODO better hiding
-        if (COW1._cow_help_toggle) {
-            real box[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
-            _soup_draw((real *) &globals.Identity, SOUP_QUADS, 2, 4, 4, box, NULL,
-                    COW1._window_clear_color[0],
-                    COW1._window_clear_color[1],
-                    COW1._window_clear_color[2],
-                    0.8, 0, false, true);
-            COW1._gui_hide_and_disable = false; {
-                _gui_begin_frame();
-                gui_printf("config.hotkeys_*");
-                if (config.hotkeys_app_next) { gui_printf("next app (wraps around) `%s", _gui_hotkey2string(config.hotkeys_app_next)); }
-                if (config.hotkeys_app_prev) { gui_printf("previous app (wraps around) `%s", _gui_hotkey2string(config.hotkeys_app_prev)); }
-                if (config.hotkeys_app_quit) {
-                    gui_printf("quit (next app no wrap) `%s", _gui_hotkey2string(config.hotkeys_app_quit));
-                    gui_printf("quit all `SHIFT + %s", _gui_hotkey2string(config.hotkeys_app_quit));
+
+        { // framerate overlay
+            static int measured_fps;
+            // request uncapped framerate 
+            if (globals.key_pressed['/'] && !globals.key_shift_held) {
+                COW0._cow_framerate_uncapped = !COW0._cow_framerate_uncapped;
+                #ifndef COW_PATCH_FRAMERATE
+                glfwSwapInterval(!COW0._cow_framerate_uncapped);
+                #endif
+            }
+            { // display fps
+                static bool display_fps;
+                if (globals.key_pressed['\\']) {
+                    display_fps = !display_fps;
                 }
-                if (config.hotkeys_app_menu) {
-                    gui_printf("exit to main menu `%s", _gui_hotkey2string(config.hotkeys_app_menu));
+                if (display_fps) {
+                    static int fps;
+                    static long stamp = util_timestamp_in_milliseconds();
+                    if (util_timestamp_in_milliseconds() - stamp > 166) {
+                        stamp = util_timestamp_in_milliseconds();
+                        fps = measured_fps;
+                        // printf("fps: %d\n", display_fps);
+                    }
+                    char text[16] = {};
+                    snprintf(text, sizeof(text), "fps: %d", fps);
+                    _text_draw((real *) &globals.NDC_from_Screen, text, 0.0, 0.0, 0.0, (fps < 45) ? 1.0 : 0.0, (fps > 30) ? 1.0 : 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, true);
                 }
-                gui_printf("display fps counter` \\");
-                gui_printf("uncap fps `/");
-                if (config.hotkeys_gui_hide) {
-                    gui_printf("(un)hide gui `%s", _gui_hotkey2string(config.hotkeys_gui_hide));
+            }
+            // grab and smooth fps
+            {
+                const int N_MOVING_WINDOW = 5;
+                static long prev_stamps[N_MOVING_WINDOW];
+                long stamp = util_timestamp_in_milliseconds();
+                measured_fps = (int) round(N_MOVING_WINDOW / (real(stamp - prev_stamps[N_MOVING_WINDOW - 1]) / 1000.));
+                for (int i = N_MOVING_WINDOW - 1; i >= 1; --i) {
+                    prev_stamps[i] = prev_stamps[i - 1];
                 }
-                gui_printf("(un)hide help `?");
-                gui_printf("start/stop recording (note: no sound) `~");
-                gui_printf("");
-                gui_printf("config.tweaks_*");
-                gui_checkbox("soup_draw_with_rounded_corners_for_all_line_primitives", &config.tweaks_soup_draw_with_rounded_corners_for_all_line_primitives);
-                gui_slider("size_in_pixels_soup_draw_defaults_to_if_you_pass_0_for_size_in_pixels", &config.tweaks_size_in_pixels_soup_draw_defaults_to_if_you_pass_0_for_size_in_pixels, 2.0, 32.0, false);
-                gui_checkbox("ASSERT_crashes_the_program_without_you_having_to_press_Enter", &config.tweaks_ASSERT_crashes_the_program_without_you_having_to_press_Enter);
-                gui_checkbox("record_raw_then_encode_everything_WARNING_USES_A_LOT_OF_DISK_SPACE", &config.tweaks_record_raw_then_encode_everything_WARNING_USES_A_LOT_OF_DISK_SPACE);
-            } COW1._gui_hide_and_disable = true;
+                prev_stamps[0] = stamp;
+            }
         }
     }
-
     _recorder_begin_frame();
     _window_begin_frame();
-    _input_begin_frame();
     _gui_begin_frame();
 
-    { // framerate overlay
-        static int measured_fps;
-        // request uncapped framerate 
-        if (globals.key_pressed['/'] && !globals.key_shift_held) {
-            static bool uncapped;
-            uncapped = !uncapped;
-            glfwSwapInterval(!uncapped);
-        }
-        { // display fps
-            static bool display_fps;
-            if (globals.key_pressed['\\']) {
-                display_fps = !display_fps;
+    #ifdef COW_PATCH_FRAMERATE
+    static auto timestamp = std::chrono::high_resolution_clock::now();
+    if (!COW0._cow_framerate_uncapped) {
+        while (true) {
+            auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - timestamp);
+            if (nanos.count() > 16666666) {
+                break;
             }
-            if (display_fps) {
-                static int fps;
-                static long stamp = util_timestamp_in_milliseconds();
-                if (util_timestamp_in_milliseconds() - stamp > 166) {
-                    stamp = util_timestamp_in_milliseconds();
-                    fps = measured_fps;
-                    // printf("fps: %d\n", display_fps);
-                }
-                char text[16] = {};
-                snprintf(text, sizeof(text), "fps: %d", fps);
-                _text_draw((real *) &globals.NDC_from_Screen, text, 0.0, 0.0, 0.0, (fps < 45) ? 1.0 : 0.0, (fps > 30) ? 1.0 : 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, true);
-            }
+            #ifdef COW_PATCH_FRAMERATE_SLEEP
+            std::this_thread::sleep_for(nanos);
+            #endif
         }
-        // grab and smooth fps
-        {
-            const int N_MOVING_WINDOW = 5;
-            static long prev_stamps[N_MOVING_WINDOW];
-            long stamp = util_timestamp_in_milliseconds();
-            measured_fps = (int) round(N_MOVING_WINDOW / (real(stamp - prev_stamps[N_MOVING_WINDOW - 1]) / 1000.));
-            for (int i = N_MOVING_WINDOW - 1; i >= 1; --i) {
-                prev_stamps[i] = prev_stamps[i - 1];
-            }
-            prev_stamps[0] = stamp;
-        }
+        timestamp = std::chrono::high_resolution_clock::now();
     }
+    #endif
+
+    _input_begin_frame();
 
     return !(
             glfwWindowShouldClose(COW0._window_glfw_window)
@@ -3937,13 +3970,10 @@ void eg_kitchen_sink() {
             mat4 M_smooth = M4_Translation(0.0, 0.0, 0.0) * R;
             mat4 M_matcap = M4_Translation( 2.2, 0.0, 0.0) * R;
 
-        glEnable(GL_SCISSOR_TEST);
-        glScissor(0, 0, 300, 300);
             vec3 color = !(globals.mouse_left_held && !globals._mouse_owner) ? color_kelly(kelly_i) : monokai.white;
             library.soups.bunny.draw(PV * M_wire, color);
             library.meshes.bunny.draw(P, V, M_smooth, color);
             if (0) { library.meshes.bunny.draw(P, globals.Identity, V * M_matcap, {}, "codebase/matcap.png"); }
-            glDisable(GL_SCISSOR_TEST);
 
             gui_checkbox("draw_axes", &draw_axes, COW_KEY_TAB);
             if (draw_axes) {
@@ -4004,7 +4034,7 @@ void eg_kitchen_sink() {
             eso_vertex(o + z);
             eso_end();
         }
-       if (0) {
+        if (0) {
             {
                 for (int i = 0; i < texture.height; ++i) {
                     real v = real(i) / (texture.height - 1);

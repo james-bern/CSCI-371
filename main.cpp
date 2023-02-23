@@ -1,4 +1,5 @@
-#define COW_NO_STYLE_GUIDE
+// #define COW_PATCH_FRAMERATE
+// #define COW_PATCH_FRAMERATE_SLEEP
 #include "include.cpp"
 
 int main() {
