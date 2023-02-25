@@ -58,7 +58,7 @@
 #include <chrono>
 #include <utility>
 
-#ifdef COW_PATCH_FRAMERATE
+#ifdef COW_PATCH_FRAMERATE_SLEEP
 #include <thread>
 #endif
 
