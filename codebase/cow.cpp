@@ -789,13 +789,6 @@ void _window_init() {
     window_set_decorated(true);
 }
 
-void _window_reset() {
-    // TODO clear the default window resetting stuff out
-    glfwSetInputMode(COW0._window_glfw_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    _window_clear_draw_buffer();
-    // glfwShowWindow(COW0._window_glfw_window); // only actually does anything on first reset
-}
-
 void _window_begin_frame() {
     _window_swap_draw_buffers();
     _window_clear_draw_buffer();
@@ -841,6 +834,26 @@ void window_set_clear_color(vec3 rgb, real a = 1.0) {
     COW1._window_clear_color[2] = rgb[2];
     COW1._window_clear_color[3] = a;
 }
+
+bool window_is_pointer_locked() {
+    return glfwGetInputMode(COW0._window_glfw_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+}
+
+void window_pointer_lock() {
+    glfwSetInputMode(COW0._window_glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+void window_pointer_unlock() {
+    glfwSetInputMode(COW0._window_glfw_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+void _window_reset() {
+    // TODO clear the default window resetting stuff out
+    window_pointer_unlock();
+    _window_clear_draw_buffer();
+    // glfwShowWindow(COW0._window_glfw_window); // only actually does anything on first reset
+}
+
 
 #endif
 
