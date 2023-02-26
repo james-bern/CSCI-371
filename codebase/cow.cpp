@@ -2015,6 +2015,20 @@ void gui_readout(char *name, real *variable) {
     gui_printf("%s%s%.4lf", name, join, *variable);
 }
 
+#ifdef SNAIL_CPP
+void gui_readout(char *name, vec2 *variable) {
+    if (!name) name = "";
+    char *join = (char *)((name) ? " " : "");
+    gui_printf("%s%s(%.4lf, %.4lf)", name, join, variable->x, variable->y);
+}
+
+void gui_readout(char *name, vec3 *variable) {
+    if (!name) name = "";
+    char *join = (char *)((name) ? " " : "");
+    gui_printf("%s%s(%.1lf, %.1lf, %.1lf)", name, join, variable->x, variable->y, variable->z);
+}
+#endif
+
 char *_gui_hotkey2string(int hotkey) {
     if (hotkey == COW_KEY_TAB) {
         return "TAB";
