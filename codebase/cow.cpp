@@ -2051,6 +2051,8 @@ char *_gui_hotkey2string(int hotkey) {
     return dummy + 2 * hotkey;
 }
 
+// todo port button and checkbox over to gui_slider method
+
 bool gui_button(char *name, int hotkey = '\0') {
     if (COW1._gui_hide_and_disable) { return false; }
     real s_mouse[2];
@@ -2161,7 +2163,7 @@ void _gui_slider(char *text, void *variable__for_ID_must_persist, real *_variabl
             globals._mouse_owner = COW_MOUSE_OWNER_GUI;
         }
         if (COW1._gui_hot == variable__for_ID_must_persist && !is_near) {
-            COW1._gui_hot = 0;
+            COW1._gui_hot = NULL;
             if (COW1._gui_selected != variable__for_ID_must_persist) globals._mouse_owner = COW_MOUSE_OWNER_NONE;
         }
     }
