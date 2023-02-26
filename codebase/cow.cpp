@@ -2076,14 +2076,25 @@ bool gui_button(char *name, int hotkey = '\0') {
         COW1._gui_x_curr    , COW1._gui_y_curr + H,
     };
 
-    bool hot = IS_BETWEEN(s_mouse[0], box[0], box[2]) && IS_BETWEEN(s_mouse[1], box[1], box[5]);
-
-    if (!COW1._gui_selected && ((hot && globals.mouse_left_pressed) || globals.key_pressed[hotkey])) {
+    if (globals._mouse_owner == COW_MOUSE_OWNER_NONE || globals._mouse_owner == COW_MOUSE_OWNER_GUI) {
+        bool is_near = IS_BETWEEN(s_mouse[0], box[0], box[2]) && IS_BETWEEN(s_mouse[1], box[1], box[5]);
+        if (is_near) {
+            COW1._gui_hot = name;
+            globals._mouse_owner = COW_MOUSE_OWNER_GUI;
+        }
+        if (COW1._gui_hot == name && !is_near) {
+            COW1._gui_hot = NULL;
+            if (COW1._gui_selected != name) { globals._mouse_owner = COW_MOUSE_OWNER_NONE; }
+        }
+    }
+    if (!COW1._gui_selected && (((COW1._gui_hot == name) && globals.mouse_left_pressed) || globals.key_pressed[hotkey])) {
+        globals._mouse_owner = COW_MOUSE_OWNER_GUI;
         COW1._gui_selected = name;
     }
     if (COW1._gui_selected == name) {
         if (globals.mouse_left_released || globals.key_released[hotkey]) {
-            COW1._gui_selected = NULL;
+            if (COW1._gui_hot != name) { globals._mouse_owner = COW_MOUSE_OWNER_NONE; }
+            COW1._gui_selected = 0;
         }
     }
 
@@ -2091,7 +2102,7 @@ bool gui_button(char *name, int hotkey = '\0') {
     if (COW1._gui_selected != name) {
         real nudge = SGN(.5 - r) * .1;
         r += nudge; 
-        if (hot || globals.key_held[hotkey]) r += nudge; 
+        if ((COW1._gui_hot == name) || globals.key_held[hotkey]) r += nudge; 
     }
     {
         _soup_draw((real *) &globals._gui_NDC_from_Screen, SOUP_QUADS, _SOUP_XY, _SOUP_RGB, 4, box, NULL, r, r, r, 1, 0, false, true);
@@ -2205,7 +2216,7 @@ void gui_slider(
         if (!decrement_hotkey && !increment_hotkey) {
             snprintf(text, sizeof(text), "%s %d", name, *variable);
         } else {
-            snprintf(text, sizeof(text), "%s %d `%s %s", name, *variable, decrement_hotkey ? _gui_hotkey2string(decrement_hotkey) : "~", increment_hotkey ? _gui_hotkey2string(increment_hotkey) : "~");
+            snprintf(text, sizeof(text), "%s %d `%s %s", name, *variable, decrement_hotkey ? _gui_hotkey2string(decrement_hotkey) : "", increment_hotkey ? _gui_hotkey2string(increment_hotkey) : "");
         }
     }
     _gui_slider(text, variable, &tmp, lower_bound, upper_bound);
