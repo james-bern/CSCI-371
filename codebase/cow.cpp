@@ -2051,8 +2051,6 @@ char *_gui_hotkey2string(int hotkey) {
     return dummy + 2 * hotkey;
 }
 
-// todo port button and checkbox over to gui_slider method
-
 bool gui_button(char *name, int hotkey = '\0') {
     if (COW1._gui_hide_and_disable) { return false; }
     real s_mouse[2];
@@ -2128,14 +2126,26 @@ void gui_checkbox(char *name, bool *variable, int hotkey = '\0') {
         COW1._gui_x_curr + L, COW1._gui_y_curr + L,
         COW1._gui_x_curr    , COW1._gui_y_curr + L,
     };
-    bool hot = IS_BETWEEN(s_mouse[0], box[0], box[2]) && IS_BETWEEN(s_mouse[1], box[1], box[5]);
 
-    if ((hot && globals.mouse_left_pressed) || globals.key_pressed[hotkey]) {
+    if (globals._mouse_owner == COW_MOUSE_OWNER_NONE || globals._mouse_owner == COW_MOUSE_OWNER_GUI) {
+        bool is_near = IS_BETWEEN(s_mouse[0], box[0], box[2]) && IS_BETWEEN(s_mouse[1], box[1], box[5]);
+        if (is_near) {
+            COW1._gui_hot = variable;
+            globals._mouse_owner = COW_MOUSE_OWNER_GUI;
+        }
+        if (COW1._gui_hot == variable && !is_near) {
+            COW1._gui_hot = NULL;
+            if (COW1._gui_selected != variable) { globals._mouse_owner = COW_MOUSE_OWNER_NONE; }
+        }
+    }
+    if (!COW1._gui_selected && (((COW1._gui_hot == variable) && globals.mouse_left_pressed) || globals.key_pressed[hotkey])) {
+        globals._mouse_owner = COW_MOUSE_OWNER_GUI;
         *variable = !(*variable);
-        if (!COW1._gui_selected) COW1._gui_selected = variable;
+        COW1._gui_selected = variable;
     }
     if (COW1._gui_selected == variable) {
         if (globals.mouse_left_released || globals.key_released[hotkey]) {
+            if (COW1._gui_hot != variable) { globals._mouse_owner = COW_MOUSE_OWNER_NONE; }
             COW1._gui_selected = NULL;
         }
     }
@@ -2144,7 +2154,7 @@ void gui_checkbox(char *name, bool *variable, int hotkey = '\0') {
     if (COW1._gui_selected != variable) {
         real nudge = SGN(.5 - r) * .1;
         r += nudge; 
-        if (hot || globals.key_held[hotkey]) r += nudge; 
+        if ((COW1._gui_hot == variable) || globals.key_held[hotkey]) r += nudge; 
     }
     {
         _soup_draw((real *) &globals._gui_NDC_from_Screen, SOUP_QUADS, _SOUP_XY, _SOUP_RGB, 4, box, NULL, r, r, r, 1, 0, false, true);
