@@ -665,6 +665,7 @@ Mat<4> xyzo2mat4(vec3 x, vec3 y, vec3 z, vec3 o) {
         0, 0, 0, 1
     };
 }
+#define M4_xyzo xyzo2mat4
 template <int T> Vec<T> magClamped(Vec<T> a, real c) {
     double norm_a = norm(a);
     if (SNAIL_ABS(norm_a) < c) { return a; }
