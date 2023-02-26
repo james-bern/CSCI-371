@@ -2885,6 +2885,13 @@ struct Soup3D {
             real size_in_pixels,
             bool force_draw_on_top);
 
+    // fornow
+    void draw(
+            mat4 PVM,
+            vec4 color_if_vertex_colors_is_NULL,
+            real size_in_pixels,
+            bool force_draw_on_top);
+
     void _dump_for_library(char *filename, char *name);
 };
 
@@ -2912,6 +2919,22 @@ struct IndexedTriangleMesh3D {
 void Soup3D::draw(
         mat4 PVM,
         vec3 color_if_vertex_colors_is_NULL = { 1.0, 0.0, 1.0 },
+        real size_in_pixels = 0,
+        bool force_draw_on_top = false) {
+    soup_draw(
+            PVM,
+            primitive,
+            num_vertices,
+            vertex_positions,
+            vertex_colors,
+            color_if_vertex_colors_is_NULL,
+            size_in_pixels,
+            force_draw_on_top);
+}
+
+void Soup3D::draw(
+        mat4 PVM,
+        vec4 color_if_vertex_colors_is_NULL,
         real size_in_pixels = 0,
         bool force_draw_on_top = false) {
     soup_draw(
