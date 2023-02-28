@@ -252,10 +252,11 @@ void hw04a() {
                     vec2 grid = INDEX2GRID(camera_index);
                     vec2 sgn = 2 * grid - V2(1.0);
                     text_draw(globals.Identity,
-                            camera_index == ORBIT_CAMERA ? "orbit" :
-                            camera_index == HUMAN_CAMERA ? "human" :
-                            camera_index == TRACK_CAMERA ? "track" :
-                            "plane",
+                            (char *) (
+                                camera_index == ORBIT_CAMERA ? "orbit" :
+                                camera_index == HUMAN_CAMERA ? "human" :
+                                camera_index == TRACK_CAMERA ? "track" :
+                                "plane"),
                             V2(-.96, -.9) + grid,
                             color_kelly(camera_index), 24, {}, true);
 
