@@ -351,7 +351,7 @@ struct CX_INTERNAL_CONSTANTS {
                 rgb += .1 * specular;
                 rgb += .6 * (-.3 + 1.3 * fresnel);
             }
-            frag_color = vec4(rgb, a);
+            frag_color = vec4(rgb, 1);
         }
     )"";
 };
