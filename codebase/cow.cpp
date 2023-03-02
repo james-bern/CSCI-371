@@ -214,8 +214,7 @@ struct CX_INTERNAL_CONSTANTS {
         out vec4 frag_color;
 
         void main() {
-            frag_color.rgb = fs_in.color.rgb;
-            frag_color.a = 1.0;
+            frag_color = fs_in.color;
             if (length(fs_in.xy) > 1) { discard; }
         }
     )"";
