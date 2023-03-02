@@ -203,6 +203,7 @@ void hw04a() {
                 track = { V3(-50, 50, 50), &plane.origin, RAD(45) };
                 plane = { V3(0, 100, -500), M4_RotationAboutYAxis(RAD(180)), RAD(45) };
                 selected_camera = NO_ACTIVE_CAMERA;
+                window_pointer_unlock();
             }
         }
 

@@ -492,6 +492,7 @@ C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
 #define BUCKET(p, a, b, n) LERP(round(INVERSE_LERP(p, a, b) * (n)) / (n), a, b)
 #define CLAMP(t, a, b) MIN(MAX(t, a), b)
 #define CLAMPED_LERP(t, a, b) LERP(CLAMP(t, 0.0, 1.0), a, b)
+#define CLAMPED_INVERSE_LERP(p, a, b) CLAMP(INVERSE_LERP(p, a, b), 0.0, 1.0)
 #define CLAMPED_LINEAR_REMAP(p, a, b, c, d) CLAMPED_LERP(INVERSE_LERP(p, a, b), c, d)
 #define WRAP(t, a, b) ((a) + fmod((t) - (a), (b) - (a)))
 
