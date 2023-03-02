@@ -430,7 +430,7 @@ void hw04b() {
             { // bespoke widget to visualize the arcball
                 eso_begin(globals.Identity, SOUP_LINE_LOOP); { // ! we are supplying vertices _in NDC_ (how cool is that?)
                     eso_color(monokai.orange);
-                    for (double theta = 0; theta < 2 * PI - TINY_VAL; theta += (2 * PI) / 64) {
+                    for (double theta = 0; theta < TAU - TINY_VAL; theta += (TAU) / 64) {
                         eso_vertex(e_theta(theta));
                     }
                 } eso_end();
