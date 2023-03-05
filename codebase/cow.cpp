@@ -2372,6 +2372,19 @@ Texture texture_create(char *texture_name, int width, int height, int number_of_
     return texture;
 }
 
+Texture texture_load(char *texture_filename) {
+    ASSERT(texture_filename);
+    Texture texture = {};
+    texture.name = texture_filename;
+    texture.data = stbi_load(texture.name, &texture.width, &texture.height, &texture.number_of_channels, 0);
+    ASSERT(texture.data);
+    ASSERT(texture.width > 0);
+    ASSERT(texture.height > 0);
+    ASSERT(texture.number_of_channels == 3 || texture.number_of_channels == 4);
+    _mesh_texture_create(texture.name, texture.width, texture.height, texture.number_of_channels, texture.data);
+    return texture;
+}
+
 void texture_set_pixel(Texture *texture, int i, int j, real r, real g = 0.0, real b = 0.0, real a = 1.0) {
     #define REAL2U8(r) (u8(CLAMP(r, 0.0, 1.0) * 255.0))
     int pixel = i * texture->width + j;
