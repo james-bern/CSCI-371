@@ -23,6 +23,7 @@ void orbit_camera_move(OrbitCamera *orbit) {
         // TODO overwrite orbit->phi
         // NOTE make sure you clamp phi or it will be possible to "pass over the north or south poles"
 
+<<<<<<< HEAD
     }
 
     // TODO overwrite orbit->distance
@@ -384,6 +385,43 @@ void hw04a() {
 // the arcball /////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+=======
+}
+
+
+vec3 _example_vertex_positions[] = {
+    { cos(RAD(000)), sin(RAD(000)), -1.0 },
+    { cos(RAD(020)), sin(RAD(020)), -1.0 },
+    { cos(RAD(200)), sin(RAD(200)),  1.0 },
+    { cos(RAD(120)), sin(RAD(120)), -1.0 },
+    { cos(RAD(140)), sin(RAD(140)), -1.0 },
+    { cos(RAD(320)), sin(RAD(320)),  1.0 },
+    { cos(RAD(240)), sin(RAD(240)), -1.0 },
+    { cos(RAD(260)), sin(RAD(260)), -1.0 },
+    { cos(RAD(100)), sin(RAD(100)),  1.0 },
+};
+
+vec3 _example_vertex_colors[] = {
+    monokai.yellow,
+    monokai.yellow,
+    monokai.yellow,
+    monokai.purple,
+    monokai.purple,
+    monokai.purple,
+    monokai.brown,
+    monokai.brown,
+    monokai.brown,
+};
+
+int3 _example_triangle_indices[] = {
+    { 0, 1, 2 },
+    { 3, 4, 5 },
+    { 6, 7, 8 },
+};
+
+
+void hw5a() {
+>>>>>>> fc7c3cf (git_ultra.bat)
 
 void hw04b_compute_z(vec3 *v) {
     double sn_v = (squaredNorm(*v));
