@@ -16,73 +16,8 @@ void rasterize(
         real z_near,
         real z_far) {
 
-    // TODO clear the depth_buffer to 1.0 (max depth)
-    // TODO clear the color_buffer to whatever you like; i like rgb = V3(1.0), a = 0.5
-    int side_length_in_pixels = color_buffer->width;
-    for (int i = 0; i < side_length_in_pixels; ++i) {
-        for (int j = 0; j < side_length_in_pixels; ++j) {
-            texture_set_pixel(depth_buffer, i, j, 1.0);
-            texture_set_pixel(color_buffer, i, j, V3(1.0, 1.0, 1.0), .5);
-        }
-    }
-
-    // TODO: iterate over all triangles and rasterize
-    // TODO: if the mesh doesn't have vertex_colors specified
-    //       (i.e. if (mesh->vertex_colors == NULL) { ... })
-    //       please use (V3(.5) + .5 * vertex_normal) as the vertex color
-    for (int triangle_i = 0; triangle_i < mesh->num_triangles; ++triangle_i) {
-        vec3 a_world = transformPoint(M, mesh->vertex_positions[mesh->triangle_indices[triangle_i][0]]);
-        vec3 b_world = transformPoint(M, mesh->vertex_positions[mesh->triangle_indices[triangle_i][1]]);
-        vec3 c_world = transformPoint(M, mesh->vertex_positions[mesh->triangle_indices[triangle_i][2]]);
-        vec3 a_camera = transformPoint(V, a_world);
-        vec3 b_camera = transformPoint(V, b_world);
-        vec3 c_camera = transformPoint(V, c_world);
-        vec3 a_NDC = transformPoint(P, a_camera);
-        vec3 b_NDC = transformPoint(P, b_camera);
-        vec3 c_NDC = transformPoint(P, c_camera);
-        vec3 color_a, color_b, color_c;
-        if (mesh->vertex_colors != NULL) {
-            color_a = mesh->vertex_colors[mesh->triangle_indices[triangle_i][0]];
-            color_b = mesh->vertex_colors[mesh->triangle_indices[triangle_i][1]];
-            color_c = mesh->vertex_colors[mesh->triangle_indices[triangle_i][2]];
-        } else {
-            color_a = V3(.5) + .5 * mesh->vertex_normals[mesh->triangle_indices[triangle_i][0]];
-            color_b = V3(.5) + .5 * mesh->vertex_normals[mesh->triangle_indices[triangle_i][1]];
-            color_c = V3(.5) + .5 * mesh->vertex_normals[mesh->triangle_indices[triangle_i][2]];
-        }
-        mat3 S = {
-            a_NDC.x, b_NDC.x, c_NDC.x,
-            a_NDC.y, b_NDC.y, c_NDC.y,
-            1,   1,   1
-        };
-        for (int i = 0; i < side_length_in_pixels; ++i) {
-            real p_y_NDC = -1 + 2 * real(i) / (side_length_in_pixels - 1);
-            if (p_y_NDC > MAX(MAX(a_NDC.y, b_NDC.y), c_NDC.y)) { continue; }
-            if (p_y_NDC < MIN(MIN(a_NDC.y, b_NDC.y), c_NDC.y)) { continue; }
-            for (int j = 0; j < side_length_in_pixels; ++j) {
-                real p_x_NDC = -1 + 2 * real(j) / (side_length_in_pixels - 1);
-                vec3 p_NDC = { p_x_NDC, p_y_NDC, 1 };
-                if (p_x_NDC > MAX(MAX(a_NDC.x, b_NDC.x), c_NDC.x)) { continue; }
-                if (p_x_NDC < MIN(MIN(a_NDC.x, b_NDC.x), c_NDC.x)) { continue; }
-                vec3 weights_NDC = inverse(S) * p_NDC;
-                if (weights_NDC[0] > 0 && weights_NDC[1] > 0 && weights_NDC[2] > 0) {
-                    real z_camera = weights_NDC[0] * a_camera.z + weights_NDC[1] * b_camera.z + weights_NDC[2] * c_camera.z;
-                    // real z_camera = 1 / (weights_NDC[0] * (1 / a_camera.z) + weights_NDC[1] * (1 / b_camera.z) + weights_NDC[2] * (1 / c_camera.z));
-                    if (z_far < z_camera && z_camera < z_near) {
-                        real z = INVERSE_LERP(1 / z_camera, 1 / z_near, 1 / z_far);
-                        real curr; texture_get_pixel(depth_buffer, i, j, &curr);
-                        if (z < curr) {
-                            texture_set_pixel(depth_buffer, i, j, z);
-                            vec3 color = weights_NDC[0] * color_a + weights_NDC[1] * color_b + weights_NDC[2] * color_c;
-                            // vec3 color = (weights_NDC[0] * (color_a / a_camera.z) + weights_NDC[1] * (color_b / b_camera.z) + weights_NDC[2] * (color_c / c_camera.z)) / (1 / z_camera);
-                            texture_set_pixel(color_buffer, i, j, color, 1.0);
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
+
 
 vec3 _example_vertex_positions[] = {
     { cos(RAD(000)), sin(RAD(000)), -1.0 },
@@ -95,6 +30,7 @@ vec3 _example_vertex_positions[] = {
     { cos(RAD(260)), sin(RAD(260)), -1.0 },
     { cos(RAD(100)), sin(RAD(100)),  1.0 },
 };
+
 vec3 _example_vertex_colors[] = {
     monokai.yellow,
     monokai.yellow,
@@ -106,11 +42,13 @@ vec3 _example_vertex_colors[] = {
     monokai.brown,
     monokai.brown,
 };
+
 int3 _example_triangle_indices[] = {
     { 0, 1, 2 },
     { 3, 4, 5 },
     { 6, 7, 8 },
 };
+
 
 void hw5a() {
 
