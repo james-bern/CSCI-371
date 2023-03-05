@@ -350,7 +350,7 @@ struct CX_INTERNAL_CONSTANTS {
                 rgb += .1 * specular;
                 rgb += .6 * (-.3 + 1.3 * fresnel);
             }
-            frag_color = vec4(rgb, 1);
+            frag_color = vec4(rgb, a);
         }
     )"";
 };
@@ -2372,7 +2372,7 @@ Texture texture_create(char *texture_name, int width, int height, int number_of_
     return texture;
 }
 
-void texture_set_pixel(Texture *texture, int i, int j, real r, real g, real b, real a = 1.0) {
+void texture_set_pixel(Texture *texture, int i, int j, real r, real g = 0.0, real b = 0.0, real a = 1.0) {
     #define REAL2U8(r) (u8(CLAMP(r, 0.0, 1.0) * 255.0))
     int pixel = i * texture->width + j;
     texture->data[pixel * texture->number_of_channels + 0]  = REAL2U8(r);
