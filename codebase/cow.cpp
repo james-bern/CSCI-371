@@ -2386,6 +2386,28 @@ void texture_set_pixel(Texture *texture, int i, int j, real r, real g = 0.0, rea
     #undef REAL2U8
 }
 
+void texture_get_pixel(Texture *texture, int i, int j, real *r, real *g = NULL, real *b = NULL, real *a = NULL) {
+    ASSERT(r != NULL);
+    if (texture->number_of_channels > 1) {
+        ASSERT(g != NULL);
+        ASSERT(b != NULL);
+    } else if (texture->number_of_channels > 3) {
+        ASSERT(a != NULL);
+    }
+
+    #define U82REAL(r) ((r) / 255.0)
+    int pixel = i * texture->width + j;
+    *r = U82REAL(texture->data[pixel * texture->number_of_channels + 0]);
+    if (texture->number_of_channels > 1) {
+        *g = U82REAL(texture->data[pixel * texture->number_of_channels + 1]);
+        *b = U82REAL(texture->data[pixel * texture->number_of_channels + 2]);
+    }
+    if (texture->number_of_channels > 3) {
+        *a = U82REAL(texture->data[pixel * texture->number_of_channels + 3]);
+    }
+    #undef REAL2U8
+}
+
 #ifdef SNAIL_CPP
 void texture_set_pixel(Texture *texture, int i, int j, vec3 rgb, real a = 1.0) {
     texture_set_pixel(texture, i, j, rgb.x, rgb.y, rgb.z, a);
