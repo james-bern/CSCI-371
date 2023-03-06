@@ -105,6 +105,7 @@ void hw5a() {
 
         mat4 C_renderer = camera_get_C(&renderer);
         mat4 P_renderer = _window_get_P_perspective(renderer.angle_of_view, renderer_n, renderer_f, 1); // aspect <- 1
+        for (int c = 0; c < 4; ++c) { P_renderer(2, c) = 0; } // zero out z row (just for this hw)
         mat4 V_renderer = inverse(C_renderer);
         rasterize(P_renderer, V_renderer, M, mesh, &color_buffer, &depth_buffer, renderer_n, renderer_f);
         texture_sync_to_GPU(&color_buffer);
