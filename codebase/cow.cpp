@@ -1623,7 +1623,6 @@ void _soup_draw(
     _shader_set_uniform_mat4(shader_program_ID, "PVM", PVM);
     _shader_set_uniform_vec4(shader_program_ID, "color_if_vertex_colors_is_NULL", color_if_vertex_colors_is_NULL);
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     if (primitive != SOUP_QUADS && !mesh_special_case) {
         glDrawArrays(primitive, 0, num_vertices);
@@ -1696,7 +1695,6 @@ void _soup_draw(
         glDrawElements(primitive, num_vertices, GL_UNSIGNED_INT, NULL);
     }
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 #ifdef SNAIL_CPP
@@ -3764,6 +3762,7 @@ void _cow_reset() {
 bool cow_begin_frame() {
     ASSERT(COW0._cow_initialized);
 
+
     { // cow
         _window_get_NDC_from_Screen((real *) &globals.NDC_from_Screen);
         { // _gui_NDC_from_Screen
@@ -3867,6 +3866,16 @@ bool cow_begin_frame() {
     _recorder_begin_frame();
     _window_begin_frame();
     _gui_begin_frame();
+
+    #ifdef COW_SHENANIGANS
+    static bool _cow_shenanigans;
+    gui_checkbox("shenanigans!", &_cow_shenanigans);
+    if (!_cow_shenanigans) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    } else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+    #endif
 
     #ifdef COW_PATCH_FRAMERATE
     static auto timestamp = std::chrono::high_resolution_clock::now();
