@@ -112,37 +112,25 @@ void hw5a() {
         texture_sync_to_GPU(&depth_buffer);
 
         { // observe
+            static bool toggle;
             { // hold tab to check your work
-                char *name = "hold to toggle C_observer <- C_renderer";
-                static bool clicked;
-                bool clicked_this_frame;
-                bool released_this_frame = false;
-                {
-                    clicked_this_frame = gui_button(name, COW_KEY_TAB);
-                    if (clicked_this_frame) {
-                        clicked = true;
-                    }
-                    bool selected = (COW1._gui_selected == (void *) name);
-                    if (clicked && !selected) {
-                        clicked = false;
-                        released_this_frame = true;
-                    }
-                }
-                {
+                bool prev = toggle;
+                gui_checkbox("toggle camera", &toggle, COW_KEY_TAB);
+                if (prev != toggle) {
+                    _hide_camera_cube = !_hide_camera_cube;
                     static Camera3D safe;
-                    if (clicked_this_frame) {
+                    if (toggle) {
                         memcpy(&safe, &observer, sizeof(Camera3D));
                         memcpy(&observer, &renderer, sizeof(Camera3D));
-                        _hide_camera_cube = true;
-                    }
-                    if (released_this_frame) {
+                    } else {
                         memcpy(&observer, &safe, sizeof(Camera3D));
-                        _hide_camera_cube = false;
                     }
                 }
             }
 
-            camera_move(&observer);
+            if (!toggle) {
+                camera_move(&observer);
+            }
             mat4 P_observer = camera_get_P(&observer);
             mat4 V_observer = camera_get_V(&observer);
             mat4 PV_observer = P_observer * V_observer;
@@ -182,6 +170,7 @@ void hw5a() {
                 }
             }
         }
+
     }
 
 }
