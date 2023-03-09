@@ -3527,7 +3527,7 @@ void _recorder_begin_frame() { // record
         }
     }
     if (COW0._recorder_recording) { // save frame
-        { // draw mouse
+        if (!window_is_pointer_locked()) { // draw mouse draw cursor
             double f = config.tweaks_scale_factor_for_everything_involving_pixels_ie_gui_text_soup_NOTE_this_will_init_to_2_on_macbook_retina;
             eso_color(1.0, 1.0, 1.0, 1.0);
             _eso_begin((real *) &globals.NDC_from_Screen, SOUP_TRIANGLE_FAN, 10.0, false, true);
