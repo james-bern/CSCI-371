@@ -215,7 +215,7 @@ struct CX_INTERNAL_CONSTANTS {
 
         void main() {
             frag_color = fs_in.color;
-            if (length(fs_in.xy) > 1) { discard; }
+            // if (length(fs_in.xy) > 1) { discard; }
         }
     )"";
 
