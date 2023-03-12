@@ -1433,6 +1433,12 @@ template <typename T> void shader_set_uniform(Shader *shader, char *name, T valu
     glUseProgram(shader->_program_ID);
     _shader_set_uniform(shader->_program_ID, name, value);
 }
+template <typename T> void shader_set_uniform(Shader *shader, char *name, int count, T *value) {
+    ASSERT(shader);
+    ASSERT(name);
+    glUseProgram(shader->_program_ID);
+    _shader_set_uniform(shader->_program_ID, name, count, value);
+}
 template <int D> void shader_pass_vertex_attribute(Shader *shader, int num_vertices, Vec<D> *vertex_attribute) {
     ASSERT(shader);
     ASSERT(vertex_attribute);
@@ -3736,7 +3742,6 @@ void _cow_init() {
 
     setvbuf(stdout, NULL, _IONBF, 0); // don't buffer printf
 
-    srand(0);
     // srand((unsigned int) time(NULL));
 
 
@@ -3757,6 +3762,8 @@ void _cow_reset() {
 
     _sound_reset();
     _window_reset();
+
+    srand(0);
 }
 
 bool cow_begin_frame() {
