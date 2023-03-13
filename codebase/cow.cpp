@@ -1433,6 +1433,12 @@ template <typename T> void shader_set_uniform(Shader *shader, char *name, T valu
     glUseProgram(shader->_program_ID);
     _shader_set_uniform(shader->_program_ID, name, value);
 }
+template <typename T> void shader_set_uniform(Shader *shader, char *name, int count, T *value) {
+    ASSERT(shader);
+    ASSERT(name);
+    glUseProgram(shader->_program_ID);
+    _shader_set_uniform(shader->_program_ID, name, count, value);
+}
 template <int D> void shader_pass_vertex_attribute(Shader *shader, int num_vertices, Vec<D> *vertex_attribute) {
     ASSERT(shader);
     ASSERT(vertex_attribute);
@@ -3365,6 +3371,118 @@ void widget_line_editor(mat4 PV, int primitive, StretchyBuffer<vec2> *vertices, 
 }
 #endif
 
+#ifdef SNAIL_CPP
+void _line_line_closest_points(vec3 a1, vec3 a2, vec3 b1, vec3 b2, vec3 *out_a_star, vec3 *out_b_star) {
+    // http://www.geomalgorithms.com/algorithms.html#dist3D_Segment_to_Segment()
+    // https://stackoverflow.com/questions/66979936/closest-two-3d-point-between-two-line-segment-of-varied-magnitude-in-different-p
+    vec3 u = a2 - a1;
+    vec3 v = b2 - b1;
+    vec3 w = a1 - b1;
+    double a = dot(u, u);         // always >= 0
+    double b = dot(u, v);
+    double c = dot(v, v);         // always >= 0
+    double d = dot(u, w);
+    double e = dot(v, w);
+    double sc, sN, sD = a*c - b*b;  // sc = sN / sD, sD >= 0
+    double tc, tN, tD = a*c - b*b;  // tc = tN / tD, tD >= 0
+    double tol = 1e-15;
+    // compute the line parameters of the two closest points
+    if (sD < tol) {            // the lines are almost parallel
+        sN = 0.0;              // force using point a1 on segment AB
+        sD = 1.0;              // to prevent possible division by 0.0 later
+        tN = e;
+        tD = c;
+    }
+    else {                     // get the closest points on the infinite lines
+        sN = (b*e - c*d);
+        tN = (a*e - b*d);
+    }
+    // finally do the division to get sc and tc
+    sc = (fabs(sN) < tol ? 0.0 : sN / sD);
+    tc = (fabs(tN) < tol ? 0.0 : tN / tD);
+    if (out_a_star) *out_a_star = a1 + (sc * u);
+    if (out_b_star) *out_b_star = b1 + (tc * v);
+}
+
+void _widget_translate_3D(mat4 PV, int num_points, vec3 *vertex_positions, vec3 *vertex_colors = NULL) { // please ignore; this function is jank
+    if (globals._mouse_owner != COW_MOUSE_OWNER_NONE && globals._mouse_owner != COW_MOUSE_OWNER_WIDGET) return;
+    static vec3 *selected_point;
+    static vec3 *selected_handle;
+    double _L_handle_NDC = .07;
+    double tol = .02;
+
+    vec3 *hot = NULL; {
+        for (int i = 0; i < num_points; ++i) {
+            vec3 *point = vertex_positions + i;
+            vec3 tmp = transformPoint(PV, *point); 
+            tmp.z = 0;
+            if (norm(tmp - V3(globals.mouse_position_NDC, 0.0)) < tol) {
+                hot = point;
+            }
+        }
+    }
+
+    static bool STILL_HOLDING_MOUSE_AFTER_SELECTING_POINT;
+    if (!globals.mouse_left_held) STILL_HOLDING_MOUSE_AFTER_SELECTING_POINT = false;
+    if (hot && globals.mouse_left_pressed) {
+        STILL_HOLDING_MOUSE_AFTER_SELECTING_POINT = true;
+        selected_point = (selected_point != hot) ? hot : 0;
+    }
+
+    if (hot) {
+        soup_draw(PV, SOUP_POINTS, 1, hot, NULL, (vertex_colors != NULL) ? (vertex_colors[hot - vertex_positions]) : monokai.white, 20.0, false, true);
+    }
+
+    if (selected_point) {
+        double L_handle = norm(*selected_point - transformPoint(inverse(PV), transformPoint(PV, *selected_point) + V3(_L_handle_NDC, 0, 0)));
+
+        vec3 selected_color = (vertex_positions == NULL) ? monokai.white : vertex_colors[selected_point - vertex_positions];
+
+        vec3 *hot_handle = 0;
+        vec3 handles[3] = { *selected_point + V3(L_handle, 0, 0), *selected_point + V3(0, L_handle, 0), *selected_point + V3(0, 0, L_handle) };
+        vec3 handle_vertex_positions[] = { *selected_point, handles[0], *selected_point, handles[1], *selected_point, handles[2] };
+        soup_draw(PV, SOUP_LINES, 6, handle_vertex_positions, NULL, selected_color, 8.0);
+        if (!STILL_HOLDING_MOUSE_AFTER_SELECTING_POINT) {
+            for (int d = 0; d < 3; ++d) {
+                vec3 tmp = transformPoint(PV, handles[d]);
+                tmp.z = 0;
+                if (norm(tmp - V3(globals.mouse_position_NDC, 0.0)) < tol) {
+                    hot_handle = handles + d;
+                }
+            }
+        }
+        if (!selected_handle) {
+            if (hot_handle) {
+                soup_draw(PV, SOUP_POINTS, 1, hot_handle, NULL, selected_color, 16.0, false, true);
+                if (globals.mouse_left_pressed) {
+                    selected_handle = hot_handle;
+                }
+            }
+        } else {
+            soup_draw(PV, SOUP_POINTS, 1, selected_handle, NULL, selected_color, 20.0, false, true);
+        }
+        if (globals.mouse_left_held && selected_handle) {
+            mat4 World_from_NDC = inverse(PV);
+            vec3 s = transformPoint(World_from_NDC, V3(globals.mouse_position_NDC, -1.0));
+            vec3 t = transformPoint(World_from_NDC, V3(globals.mouse_position_NDC,  1.0));
+            vec3 new_handle_position;
+            _line_line_closest_points(*selected_point, *selected_handle, s, t, &new_handle_position, 0);
+            *selected_point += new_handle_position - *selected_handle;
+
+            {
+                vec3 tmp = 16 * normalized(new_handle_position - *selected_point);
+                vec3 tmp2[2] = { *selected_point - tmp, *selected_point + tmp };
+                soup_draw(PV, SOUP_LINES, 2, tmp2, NULL, selected_color, 3.0);
+            }
+            globals._mouse_owner = COW_MOUSE_OWNER_WIDGET;
+        } else if (globals.mouse_left_released) {
+            selected_handle = 0;
+            globals._mouse_owner = COW_MOUSE_OWNER_NONE;
+        }
+    }
+}
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // #include "sound.cpp"/////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3736,7 +3854,6 @@ void _cow_init() {
 
     setvbuf(stdout, NULL, _IONBF, 0); // don't buffer printf
 
-    srand(0);
     // srand((unsigned int) time(NULL));
 
 
@@ -3757,6 +3874,8 @@ void _cow_reset() {
 
     _sound_reset();
     _window_reset();
+
+    srand(0);
 }
 
 bool cow_begin_frame() {
