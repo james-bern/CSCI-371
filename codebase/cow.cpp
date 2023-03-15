@@ -3943,7 +3943,7 @@ bool cow_begin_frame() {
         }
 
         { // framerate overlay
-            static int measured_fps;
+            static long measured_fps;
             // request uncapped framerate 
             if (globals.key_pressed['/'] && !globals.key_shift_held) {
                 COW0._cow_framerate_uncapped = !COW0._cow_framerate_uncapped;
@@ -3958,9 +3958,10 @@ bool cow_begin_frame() {
                 }
                 if (display_fps) {
                     static int fps;
-                    static long stamp = util_timestamp_in_milliseconds();
-                    if (util_timestamp_in_milliseconds() - stamp > 166) {
-                        stamp = util_timestamp_in_milliseconds();
+                    static std::chrono::steady_clock::time_point timestamp = std::chrono::high_resolution_clock::now();
+                    auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - timestamp);
+                    if (nanos.count() > 166666666 / 1.5) {
+                        timestamp = std::chrono::high_resolution_clock::now();
                         fps = measured_fps;
                         // printf("fps: %d\n", display_fps);
                     }
@@ -3972,13 +3973,15 @@ bool cow_begin_frame() {
             // grab and smooth fps
             {
                 const int N_MOVING_WINDOW = 5;
-                static long prev_stamps[N_MOVING_WINDOW];
-                long stamp = util_timestamp_in_milliseconds();
-                measured_fps = (int) round(N_MOVING_WINDOW / (real(stamp - prev_stamps[N_MOVING_WINDOW - 1]) / 1000.));
+                static std::chrono::steady_clock::time_point prev_timestamps[N_MOVING_WINDOW];
+                std::chrono::steady_clock::time_point timestamp = std::chrono::high_resolution_clock::now();
+                auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp - prev_timestamps[N_MOVING_WINDOW - 1]);
+                measured_fps = (int) round(N_MOVING_WINDOW / (nanos.count() / 1000000000.));
+
                 for (int i = N_MOVING_WINDOW - 1; i >= 1; --i) {
-                    prev_stamps[i] = prev_stamps[i - 1];
+                    prev_timestamps[i] = prev_timestamps[i - 1];
                 }
-                prev_stamps[0] = stamp;
+                prev_timestamps[0] = timestamp;
             }
         }
     }
