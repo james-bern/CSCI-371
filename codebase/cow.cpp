@@ -477,6 +477,7 @@ C1_PersistsAcrossFrames_AutomaticallyClearedToZeroBetweenAppsBycow_reset COW1;
 #define SGN(a) ((a) < 0 ? -1 : 1)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MID(a, b, c) MAX(MIN(a, b), MIN(MAX(a, b), c))
 #define AVG(a, b) (.5 * (a) + .5 * (b))
 
 #define IS_ZERO(a) (ABS(a) < TINY_VAL)
@@ -3249,6 +3250,10 @@ real random_real(real lower_bound, real upper_bound) {
 
 int random_sign() {
     return random_real(0.0, 1.0) < .5 ? -1 : 1;
+}
+
+bool random_bool() {
+    return (random_real(0.0, 1.0) > 0.5);
 }
 
 long util_timestamp_in_milliseconds() { // no promises this is even a little bit accurate

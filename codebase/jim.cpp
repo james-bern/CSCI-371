@@ -13,8 +13,6 @@
 
 // msvc details switches /Bt /d2cgsummary 
 
-#define MID(a, b, c) MAX(MIN((a), (b)), MIN(MAX((a), (b)), (c)))
-
 #define real double
 #define for_(i, N) for (int i = 0; i < N; ++i)
 #define for_polygon_(i, j, N) for (int i = N - 1, j = 0; j < N; i = j++)
