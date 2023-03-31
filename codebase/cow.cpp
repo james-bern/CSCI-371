@@ -3441,7 +3441,7 @@ void _widget_translate_3D(mat4 PV, int num_points, vec3 *vertex_positions, vec3 
     if (selected_point) {
         double L_handle = norm(*selected_point - transformPoint(inverse(PV), transformPoint(PV, *selected_point) + V3(_L_handle_NDC, 0, 0)));
 
-        vec3 selected_color = (vertex_positions == NULL) ? monokai.white : vertex_colors[selected_point - vertex_positions];
+        vec3 selected_color = (vertex_colors == NULL) ? monokai.white : vertex_colors[selected_point - vertex_positions];
 
         vec3 *hot_handle = 0;
         vec3 handles[3] = { *selected_point + V3(L_handle, 0, 0), *selected_point + V3(0, L_handle, 0), *selected_point + V3(0, 0, L_handle) };
