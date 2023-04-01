@@ -59,11 +59,8 @@ vec3 march(vec3 o, vec3 d) {
     return vec3(0.0);
 }
 
-
-
-
 void main() {
-    vec3 o = C[3].xyz;
+    vec3 o = C[3].xyz; // glsl is pretty neato :)
     vec3 d; {
         float theta_over_two = RAD(30.0);
         vec2 d_xy_camera = (gl_FragCoord.xy - iResolution.xy / 2.0) * (tan(theta_over_two) / (0.5 * iResolution.y));
