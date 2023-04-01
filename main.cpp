@@ -266,12 +266,12 @@ void hw9b() {
     IndexedTriangleMesh3D mesh = library.meshes.square;
     Camera3D camera = { 5.0 };
     bool playing = false;
-    real time = 0.0;
+    real iTime = 0.0;
     while (cow_begin_frame()) {
         gui_checkbox("playing", &playing, 'p');
-        if (playing) { time += .0167; }
+        if (playing) { iTime += .0167; }
         camera_move(&camera);
-        shader_set_uniform(&shader, "time", time);
+        shader_set_uniform(&shader, "iTime", iTime);
         shader_set_uniform(&shader, "iResolution", window_get_size());
         shader_set_uniform(&shader, "C", camera_get_C(&camera));
         shader_pass_vertex_attribute(&shader, mesh.num_vertices, mesh.vertex_positions);

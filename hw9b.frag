@@ -1,6 +1,6 @@
 #version 330 core
 
-uniform float time;
+uniform float iTime;
 uniform vec2 iResolution;
 uniform mat4 C;
 
@@ -37,7 +37,7 @@ vec4 march(vec3 o, vec3 d) {
         float f = march_max_distance; {
             // TODO: make the scene of your dreams :)
             { // box
-                vec3 box_position = vec3(2.0 * sin(time), 0.0, 0.0);
+                vec3 box_position = vec3(2.0 * sin(iTime), 0.0, 0.0);
                 vec3 box_side_lengths = vec3(1.0);
                 float distance_to_box = sdBox(p - box_position, box_side_lengths);
                 f = min(f, distance_to_box);
