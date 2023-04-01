@@ -67,7 +67,7 @@ void main() {
     vec3 d; {
         float theta_over_two = RAD(30.0);
         vec2 d_xy_camera = (gl_FragCoord.xy - iResolution.xy / 2.0) * (tan(theta_over_two) / (0.5 * iResolution.y));
-        vec3 d_camera = normalize(vec3(d_x_d_y_camera, -1.0));
+        vec3 d_camera = normalize(vec3(d_xy_camera, -1.0));
         d = mat3(C) * d_camera;
     }
     vec3 col = march(o, d);
