@@ -20,7 +20,7 @@ float sdBox(vec3 p, vec3 b) {
     return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
-vec3 march(vec3 o, vec3 d) {
+vec4 march(vec3 o, vec3 d) {
     // params
     const int   march_max_steps     = 80;
     const float march_hit_tolerance = 0.001;
@@ -52,11 +52,11 @@ vec3 march(vec3 o, vec3 d) {
             }
         }
         if (f < march_hit_tolerance) { // hit!
-            return 0.5 + 0.5 * cos(TAU * (vec3(0.0, 0.33, -0.33) - vec3(0.3 * p.z)));
+            return vec4(0.5 + 0.5 * cos(TAU * (vec3(0.0, 0.33, -0.33) - vec3(0.3 * p.z))), 1.0);
         }
         t += min(f, .5); // make the number smaller if you're getting weird artifacts
     }
-    return vec3(0.0);
+    return vec4(0.0);
 }
 
 void main() {
@@ -67,6 +67,5 @@ void main() {
         vec3 d_camera = normalize(vec3(d_xy_camera, -1.0));
         d = mat3(C) * d_camera;
     }
-    vec3 col = march(o, d);
-    fragColor = vec4(col, 1);
+    fragColor = march(o, d);
 }
