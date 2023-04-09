@@ -107,7 +107,7 @@ struct CW_USER_FACING_CONFIG {
     bool tweaks_soup_draw_with_rounded_corners_for_all_line_primitives = true;
     bool tweaks_ASSERT_crashes_the_program_without_you_having_to_press_Enter = false;
     bool tweaks_record_raw_then_encode_everything_WARNING_USES_A_LOT_OF_DISK_SPACE = false;
-    real tweaks_size_in_pixels_soup_draw_defaults_to_if_you_pass_0_for_size_in_pixels = 12.0;
+    real tweaks_size_in_pixels_soup_draw_defaults_to_if_you_pass_0_for_size_in_pixels = 8.0;
 };
 
 struct C2_READONLY_USER_FACING_DATA {
@@ -3718,6 +3718,83 @@ void _recorder_begin_frame() { // record
         _recorder_draw_pacman(1.0, 0.0, 0.0, 0.9, 1.0);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// #include "plot.cpp" /////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// plot[i][j].y is the data
+// j = 0 most recent sample
+
+#define PLOT_MAX_NUM_TRACES 16
+
+struct Plot {
+    int num_samples;
+    int num_traces;
+    real y_min[PLOT_MAX_NUM_TRACES];
+    real y_max[PLOT_MAX_NUM_TRACES];
+    vec2 *vertex_positions[PLOT_MAX_NUM_TRACES];
+    vec3 trace_colors[PLOT_MAX_NUM_TRACES];
+    real trace_sizes_in_pixels[PLOT_MAX_NUM_TRACES];
+};
+
+real plot_get(Plot *plot, int trace_i, int sample_j) {
+    return LINEAR_REMAP(plot->vertex_positions[trace_i][sample_j].y, 0.0, 1.0, plot->y_min[trace_i], plot->y_max[trace_i]);
+}
+
+void plot_init(Plot *plot, int num_samples = 64) {
+    *plot = {};
+    plot->num_samples = num_samples;
+}
+
+void plot_add_trace(Plot *plot, real y_min, real y_max, vec3 color = { 1.0, 1.0, 1.0 }, real size_in_pixels = 0.0) {
+    real y0 = INFINITY;
+    ASSERT(plot->num_traces < PLOT_MAX_NUM_TRACES);
+    plot->y_min[plot->num_traces] = y_min;
+    plot->y_max[plot->num_traces] = y_max;
+    plot->vertex_positions[plot->num_traces] = (vec2 *) malloc(plot->num_samples * sizeof(vec2));
+    plot->trace_colors[plot->num_traces] = color;
+    plot->trace_sizes_in_pixels[plot->num_traces] = size_in_pixels;
+    for (int j = 0; j < plot->num_samples; ++j) {
+        plot->vertex_positions[plot->num_traces][j] = { real(j) / (plot->num_samples - 1), LINEAR_REMAP(y0, y_min, y_max, 0.0, 1.0) };
+    }
+    ++(plot->num_traces);
+}
+
+void plot_data_point(Plot *plot, int trace_i, real y) {
+    ASSERT(0 <= trace_i && trace_i < plot->num_traces);
+    for (int j = plot->num_samples - 1; j > 0; --j) {
+        plot->vertex_positions[trace_i][j].y = plot->vertex_positions[trace_i][j - 1].y;
+    }
+    plot->vertex_positions[trace_i][0].y = LINEAR_REMAP(y, plot->y_min[trace_i], plot->y_max[trace_i], 0.0, 1.0);
+}
+
+void plot_draw(Plot *plot, mat4 PV) {
+    { // draw axes
+        eso_begin(PV, SOUP_LINE_STRIP);
+        eso_color(monokai.gray);
+        eso_vertex(1.0, 0.0);
+        eso_vertex(0.0, 0.0);
+        eso_vertex(0.0, 1.0);
+        eso_end();
+    }
+
+    for (int i = 0; i < plot->num_traces; ++i) {
+        soup_draw(PV, SOUP_LINE_STRIP, plot->num_samples, plot->vertex_positions[i], NULL, plot->trace_colors[i], plot->trace_sizes_in_pixels[i]);
+    } 
+}
+
+// single trace API
+real plot_get(Plot *plot, int sample_j) {
+    ASSERT(plot->num_traces == 1);
+    return plot_get(plot, 0, sample_j);
+}
+void plot_data_point(Plot *plot, real y) {
+    ASSERT(plot->num_traces == 1);
+    return plot_data_point(plot, 0, y);
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // #include "library.cpp"///////////////////////////////////////////////////////
