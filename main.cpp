@@ -36,8 +36,7 @@ vec2 step_forward_in_time(vec2 curr, int mode, real h, real g, real L) {
     // alpha is the angular acceleration of the pendulum
     // this is a lambda (local) function you can call just like a regular function
     auto get_alpha = [&](real theta) {
-        // TODO: calculate alpha
-        return 0.0;
+        return g / L * sin(theta);
     };
 
     vec2 next = curr;
