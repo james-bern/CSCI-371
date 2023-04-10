@@ -247,7 +247,7 @@ void initialize_weights(real **weights, int mode, vec2 *s_bind, vec2 *b_bind) {
         real w_i[NUM_BONES] = {}; {
             // TODO: calculate the i-th node's skinning weights
             // NOTE: they start out cleared to zero
-            // NOTE: i will normalize them for you (see below)
+            // NOTE: don't worry about ensuring sum(w_i) is 1 (i do it for you below)
 
             if (mode == SKELETON_ANIMATION_MODE_ONLY_ZEROTH) {
                 // bind the node completely to the 0-th bone
@@ -271,7 +271,7 @@ void initialize_weights(real **weights, int mode, vec2 *s_bind, vec2 *b_bind) {
             }
         }
 
-        { // normalize
+        { // normalize weights (ensure they sum(w_i) is 1)
             real sum = 0;
             for (int j = 0; j < NUM_BONES; ++j) {
                 sum += w_i[j];
@@ -282,7 +282,7 @@ void initialize_weights(real **weights, int mode, vec2 *s_bind, vec2 *b_bind) {
             }
         }
 
-        { // write
+        { // write w_i -> weights[i]
             for (int j = 0; j < NUM_BONES; ++j) {
                 weights[i][j] = w_i[j];
             }
