@@ -3752,7 +3752,6 @@ void plot_init(Plot *plot, int num_samples = 64) {
 }
 
 void plot_add_trace(Plot *plot, real y_min, real y_max, vec3 color = { 1.0, 1.0, 1.0 }, real size_in_pixels = 0.0) {
-    real y0 = INFINITY;
     ASSERT(plot->num_traces < PLOT_MAX_NUM_TRACES);
     plot->y_min[plot->num_traces] = y_min;
     plot->y_max[plot->num_traces] = y_max;
@@ -3760,7 +3759,7 @@ void plot_add_trace(Plot *plot, real y_min, real y_max, vec3 color = { 1.0, 1.0,
     plot->trace_colors[plot->num_traces] = color;
     plot->trace_sizes_in_pixels[plot->num_traces] = size_in_pixels;
     for (int j = 0; j < plot->num_samples; ++j) {
-        plot->vertex_positions[plot->num_traces][j] = { real(j) / (plot->num_samples - 1), LINEAR_REMAP(y0, y_min, y_max, 0.0, 1.0) };
+        plot->vertex_positions[plot->num_traces][j] = { real(j) / (plot->num_samples - 1), INFINITY };
     }
     ++(plot->num_traces);
 }
@@ -3786,6 +3785,14 @@ void plot_draw(Plot *plot, mat4 PV) {
     for (int i = 0; i < plot->num_traces; ++i) {
         soup_draw(PV, SOUP_LINE_STRIP, plot->num_samples, plot->vertex_positions[i], NULL, plot->trace_colors[i], plot->trace_sizes_in_pixels[i]);
     } 
+}
+
+void plot_clear(Plot *plot) {
+    for (int i = 0; i < plot->num_traces; ++i) {
+        for (int j = 0; j < plot->num_samples; ++j) {
+            plot->vertex_positions[i][j].y = INFINITY;
+        }
+    }
 }
 
 // single trace API
