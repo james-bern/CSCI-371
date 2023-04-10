@@ -221,24 +221,16 @@ char *skeletal_animation_mode_names[] = {
 
 
 void update_skeleton(vec2 *b, real *L, real *theta) {
-    // TODO: calculate b (see writeup)
+    // TODO: calculate b
     // (after you get this right, you should see the skeleton)
-    b[0] = {};
-    for (int j = 0; j < NUM_BONES; ++j ) {
-        // b[j + 1] = ...;
-    }
+
 }
 
 
 void update_skin(vec2 *s, real **weights, vec2 *b, real *theta, vec2 *b_bind, vec2 *s_bind) {
-    // TODO: calculate s (see writeup)
-    // (after you get this right, you should see the skeleton)
-    for (int i = 0; i < NUM_NODES; ++i) {
-        s[i] = {};
-        for (int j = 0; j < NUM_BONES; ++j) {
-            // s[i] += ...;
-        }
-    }
+    // TODO: calculate s
+    // (after you get this right, you should see the skin)
+
 }
 
 
