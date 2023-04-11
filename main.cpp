@@ -239,7 +239,7 @@ void update_skin(vec2 *s, real **weights, vec2 *b, real *theta, vec2 *b_bind, ve
 real point_segment_distance(vec2 p, vec2 a, vec2 b) {
     real L2 = squaredNorm(a - b);
     if (IS_ZERO(L2)) { return norm(p - a); }
-    return norm(p - LERP(MAX(0, min(1, dot(p - a, b - a) / L2)), a, b));
+    return norm(p - LERP(MAX(0, MIN(1, dot(p - a, b - a) / L2)), a, b));
 }
 
 void initialize_weights(real **weights, int mode, vec2 *s_bind, vec2 *b_bind) {
