@@ -702,15 +702,3 @@ template <int T> void pprint(Mat<T> M) {
 #endif
 
 
-
-
-
-
-
-
-
-
-
-
-
-
